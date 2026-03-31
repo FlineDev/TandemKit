@@ -170,15 +170,15 @@ HarnessKit/
 │   └── harness-kit/
 │       ├── SKILL.md               # The orchestration skill
 │       └── references/
-│           ├── RolePlanner.md
-│           ├── RoleGenerator.md
-│           ├── RoleEvaluator.md
-│           ├── DualSessionProtocol.md
-│           ├── SpecFormat.md
-│           ├── EvalStrategy-ApplePlatform.md
-│           ├── EvalStrategy-Web.md
-│           ├── EvalStrategy-CLI.md
-│           └── EvalStrategy-Domain.md
+│           ├── Role-Planner.md
+│           ├── Role-Generator.md
+│           ├── Role-Evaluator.md
+│           ├── Dual-Session-Protocol.md
+│           ├── Spec-Format.md
+│           ├── Evaluation-Strategy-ApplePlatform.md
+│           ├── Evaluation-Strategy-Web.md
+│           ├── Evaluation-Strategy-CLI.md
+│           └── Evaluation-Strategy-Domain.md
 ├── DESIGN.md
 ├── README.md
 └── LICENSE
@@ -189,22 +189,24 @@ HarnessKit/
 ```
 HarnessKit/
 ├── Config.json
-├── Roles/
-│   ├── Planner.md
-│   ├── Generator.md
-│   └── Evaluator.md
+├── Planner.md                    # Project-specific planner context
+├── Generator.md                  # Project-specific generator context
+├── Evaluator.md                  # Project-specific evaluator context
 ├── 001-JWTAuth/                  # A completed mission
 │   ├── Spec.md
 │   ├── State.json
-│   ├── Gen/
-│   │   ├── Round-001.md
-│   │   └── Round-002.md
-│   ├── Eval/
-│   │   ├── Round-001.md          # FAIL
-│   │   └── Round-002.md          # PASS
-│   ├── UserFeedback/
-│   │   └── Feedback-001.md
-│   └── Summary.md
+│   ├── Summary.md
+│   ├── Generator/
+│   │   ├── Round-01.md
+│   │   └── Round-02.md
+│   ├── Evaluator/
+│   │   ├── Round-01.md           # FAIL
+│   │   ├── Round-01-Conversation/ # dual evaluator process
+│   │   └── Round-02.md           # PASS
+│   ├── Planner-Conversation/     # dual planner process
+│   │   └── ...
+│   └── UserFeedback/
+│       └── Feedback-01.md
 └── 002-SettingsRefactor/         # Current mission
     ├── Spec.md
     ├── State.json

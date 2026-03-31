@@ -41,9 +41,9 @@ Determine your role from the user's prompt:
 | User gives feedback after a Review Briefing | **User Feedback** | Document feedback, resume inner loop |
 
 Once the role is determined, read the corresponding reference and project role file:
-- **Planner**: Read `references/RolePlanner.md` + `HarnessKit/Roles/Planner.md`
-- **Generator**: Read `references/RoleGenerator.md` + `HarnessKit/Roles/Generator.md`
-- **Evaluator**: Read `references/RoleEvaluator.md` + `HarnessKit/Roles/Evaluator.md`
+- **Planner**: Read `references/Role-Planner.md` + `HarnessKit/Planner.md`
+- **Generator**: Read `references/Role-Generator.md` + `HarnessKit/Generator.md`
+- **Evaluator**: Read `references/Role-Evaluator.md` + `HarnessKit/Evaluator.md`
 
 ---
 
@@ -89,28 +89,28 @@ Ask the user:
 > "Do you want to plan this mission with a parallel session? Using two planners (e.g., Claude + Codex) provides diverse investigation — different models find different things. If yes, I'll generate a prompt for the second session."
 
 **If the user wants dual planning:**
-1. Read `references/DualSessionProtocol.md` for the full protocol
+1. Read `references/Dual-Session-Protocol.md` for the full protocol
 2. Generate a prompt for the second planner session:
    ```
    HarnessKit: I'm Planner B for mission NNN-MissionName.
    Read the planning state and join the planning process.
    ```
 3. Present this to the user: "Please open a new session and paste this prompt. Once you've done that, say 'continue' here."
-4. Create `Planning/` subfolder with `Protocol.json`, `StatusA.json`, and `StatusB.json` for dual-planner coordination
-5. Follow the dual-session protocol (Steps 1-6 from DualSessionProtocol.md)
+4. Create `Planner-Conversation/` subfolder with `Coordination.json`, `Status-A.json`, and `Status-B.json` for dual-planner coordination
+5. Follow the dual-session protocol (Steps 1-6 from Dual-Session-Protocol.md)
 
 **If the user wants single planning:**
 Proceed directly to Step 3.
 
 ### Step 3 — Plan the Mission
 
-Read `references/RolePlanner.md` for detailed planner guidance. The high-level flow:
+Read `references/Role-Planner.md` for detailed planner guidance. The high-level flow:
 
 1. **Capture the user's goal verbatim** — preserve their exact words (typo/grammar-corrected) for the User Intent section of Spec.md
 2. **Investigate the codebase** — read relevant files, check architecture, look for PlanKit files, examine existing patterns. Tell the user what you're investigating.
 3. **Ask upfront questions** (only if truly needed for direction) — if you have no upfront questions, explicitly say "No upfront questions — let me investigate first" so the user can leave
 4. **Research and explore** — investigate thoroughly. Document findings with file paths, line numbers, links.
-5. **Draft the Spec.md** — follow the format in `references/SpecFormat.md`. Present it to the user.
+5. **Draft the Spec.md** — follow the format in `references/Spec-Format.md`. Present it to the user.
 6. **Iterate with user** — the user may adjust, add, remove, or change direction. Document all changes including original positions.
 7. **Finalize Spec.md** — write the final spec to `HarnessKit/NNN-MissionName/Spec.md`
 8. **Ask remaining questions** — if any edge cases or details need clarification
@@ -159,19 +159,19 @@ You are the Generator. Your job is to implement the spec faithfully and in a way
 
 ### On Start
 
-1. Read `references/RoleGenerator.md` for detailed guidance
-2. Read `HarnessKit/Roles/Generator.md` for project-specific context
+1. Read `references/Role-Generator.md` for detailed guidance
+2. Read `HarnessKit/Generator.md` for project-specific context
 3. Read the mission's `Spec.md` — this is your source of truth
 4. Read `State.json` to understand the current state. If `phase` is `"ready-for-execution"` or `"planning"`, transition it to `"generation"` — you are now the active Generator.
 5. Check for any `UserFeedback/` files — if they exist, read the latest one (this is a feedback iteration, not a fresh start)
-6. Check for any previous `Eval/Round-NNN.md` files — if they exist, read the latest one to understand what the evaluator found
+6. Check for any previous `Evaluator/Round-NN.md` files — if they exist, read the latest one to understand what the evaluator found
 
 ### Implementation Loop
 
-1. **Determine the round number**: Count existing files in `Gen/` directory. The next round is one more than the highest existing round. If no files exist, this is round 1.
+1. **Determine the round number**: Count existing files in `Generator/` directory. The next round is one more than the highest existing round. If no files exist, this is round 1.
 2. **Update State.json**: Set `"phase": "generation"`, `"generatorStatus": "working"`, `"round": N`, `"updated": "..."`. Only update YOUR fields (`generatorStatus`) — never overwrite `evaluatorStatus` (the Evaluator owns that field). Read-modify-write: read the full State.json first, update only your fields, write it back.
-3. **Implement** — work through the spec's acceptance criteria. Follow the project conventions from `HarnessKit/Roles/Generator.md`. Make commits at milestones if auto-commit is enabled in Config.json.
-4. **When done implementing**, write a report to `Gen/Round-NNN.md` that includes:
+3. **Implement** — work through the spec's acceptance criteria. Follow the project conventions from `HarnessKit/Generator.md`. Make commits at milestones if auto-commit is enabled in Config.json.
+4. **When done implementing**, write a report to `Generator/Round-NN.md` that includes:
    - What was implemented/changed in this round
    - Which acceptance criteria you believe are satisfied
    - Which files were created or modified
@@ -191,11 +191,11 @@ You are the Generator. Your job is to implement the spec faithfully and in a way
    ```bash
    GIT_ROOT=$(git rev-parse --show-toplevel) && watchman-wait "$GIT_ROOT/HarnessKit/NNN-MissionName" -p "State.json" --max-events 1 -t 600
    ```
-   When the file changes, read State.json. If `evaluatorStatus` is `"done"`, read `Eval/Round-NNN.md`.
+   When the file changes, read State.json. If `evaluatorStatus` is `"done"`, read `Evaluator/Round-NN.md`.
 
 ### After Receiving Evaluation
 
-Read the evaluation findings in `Eval/Round-NNN.md`:
+Read the evaluation findings in `Evaluator/Round-NN.md`:
 
 - **If FAIL**: Read the specific failures. Go back to the implementation loop (Step 1) to address each issue. This is the next round.
 - **If PASS_WITH_GAPS**: All acceptance criteria passed but the Evaluator noted non-critical issues. Proceed to the Review Briefing — include the gaps in the "what the user should test" section. The user decides whether to address them.
@@ -208,7 +208,7 @@ When the Evaluator says PASS, present a **Review Briefing** to the user (in the 
 The Review Briefing includes:
 
 1. **What was done** — high-level summary of the implementation
-2. **Stats** — files created/changed, number of Gen/Eval rounds, user feedback rounds (if any)
+2. **Stats** — files created/changed, number of Generator/Evaluator rounds, user feedback rounds (if any)
 3. **Issues found and fixed** — significant bugs the Evaluator caught and you fixed
 4. **Key decisions made** — architectural or implementation choices you made during generation
 5. **What the user should test** — specific manual test steps:
@@ -231,9 +231,9 @@ Update State.json: `"phase": "user-review"`, `"generatorStatus": "awaiting-user"
 
 If the user provides feedback (rather than approving):
 
-1. Document the feedback in `UserFeedback/Feedback-NNN.md` where NNN is the user feedback sequence (001, 002, ...). This is a SEPARATE numbering from Gen/Eval rounds. Preserve the user's exact words, plus any clarifications.
+1. Document the feedback in `UserFeedback/Feedback-NN.md` where NN is the user feedback sequence (01, 02, ...). This is a SEPARATE numbering from Generator/Evaluator rounds. Preserve the user's exact words, plus any clarifications.
 2. Update State.json: `"phase": "generation"`, `"generatorStatus": "working"`, `"userFeedbackRounds": N` (increment the count), `"evaluatorStatus": "pending"`, `"updated": "..."`
-3. Re-enter the Implementation Loop, treating the user feedback as additional requirements. The next Gen/Eval round continues the overall round numbering.
+3. Re-enter the Implementation Loop, treating the user feedback as additional requirements. The next Generator/Evaluator round continues the overall round numbering.
 
 ### Mission Complete
 
@@ -254,11 +254,11 @@ You are the Evaluator. Your job is to verify the Generator's work against the sp
 
 ### On Start
 
-1. Read `references/RoleEvaluator.md` for detailed guidance
-2. Read `HarnessKit/Roles/Evaluator.md` for project-specific context (tools, priorities, always/never rules)
+1. Read `references/Role-Evaluator.md` for detailed guidance
+2. Read `HarnessKit/Evaluator.md` for project-specific context (tools, priorities, always/never rules)
 3. Read the mission's `Spec.md` — this is your verification baseline
 4. Read `State.json` to understand the current state
-5. If you are Evaluator B in a dual-evaluator setup: read `references/DualSessionProtocol.md`
+5. If you are Evaluator B in a dual-evaluator setup: read `references/Dual-Session-Protocol.md`
 
 ### Waiting for Generator
 
@@ -277,15 +277,15 @@ If you are resuming after a crash and the state shows `evaluatorStatus: "pending
 **If single evaluator (or Evaluator A in a dual setup with no Evaluator B):**
 
 1. Update State.json: `"evaluatorStatus": "evaluating"`, `"updated": "..."`. Only update YOUR fields (`evaluatorStatus`, `verdict`) — never overwrite `generatorStatus`. Read-modify-write.
-2. Read `Gen/Round-NNN.md` — the Generator's report for this round
+2. Read `Generator/Round-NN.md` — the Generator's report for this round
 3. Read any `UserFeedback/` files if this is a post-feedback round
 4. **Evaluate against every acceptance criterion in Spec.md:**
-   - For each criterion: verify it using the tools described in `HarnessKit/Roles/Evaluator.md`
+   - For each criterion: verify it using the tools described in `HarnessKit/Evaluator.md`
    - Use available verification tools (build, test, screenshots, UI interaction, etc.)
    - Follow the "Always do" rules from the Evaluator role file
    - Check edge cases and negative cases from the spec
    - If this is a post-feedback round: verify ALL user feedback points are addressed AND no regressions occurred
-5. Write findings to `Eval/Round-NNN.md`:
+5. Write findings to `Evaluator/Round-NN.md`:
    - **Verdict**: PASS, PASS_WITH_GAPS, or FAIL
    - **Per-criterion results**: For each acceptance criterion, mark PASS or FAIL with evidence
    - **Issues found**: Specific problems with reproduction steps, severity, and likely cause
@@ -293,7 +293,7 @@ If you are resuming after a crash and the state shows `evaluatorStatus: "pending
    - **Suggestions**: Non-blocking improvements the Generator could consider
 6. Update State.json: `"evaluatorStatus": "done"`, `"verdict": "PASS|PASS_WITH_GAPS|FAIL"`
 
-**If dual evaluators:** Follow the dual-session protocol in `references/DualSessionProtocol.md`. Both evaluators investigate independently, then cross-review and discuss until consensus. Evaluator A writes the final `Eval/Round-NNN.md`. The `EvalDiscussion/Round-NNN/` folder holds the intermediate files.
+**If dual evaluators:** Follow the dual-session protocol in `references/Dual-Session-Protocol.md`. Both evaluators investigate independently, then cross-review and discuss until consensus. Evaluator A writes the final `Evaluator/Round-NN.md`. The `Evaluator/Round-NN-Conversation/` folder holds the intermediate files.
 
 ### Evaluation Principles
 
@@ -308,17 +308,17 @@ If you are resuming after a crash and the state shows `evaluatorStatus: "pending
 
 ## ROLE: Planner B (Dual Planning)
 
-You are the secondary Planner in a dual-planner setup. Read `references/DualSessionProtocol.md` for the full protocol.
+You are the secondary Planner in a dual-planner setup. Read `references/Dual-Session-Protocol.md` for the full protocol.
 
-1. Read `HarnessKit/NNN-MissionName/Planning/Protocol.json` and `StatusB.json` to understand the current step and your status
+1. Read `HarnessKit/NNN-MissionName/Planner-Conversation/Coordination.json` and `Status-B.json` to understand the current step and your status
 2. Follow the protocol for Session B:
    - Write your findings to `Investigation-B.md`
    - Write your review of A's findings to `Review-B.md`
    - Respond in `Discussion/` when it's your turn
    - Review A's draft of Spec.md and give feedback in `Draft/`
 3. **Never ask the user directly.** All user communication goes through Planner A.
-4. Signal state changes by updating your `Planning/StatusB.json`
-5. When waiting for Planner A, use watchman-wait on the `Planning/` folder
+4. Signal state changes by updating your `Planner-Conversation/Status-B.json`
+5. When waiting for Planner A, use watchman-wait on the `Planner-Conversation/` folder
 
 ---
 
@@ -415,13 +415,13 @@ Generated when a mission is completed by the user:
 | Files | Written By |
 |---|---|
 | `Spec.md` | Planner (or Planner A in dual setup) |
-| `Gen/Round-NNN.md` | Generator |
-| `Eval/Round-NNN.md` | Evaluator (or Evaluator A in dual setup) |
-| `UserFeedback/Feedback-NNN.md` | Generator (documents user's words) |
+| `Generator/Round-NN.md` | Generator |
+| `Evaluator/Round-NN.md` | Evaluator (or Evaluator A in dual setup) |
+| `UserFeedback/Feedback-NN.md` | Generator (documents user's words) |
 | `State.json` | Both — but each role only updates ITS OWN fields (see State.json Ownership below) |
 | `Summary.md` | Generator (at mission completion) |
-| `Planning/*` | Respective planner (A or B writes their own files) |
-| `EvalDiscussion/*` | Respective evaluator (A or B writes their own files) |
+| `Planner-Conversation/*` | Respective planner (A or B writes their own files) |
+| `Evaluator/Round-NN-Conversation/*` | Respective evaluator (A or B writes their own files) |
 
 ### State.json Ownership (Prevents Race Conditions)
 
@@ -452,9 +452,9 @@ When running `watchman-wait`, use the Bash tool with `run_in_background: true` s
 
 ### Round Numbering
 
-**Gen/Eval rounds** are numbered **continuously across the entire mission**. If the first inner loop was 2 rounds (Gen-001, Eval-001 FAIL, Gen-002, Eval-002 PASS), and the user gives feedback, the next round is 003. This creates a clear timeline.
+**Generator/Evaluator rounds** are numbered **continuously across the entire mission**. If the first inner loop was 2 rounds (Generator/Round-01, Evaluator/Round-01 FAIL, Generator/Round-02, Evaluator/Round-02 PASS), and the user gives feedback, the next round is 03. This creates a clear timeline.
 
-**User feedback** uses a **separate numbering sequence** in `UserFeedback/Feedback-001.md`, `Feedback-002.md`, etc. This is distinct from Gen/Eval round numbers.
+**User feedback** uses a **separate numbering sequence** in `UserFeedback/Feedback-01.md`, `Feedback-02.md`, etc. This is distinct from Generator/Evaluator round numbers.
 
 ### Spec Immutability
 

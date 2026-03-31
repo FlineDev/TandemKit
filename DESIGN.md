@@ -67,7 +67,7 @@ When a session restarts after a crash/update, the user says "continue" and the s
 | `evaluatorStatus: "evaluating"` | Evaluator | Continue evaluating |
 | `evaluatorStatus: "done"` | Evaluator | Wait (generator should read results) |
 
-Each round's Gen and Eval files serve as checkpoints — even if context is lost, the session can re-read the spec, the latest round file, and State.json to fully reconstruct what was happening.
+Each round's Generator and Evaluator files serve as checkpoints — even if context is lost, the session can re-read the spec, the latest round file, and State.json to fully reconstruct what was happening.
 
 ---
 
@@ -114,7 +114,7 @@ Each round's Gen and Eval files serve as checkpoints — even if context is lost
 
 4. **Sequential Discussion** — A goes first. They alternate responses until 100% agreement on every aspect. No skipping disagreements — everything must be resolved.
 
-5. **Documentation** — A writes the final document (Spec.md for planners, Eval/Round-NNN.md for evaluators). B reviews. A fixes. B re-reviews. Repeat until both agree the document is correct.
+5. **Documentation** — A writes the final document (Spec.md for planners, Evaluator/Round-NN.md for evaluators). B reviews. A fixes. B re-reviews. Repeat until both agree the document is correct.
 
 6. **End Questions** (Planners only) — A collects remaining questions from both sessions and asks the user. If answers require re-investigation, back to Step 2.
 
@@ -123,14 +123,14 @@ Each round's Gen and Eval files serve as checkpoints — even if context is lost
 - Steps 4-6 are sequential (alternating, A always starts)
 - All findings must include source references so the other session can verify without re-investigating
 - The user is only engaged in Session A's chat, only at the start (upfront questions) and end (remaining questions)
-- From the Generator's perspective, there's always one Spec.md and one Eval/Round-NNN.md — it doesn't know or care if one or two sessions produced it
+- From the Generator's perspective, there's always one Spec.md and one Evaluator/Round-NN.md — it doesn't know or care if one or two sessions produced it
 
 **File structure for dual-session communication:**
 ```
-Planning/                              # (or EvalDiscussion/ for evaluators)
-├── Protocol.json                      # Shared protocol state (step, rounds)
-├── StatusA.json                       # Session A signal file
-├── StatusB.json                       # Session B signal file
+Planner-Conversation/                  # (or Evaluator/Round-NN-Conversation/ for evaluators)
+├── Coordination.json                  # Shared protocol state (step, rounds)
+├── Status-A.json                      # Session A signal file
+├── Status-B.json                      # Session B signal file
 ├── UpfrontQuestions-A.md              # (planners only)
 ├── UpfrontQuestions-B.md              # (planners only)
 ├── UserAnswers.md                     # (planners only)
@@ -152,7 +152,7 @@ Planning/                              # (or EvalDiscussion/ for evaluators)
 
 **Coordination files for the protocol:**
 
-`Protocol.json` (shared state, written only during sequential phases):
+`Coordination.json` (shared state, written only during sequential phases):
 ```json
 {
   "step": "parallel-investigation",
@@ -162,7 +162,7 @@ Planning/                              # (or EvalDiscussion/ for evaluators)
 }
 ```
 
-`StatusA.json` / `StatusB.json` (each session writes only its own):
+`Status-A.json` / `Status-B.json` (each session writes only its own):
 ```json
 {
   "status": "investigating",
@@ -227,44 +227,47 @@ Step field progresses: `upfront-questions` → `parallel-investigation` → `par
 ```
 HarnessKit/
 ├── Config.json                    # Global config + currentMission + nextMissionNumber
+├── Planner.md                     # Project-specific planner context
+├── Generator.md                   # Project-specific generator context
+├── Evaluator.md                   # Project-specific evaluator context
 ├── 001-AuthModule/
 │   ├── Spec.md                    # Acceptance criteria (output of planning)
 │   ├── State.json                 # Coordination state (phase: "done")
-│   ├── Planning/                  # Only when dual planners were used
-│   │   ├── Protocol.json          # Shared protocol state (step, rounds)
-│   │   ├── StatusA.json           # Session A signal file
-│   │   ├── StatusB.json           # Session B signal file
-│   │   ├── Investigation-A.md
-│   │   ├── Investigation-B.md
-│   │   ├── Review-A.md
-│   │   ├── Review-B.md
-│   │   ├── Discussion/
-│   │   └── Draft/
-│   ├── Gen/
-│   │   ├── Round-001.md           # Generator's implementation report
-│   │   └── Round-002.md           # Generator's fix report
-│   ├── Eval/
-│   │   ├── Round-001.md           # Final evaluator findings (FAIL)
-│   │   └── Round-002.md           # Final evaluator findings (PASS)
-│   ├── EvalDiscussion/            # Only when dual evaluators, per round
-│   │   ├── Round-001/             # Dual-session protocol files for round 1
-│   │   │   ├── Protocol.json
-│   │   │   ├── StatusA.json
-│   │   │   ├── StatusB.json
+│   ├── Summary.md                 # Auto-generated after PASS
+│   ├── Generator/
+│   │   ├── Round-01.md            # Generator's implementation report
+│   │   └── Round-02.md            # Generator's fix report
+│   ├── Evaluator/
+│   │   ├── Round-01.md            # Final evaluator findings (FAIL)
+│   │   ├── Round-01-Conversation/ # Only when dual evaluators
+│   │   │   ├── Coordination.json
+│   │   │   ├── Status-A.json
+│   │   │   ├── Status-B.json
 │   │   │   ├── Investigation-A.md
 │   │   │   ├── Investigation-B.md
 │   │   │   ├── Review-A.md
 │   │   │   ├── Review-B.md
 │   │   │   ├── Discussion/
 │   │   │   └── Draft/
-│   │   └── Round-002/
-│   └── Summary.md                 # Auto-generated after PASS
+│   │   └── Round-02.md            # Final evaluator findings (PASS)
+│   ├── Planner-Conversation/      # Only when dual planners were used
+│   │   ├── Coordination.json
+│   │   ├── Status-A.json
+│   │   ├── Status-B.json
+│   │   ├── Investigation-A.md
+│   │   ├── Investigation-B.md
+│   │   ├── Review-A.md
+│   │   ├── Review-B.md
+│   │   ├── Discussion/
+│   │   └── Draft/
+│   └── UserFeedback/
+│       └── Feedback-01.md
 ├── 002-UserProfile/               # Current mission
 │   ├── Spec.md
 │   ├── State.json                 # phase: "evaluation", round: 1
-│   ├── Gen/
-│   │   └── Round-001.md
-│   └── Eval/                      # (evaluator currently working)
+│   ├── Generator/
+│   │   └── Round-01.md
+│   └── Evaluator/                 # (evaluator currently working)
 ```
 
 **Summary.md** is auto-generated when a mission reaches PASS. It captures: goal, dates, round count, roles used, key decisions, issues found & fixed, files changed. The skill reads Summary.md files when the user asks "what have we worked on?"
@@ -316,13 +319,13 @@ HarnessKit/
 
 ### 10. Role files and initialization
 
-**Decision:** Each project gets a `HarnessKit/Roles/` folder with three project-specific role files: `Planner.md`, `Generator.md`, `Evaluator.md`. These are populated during `harness-kit:init` based on project investigation + user Q&A. The plugin's skills contain the general protocol knowledge; the role files contain the project-specific context.
+**Decision:** Each project gets three project-specific role files at the `HarnessKit/` root: `Planner.md`, `Generator.md`, `Evaluator.md`. These are populated during `harness-kit:init` based on project investigation + user Q&A. The plugin's skills contain the general protocol knowledge; the role files contain the project-specific context.
 
 **Why:** Skills in the plugin are the same for all projects (how to coordinate, how to evaluate, the dual-session protocol). But WHAT to evaluate and HOW to verify is project-specific. The role files bridge this gap. Every session reads its role file as the first thing — it's the project-specific briefing.
 
 **Role files in the target project:**
 ```
-HarnessKit/Roles/
+HarnessKit/
 ├── Planner.md      # Key files to investigate, planning priorities, domain context
 ├── Generator.md    # Architecture, conventions, build commands, test suites
 └── Evaluator.md    # Available verification tools, evaluation priorities, always/never rules
@@ -352,15 +355,15 @@ HarnessKit/Roles/
 **Reference documents** live under the main skill (used by both init and runtime):
 ```
 skills/harness-kit/references/
-├── RolePlanner.md                   # General planner knowledge
-├── RoleGenerator.md                 # General generator knowledge
-├── RoleEvaluator.md                 # General evaluator knowledge
-├── DualSessionProtocol.md           # How two sessions coordinate
-├── SpecFormat.md                    # Spec.md structure and principles
-├── EvalStrategy-ApplePlatform.md    # Xcode MCP + ios-simulator-mcp + AppleScript setup
-├── EvalStrategy-Web.md              # Playwright MCP setup and patterns
-├── EvalStrategy-CLI.md              # Test runners, output verification
-└── EvalStrategy-Domain.md           # Case-based reasoning, scenario testing
+├── Role-Planner.md                   # General planner knowledge
+├── Role-Generator.md                 # General generator knowledge
+├── Role-Evaluator.md                 # General evaluator knowledge
+├── Dual-Session-Protocol.md           # How two sessions coordinate
+├── Spec-Format.md                    # Spec.md structure and principles
+├── Evaluation-Strategy-ApplePlatform.md    # Xcode MCP + ios-simulator-mcp + AppleScript setup
+├── Evaluation-Strategy-Web.md              # Playwright MCP setup and patterns
+├── Evaluation-Strategy-CLI.md              # Test runners, output verification
+└── Evaluation-Strategy-Domain.md           # Case-based reasoning, scenario testing
 ```
 
 **Apple platform evaluation tools (researched):**
@@ -383,7 +386,7 @@ skills/harness-kit/references/
 
 **Decision:** HarnessKit has exactly two components:
 
-1. **`init` command** (`commands/init.md`) — user runs `/harness-kit:init` once per project. Never auto-loads. Handles project investigation, user Q&A, tool installation, and populating `HarnessKit/Roles/`.
+1. **`init` command** (`commands/init.md`) — user runs `/harness-kit:init` once per project. Never auto-loads. Handles project investigation, user Q&A, tool installation, and populating `HarnessKit/` role files.
 
 2. **`harness-kit` skill** (`skills/harness-kit/SKILL.md`) — auto-triggers when user mentions HarnessKit, missions, etc. Contains ALL orchestration logic: planning, generation, evaluation, coordination, resumption. Role-specific references are read conditionally based on which role this session has.
 
@@ -397,15 +400,15 @@ HarnessKit/                              # The plugin repo
 │   └── harness-kit/
 │       ├── SKILL.md                     # THE skill — orchestrates everything
 │       └── references/
-│           ├── RolePlanner.md           # How to be an effective planner
-│           ├── RoleGenerator.md         # How to be an effective generator
-│           ├── RoleEvaluator.md         # How to be an effective evaluator
-│           ├── DualSessionProtocol.md   # How two sessions coordinate
-│           ├── SpecFormat.md            # Spec.md structure and principles
-│           ├── EvalStrategy-ApplePlatform.md
-│           ├── EvalStrategy-Web.md
-│           ├── EvalStrategy-CLI.md
-│           └── EvalStrategy-Domain.md
+│           ├── Role-Planner.md           # How to be an effective planner
+│           ├── Role-Generator.md         # How to be an effective generator
+│           ├── Role-Evaluator.md         # How to be an effective evaluator
+│           ├── Dual-Session-Protocol.md   # How two sessions coordinate
+│           ├── Spec-Format.md            # Spec.md structure and principles
+│           ├── Evaluation-Strategy-ApplePlatform.md
+│           ├── Evaluation-Strategy-Web.md
+│           ├── Evaluation-Strategy-CLI.md
+│           └── Evaluation-Strategy-Domain.md
 ├── README.md
 └── LICENSE
 ```
@@ -423,8 +426,8 @@ HarnessKit/                              # The plugin repo
 - "Continue" / resumption → Check State.json, resume last role
 
 **How the skill reads role-specific context:**
-1. Reads the appropriate plugin reference (e.g., `references/RoleGenerator.md`)
-2. Reads the project-specific role file (e.g., `HarnessKit/Roles/Generator.md`)
+1. Reads the appropriate plugin reference (e.g., `references/Role-Generator.md`)
+2. Reads the project-specific role file (e.g., `HarnessKit/Generator.md`)
 3. Both inform the session's behavior
 
 **User workflow:**
@@ -469,7 +472,7 @@ These prompts trigger the skill in the new session, which then reads the role fr
 **Default behavior (suggested for quick setup):**
 
 - **Generator commits at milestones** — the Planner can suggest natural milestone points in the spec, but the Generator decides when to commit. Each commit should represent a coherent, buildable state.
-- **HarnessKit/ files are NOT committed until the mission is fully complete** — the coordination files (State.json, Gen/, Eval/, etc.) stay uncommitted during the mission. Only when the user confirms the mission is done are HarnessKit/ files committed (as part of the archive).
+- **HarnessKit/ files are NOT committed until the mission is fully complete** — the coordination files (State.json, Generator/, Evaluator/, etc.) stay uncommitted during the mission. Only when the user confirms the mission is done are HarnessKit/ files committed (as part of the archive).
 - **Feature branches per mission** — each mission gets its own branch (e.g., `001-jwt-auth`), following git conventions (lowercase, dashes). The branch name mirrors the mission folder name.
 
 **Init questions for the user:**
@@ -538,13 +541,13 @@ These prompts trigger the skill in the new session, which then reads the role fr
 **Detailed flow:**
 
 **Step 1: AI Inner Loop**
-Generator and Evaluator(s) iterate autonomously until the Evaluator says PASS. This is the existing Gen/Eval coordination described in Decision 4.
+Generator and Evaluator(s) iterate autonomously until the Evaluator says PASS. This is the existing Generator/Evaluator coordination described in Decision 4.
 
 **Step 2: AI PASS → Review Briefing**
 When the Evaluator says PASS, the Generator session presents a **Review Briefing** to the user. This is NOT Summary.md (that's the final archive). The Review Briefing includes:
 
 1. **What was done** — high-level summary of the implementation
-2. **Stats** — files created/changed, lines of code, number of Gen/Eval rounds, number of user feedback rounds (if any)
+2. **Stats** — files created/changed, lines of code, number of Generator/Evaluator rounds, number of user feedback rounds (if any)
 3. **Issues found and fixed** — significant bugs or problems the Evaluator caught and the Generator fixed
 4. **Key decisions made** — architectural or implementation choices the Generator made
 5. **What the user should test** — specific things to check manually, with clear instructions:
@@ -565,13 +568,13 @@ The user tests the implementation. Two outcomes:
 → Mission is COMPLETE (see Step 5)
 
 **B) User has feedback:**
-The user describes issues, changes, or refinements. This is documented in `UserFeedback/Feedback-NNN.md`:
+The user describes issues, changes, or refinements. This is documented in `UserFeedback/Feedback-NN.md`:
 
 ```
 HarnessKit/001-JWTAuth/
 ├── UserFeedback/
-│   ├── Feedback-001.md    # User's first feedback after initial AI PASS
-│   ├── Feedback-002.md    # User's second feedback (after AI addressed round 1)
+│   ├── Feedback-01.md    # User's first feedback after initial AI PASS
+│   ├── Feedback-02.md    # User's second feedback (after AI addressed round 1)
 │   └── ...
 ```
 
@@ -602,22 +605,22 @@ When the user says "looks good":
 HarnessKit/001-JWTAuth/
 ├── Spec.md                    # Original spec from planning
 ├── State.json                 # Final state: phase: "complete"
-├── Gen/
-│   ├── Round-001.md           # Initial implementation
-│   ├── Round-002.md           # After evaluator feedback
-│   └── Round-003.md           # After user feedback round 1
-├── Eval/
-│   ├── Round-001.md           # FAIL
-│   ├── Round-002.md           # PASS (first AI pass)
-│   └── Round-003.md           # PASS (after user feedback)
-├── UserFeedback/
-│   └── Feedback-001.md           # User's feedback after first AI pass
-├── Planning/                  # (if dual planners were used)
-├── EvalDiscussion/            # (if dual evaluators were used)
-└── Summary.md                 # Final archive
+├── Summary.md                 # Final archive
+├── Generator/
+│   ├── Round-01.md            # Initial implementation
+│   ├── Round-02.md            # After evaluator feedback
+│   └── Round-03.md            # After user feedback round 1
+├── Evaluator/
+│   ├── Round-01.md            # FAIL
+│   ├── Round-01-Conversation/ # (if dual evaluators were used)
+│   ├── Round-02.md            # PASS (first AI pass)
+│   └── Round-03.md            # PASS (after user feedback)
+├── Planner-Conversation/      # (if dual planners were used)
+└── UserFeedback/
+    └── Feedback-01.md         # User's feedback after first AI pass
 ```
 
-**Round numbering is continuous across the whole mission.** If the first AI inner loop was 2 rounds (Gen-001, Eval-001 FAIL, Gen-002, Eval-002 PASS), and then the user gives feedback, the next Gen/Eval round is 003. This makes the timeline clear.
+**Round numbering is continuous across the whole mission.** If the first AI inner loop was 2 rounds (Generator/Round-01, Evaluator/Round-01 FAIL, Generator/Round-02, Evaluator/Round-02 PASS), and then the user gives feedback, the next round is 03. This makes the timeline clear.
 
 **Why this matters:**
 - AI tools are good but not perfect — they WILL miss things, especially visual/UX issues

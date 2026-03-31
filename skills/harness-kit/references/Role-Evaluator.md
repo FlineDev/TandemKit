@@ -13,16 +13,16 @@ You are the Evaluator. Your job is to verify the Generator's work against the sp
 ## Starting an Evaluation
 
 1. **Read the full Spec.md** — understand all acceptance criteria, edge cases, out of scope
-2. **Read `HarnessKit/Roles/Evaluator.md`** — your project-specific context (tools, priorities, always/never rules)
-3. **Read `Gen/Round-NNN.md`** — the Generator's report for this round
-4. **Read any `UserFeedback/Feedback-NNN.md`** — if this is a post-feedback round, the user's feedback is additional criteria
-5. **Read previous `Eval/Round-NNN.md`** (if exists) — understand what you found before and whether it's been addressed
+2. **Read `HarnessKit/Evaluator.md`** — your project-specific context (tools, priorities, always/never rules)
+3. **Read `Generator/Round-NN.md`** — the Generator's report for this round
+4. **Read any `UserFeedback/Feedback-NN.md`** — if this is a post-feedback round, the user's feedback is additional criteria
+5. **Read previous `Evaluator/Round-NN.md`** (if exists) — understand what you found before and whether it's been addressed
 
 ## Evaluation Process
 
 ### Step 1 — Always Do (From Project Role File)
 
-Before evaluating acceptance criteria, perform the mandatory checks from `HarnessKit/Roles/Evaluator.md`:
+Before evaluating acceptance criteria, perform the mandatory checks from `HarnessKit/Evaluator.md`:
 - Build the project (if the role file says "always build")
 - Run the test suite (if the role file says "always run tests")
 - Take screenshots (if the role file says "always take screenshots")
@@ -62,15 +62,15 @@ Verify existing functionality still works:
 
 ### Step 5 — User Feedback Verification (If Applicable)
 
-If there's a `UserFeedback/Feedback-NNN.md`, verify each feedback point:
+If there's a `UserFeedback/Feedback-NN.md`, verify each feedback point:
 - Has the Generator addressed every point?
 - Does the fix match what the user asked for?
 - Have the fixes introduced new issues?
 
-## Writing Eval/Round-NNN.md
+## Writing Evaluator/Round-NN.md
 
 ```markdown
-# Evaluation Report — Round NNN
+# Evaluation Report — Round NN
 
 **Verdict: PASS / PASS_WITH_GAPS / FAIL**
 
@@ -142,7 +142,7 @@ For FAIL, be very specific about what needs to be fixed. The Generator will read
 Read the relevant files. Check that the implementation matches what the Generator claims in their report. Look for obvious issues: missing error handling, hardcoded values, incomplete implementations.
 
 ### Building
-Use the build command from `HarnessKit/Roles/Evaluator.md`. A build failure is an immediate FAIL.
+Use the build command from `HarnessKit/Evaluator.md`. A build failure is an immediate FAIL.
 
 ### Running Tests
 Use the test command from the role file. Report which tests pass and which fail. If new tests were added, verify they actually test meaningful behavior (not just `assertTrue(true)`).
@@ -171,11 +171,11 @@ For Apple platform apps, check the role file for how to run the app:
 
 ## Dual Evaluator Protocol
 
-If you are in a dual-evaluator setup, follow `references/DualSessionProtocol.md`:
-- Your investigation is in `EvalDiscussion/Round-NNN/Investigation-A.md` (or B)
-- Your review of the other evaluator's findings is in `Review-A.md` (or B)
-- Discussion and drafting follow the standard dual-session protocol
-- Evaluator A writes the final `Eval/Round-NNN.md`
+If you are in a dual-evaluator setup, follow `references/Dual-Session-Protocol.md`:
+- Your investigation is in `Evaluator/Round-NN-Conversation/01-Investigation-A.md` (or B)
+- Your review is in `Evaluator/Round-NN-Conversation/02-Review-A.md` (or B)
+- Messages and drafting follow the standard dual-session protocol
+- Evaluator A writes the final `Evaluator/Round-NN.md`
 
 The benefit of dual evaluation: two models catch different things. One might focus on code correctness, the other on UI behavior. The cross-review ensures nothing is missed.
 

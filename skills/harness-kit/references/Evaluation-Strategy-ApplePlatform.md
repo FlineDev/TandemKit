@@ -139,7 +139,7 @@ xcrun simctl launch --console booted com.example.myapp
 
 ## Role File Template
 
-During init, create `HarnessKit/Roles/Evaluator.md` with:
+During init, create `HarnessKit/Evaluator.md` with:
 
 ```markdown
 # Evaluator — Project-Specific Context

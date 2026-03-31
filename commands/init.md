@@ -92,7 +92,7 @@ Options:
 
 **For Apple platform projects:**
 
-Read `references/EvalStrategy-ApplePlatform.md` for full details.
+Read `references/Evaluation-Strategy-ApplePlatform.md` for full details.
 
 > "For the best evaluation quality, I recommend setting up these tools:
 > 1. **Xcode MCP** (built-in) — builds, tests, SwiftUI preview screenshots. [Already connected / Not yet connected]
@@ -108,7 +108,7 @@ If the user agrees, guide them through:
 
 **For web projects:**
 
-Read `references/EvalStrategy-Web.md` for full details.
+Read `references/Evaluation-Strategy-Web.md` for full details.
 
 > "For web evaluation, Playwright MCP is essential — it lets the evaluator interact with your app like a real user. [Already configured / Not configured]
 >
@@ -118,13 +118,13 @@ If the user agrees, add Playwright MCP to `.claude/settings.json`.
 
 **For CLI/library projects:**
 
-Read `references/EvalStrategy-CLI.md`.
+Read `references/Evaluation-Strategy-CLI.md`.
 
 > "For CLI/library evaluation, the test suite is the primary verification tool. I'll configure the evaluator to run `[detected test command]` before every evaluation. Anything else specific?"
 
 **For domain systems:**
 
-Read `references/EvalStrategy-Domain.md`.
+Read `references/Evaluation-Strategy-Domain.md`.
 
 > "For domain systems, evaluation focuses on reasoning quality, case handling, and consistency. Do you have canonical test cases defined? If not, I'll set up a structure for defining them."
 
@@ -136,7 +136,7 @@ Read `references/EvalStrategy-Domain.md`.
 > 1. Should the Generator make commits automatically at milestones? (default: yes)
 > 2. Should each mission use a feature branch? (default: yes)
 > 3. Do you use a branch name prefix? (e.g., `feature/` → `feature/001-jwt-auth`, or empty for `001-jwt-auth`)
-> 4. HarnessKit coordination files (State.json, Gen/, Eval/) will only be committed when the mission is completed by you. Is that okay?"
+> 4. HarnessKit coordination files (State.json, Generator/, Evaluator/) will only be committed when the mission is completed by you. Is that okay?"
 
 ### Question 5: Codex Compatibility
 
@@ -189,10 +189,9 @@ Create the folder structure:
 ```
 HarnessKit/
 ├── Config.json
-└── Roles/
-    ├── Planner.md
-    ├── Generator.md
-    └── Evaluator.md
+├── Planner.md
+├── Generator.md
+└── Evaluator.md
 ```
 
 ### Config.json
@@ -215,7 +214,7 @@ HarnessKit/
 }
 ```
 
-### Roles/Planner.md
+### Planner.md
 
 Populate with project-specific planner context:
 - Key files to investigate
@@ -223,7 +222,7 @@ Populate with project-specific planner context:
 - Existing documentation locations (AGENTS.md, README, PlanKit if present)
 - Domain context if applicable
 
-### Roles/Generator.md
+### Generator.md
 
 Populate with project-specific generator context:
 - Architecture overview (from investigation)
@@ -232,7 +231,7 @@ Populate with project-specific generator context:
 - Important patterns to follow
 - Commit message conventions
 
-### Roles/Evaluator.md
+### Evaluator.md
 
 This is the most important role file. Populate with:
 - Project type
@@ -242,7 +241,7 @@ This is the most important role file. Populate with:
 - "Always do" rules (build, run tests, take screenshots, etc.)
 - "Never do" rules (never PASS without building, never PASS without tests, etc.)
 
-Use the appropriate EvalStrategy reference as a template.
+Use the appropriate Evaluation-Strategy reference as a template.
 
 ## Step 6 — Update .gitignore
 
@@ -252,16 +251,15 @@ Add entries to `.gitignore` to prevent accidental staging of active mission coor
 # HarnessKit — coordination files excluded during active missions
 # (committed at mission completion via force-add)
 HarnessKit/*/State.json
-HarnessKit/*/Gen/
-HarnessKit/*/Eval/
+HarnessKit/*/Generator/
+HarnessKit/*/Evaluator/
 HarnessKit/*/UserFeedback/
-HarnessKit/*/Planning/
-HarnessKit/*/EvalDiscussion/
+HarnessKit/*/Planner-Conversation/
 ```
 
 **Do NOT gitignore:**
 - `HarnessKit/Config.json` — project config, safe to commit anytime
-- `HarnessKit/Roles/` — role files, safe to commit anytime
+- `HarnessKit/Planner.md`, `HarnessKit/Generator.md`, `HarnessKit/Evaluator.md` — role files, safe to commit anytime
 - `HarnessKit/*/Spec.md` — the spec, safe to commit
 - `HarnessKit/*/Summary.md` — the archive, committed at completion
 
@@ -300,8 +298,8 @@ Present a summary of what was set up:
 >
 > **Files created:**
 > - `HarnessKit/Config.json` — project configuration
-> - `HarnessKit/Roles/Planner.md` — planner context
-> - `HarnessKit/Roles/Generator.md` — generator context
-> - `HarnessKit/Roles/Evaluator.md` — evaluator context
+> - `HarnessKit/Planner.md` — planner context
+> - `HarnessKit/Generator.md` — generator context
+> - `HarnessKit/Evaluator.md` — evaluator context
 
 Do NOT commit the HarnessKit/ folder now — it will be committed with the first completed mission.

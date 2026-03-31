@@ -124,7 +124,7 @@ If the project uses case files for evaluation, they should follow this structure
 
 ## Role File Template
 
-During init, create `HarnessKit/Roles/Evaluator.md` with:
+During init, create `HarnessKit/Evaluator.md` with:
 
 ```markdown
 # Evaluator — Project-Specific Context

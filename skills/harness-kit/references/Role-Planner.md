@@ -38,7 +38,7 @@ Tell the user what you're doing: "Let me investigate the codebase to understand 
 
 ### Phase 4 — Draft the Spec
 
-Follow the format in `references/SpecFormat.md` precisely. Key points:
+Follow the format in `references/Spec-Format.md` precisely. Key points:
 
 - **User Intent**: The user's exact words (typo-corrected), in blockquotes. Include all follow-up answers.
 - **Goal**: One clear paragraph. Not what the user said — what they mean. Clarify and distill.

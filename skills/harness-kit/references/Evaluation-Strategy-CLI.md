@@ -80,7 +80,7 @@ my-tool export --format json | jq '.items | length' | grep -q "^5$"
 
 ## Role File Template
 
-During init, create `HarnessKit/Roles/Evaluator.md` with:
+During init, create `HarnessKit/Evaluator.md` with:
 
 ```markdown
 # Evaluator — Project-Specific Context
