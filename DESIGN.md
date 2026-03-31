@@ -447,14 +447,187 @@ These prompts trigger the skill in the new session, which then reads the role fr
 - Separate /harness-kit:continue skill: Not needed — each role's logic handles resumption by checking State.json
 - Separate /harness-kit:status skill: Status is built into the main skill — user just asks "what's the status?"
 
+### 12. Git commit policy
+
+**Decision:** Commit behavior is configured during `harness-kit:init` and documented in Config.json. The init command reads existing commit rules from AGENTS.md/CLAUDE.md, considers the project's conventions, and asks the user focused questions.
+
+**Default behavior (suggested for quick setup):**
+
+- **Generator commits at milestones** — the Planner can suggest natural milestone points in the spec, but the Generator decides when to commit. Each commit should represent a coherent, buildable state.
+- **HarnessKit/ files are NOT committed until the mission is fully complete** — the coordination files (State.json, Gen/, Eval/, etc.) stay uncommitted during the mission. Only when the user confirms the mission is done are HarnessKit/ files committed (as part of the archive).
+- **Feature branches per mission** — each mission gets its own branch (e.g., `001-jwt-auth`), following git conventions (lowercase, dashes). The branch name mirrors the mission folder name.
+
+**Init questions for the user:**
+1. "Should the Generator make commits automatically at milestones?" (default: yes)
+2. "Should each mission use a feature branch?" (default: yes) — if yes, follows the project's branch naming convention
+3. "Any specific commit message conventions?" (reads from existing AGENTS.md/CLAUDE.md)
+
+**Config.json stores these preferences:**
+```json
+{
+  "git": {
+    "autoCommit": true,
+    "featureBranches": true,
+    "branchPrefix": "",
+    "commitConventions": "read from AGENTS.md"
+  }
+}
+```
+
+**Alternatives considered:**
+- Always auto-commit: Some users don't want AI making commits — must be configurable
+- Never auto-commit: Loses the milestone-based progress tracking that makes long missions recoverable
+- Commit HarnessKit/ files during the mission: Pollutes git history with coordination artifacts that change every few minutes
+
+### 13. Mission completion: two-loop architecture with user feedback
+
+**Decision:** A mission is NEVER complete just because the AI says PASS. The AI's PASS means "we're ready for your review." Only the user can complete a mission. This is the most important architectural decision in HarnessKit.
+
+**The two loops:**
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                                                                     │
+│  OUTER LOOP (Human in the loop)                                     │
+│                                                                     │
+│  ┌────────────────────────────────────────────────────────────┐     │
+│  │                                                            │     │
+│  │  INNER LOOP (AI autonomous)                                │     │
+│  │                                                            │     │
+│  │  Generator implements → Evaluator evaluates                │     │
+│  │       ↑                        │                           │     │
+│  │       └──── FAIL/GAPS ────────┘                           │     │
+│  │                                                            │     │
+│  │  Repeats until Evaluator says PASS                         │     │
+│  │                                                            │     │
+│  └──────────────────────┬─────────────────────────────────────┘     │
+│                         │                                           │
+│                    AI PASS                                           │
+│                         │                                           │
+│                         ▼                                           │
+│              Review Briefing presented to user                      │
+│              (what was done, what to test, AI limitations)          │
+│                         │                                           │
+│                         ▼                                           │
+│              User tests and reviews                                 │
+│                    │              │                                  │
+│              "Looks good"    Has feedback                           │
+│                    │              │                                  │
+│                    ▼              ▼                                  │
+│            MISSION COMPLETE   User feedback documented              │
+│                               → back to inner loop                  │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Detailed flow:**
+
+**Step 1: AI Inner Loop**
+Generator and Evaluator(s) iterate autonomously until the Evaluator says PASS. This is the existing Gen/Eval coordination described in Decision 4.
+
+**Step 2: AI PASS → Review Briefing**
+When the Evaluator says PASS, the Generator session presents a **Review Briefing** to the user. This is NOT Summary.md (that's the final archive). The Review Briefing includes:
+
+1. **What was done** — high-level summary of the implementation
+2. **Stats** — files created/changed, lines of code, number of Gen/Eval rounds, number of user feedback rounds (if any)
+3. **Issues found and fixed** — significant bugs or problems the Evaluator caught and the Generator fixed
+4. **Key decisions made** — architectural or implementation choices the Generator made
+5. **What the user should test** — specific things to check manually, with clear instructions:
+   - "Open the app and navigate to Settings → Auth"
+   - "Try logging in with invalid credentials"
+   - "Check if the refresh token flow works after 15 minutes"
+6. **Aspects AI cannot fully verify** — explicitly called out:
+   - "We created a new login screen but could not fully verify the visual design — please check spacing, font sizes, and color consistency"
+   - "The error messages are functional but we recommend checking if the wording feels right to your users"
+   - "Animations and transitions were not testable via our tools"
+
+The Generator also notifies the user (via claude-notify if available) that the review is ready.
+
+**Step 3: User Reviews and Gives Feedback**
+The user tests the implementation. Two outcomes:
+
+**A) User says "looks good" / "approved" / "done":**
+→ Mission is COMPLETE (see Step 5)
+
+**B) User has feedback:**
+The user describes issues, changes, or refinements. This is documented in `UserFeedback/Round-NNN.md`:
+
+```
+HarnessKit/001-JWTAuth/
+├── UserFeedback/
+│   ├── Round-001.md       # User's first feedback after initial AI PASS
+│   ├── Round-002.md       # User's second feedback (after AI addressed round 1)
+│   └── ...
+```
+
+Each feedback round file captures the user's exact words (like User Intent in Spec.md), plus any clarifications. User feedback is treated as **an extension of the spec** — it can:
+- Point out bugs the AI missed
+- Request changes to the implementation approach
+- Change direction ("now that I see it, I want it differently")
+- Add new requirements that weren't in the original spec
+
+**Step 4: AI Inner Loop Resumes**
+The Generator reads the user feedback, the Evaluator reads it too. They re-enter the inner loop:
+- Generator makes changes to address the feedback
+- Evaluator verifies the changes address ALL points in the feedback AND don't regress existing functionality
+- They iterate until the Evaluator says PASS again
+- Another Review Briefing is presented, this time focusing on "what changed since last review"
+
+**Step 5: Mission Complete**
+When the user says "looks good":
+1. State.json updated: `"phase": "complete"`, `"completedBy": "user"`
+2. Summary.md generated (the final archive document)
+3. HarnessKit/ files committed (the coordination artifacts become part of the archive)
+4. Config.json: `"currentMission": null`
+5. If feature branch: prompt user about merging
+6. Generator session: "Mission 001-JWTAuth complete. Summary saved."
+
+**File structure with user feedback:**
+```
+HarnessKit/001-JWTAuth/
+├── Spec.md                    # Original spec from planning
+├── State.json                 # Final state: phase: "complete"
+├── Gen/
+│   ├── Round-001.md           # Initial implementation
+│   ├── Round-002.md           # After evaluator feedback
+│   └── Round-003.md           # After user feedback round 1
+├── Eval/
+│   ├── Round-001.md           # FAIL
+│   ├── Round-002.md           # PASS (first AI pass)
+│   └── Round-003.md           # PASS (after user feedback)
+├── UserFeedback/
+│   └── Round-001.md           # User's feedback after first AI pass
+├── Planning/                  # (if dual planners were used)
+├── EvalDiscussion/            # (if dual evaluators were used)
+└── Summary.md                 # Final archive
+```
+
+**Round numbering is continuous across the whole mission.** If the first AI inner loop was 2 rounds (Gen-001, Eval-001 FAIL, Gen-002, Eval-002 PASS), and then the user gives feedback, the next Gen/Eval round is 003. This makes the timeline clear.
+
+**Why this matters:**
+- AI tools are good but not perfect — they WILL miss things, especially visual/UX issues
+- The user feedback loop catches what AI can't
+- Documenting feedback rounds creates a record of the iterative refinement process
+- The Review Briefing with "what to test" and "AI limitations" sets honest expectations
+- The user is always in control of when a mission is truly done
+
+**Alternatives considered:**
+- AI PASS = mission complete: Dangerous — AI marks things done that aren't actually done from the user's perspective
+- No structured user feedback: Feedback gets lost in chat history, not documented
+- Separate mission for user feedback: Creates overhead, loses context of the original mission
+
 ---
 
 ## Open — To Be Discussed
 
-### When Is a Mission "Done"?
+All major architectural decisions have been made. Remaining topics are implementation details that can be decided during development:
 
-- Evaluator says PASS → what happens? Auto-commit? Summary generation? State update?
-- How is the mission closed/archived?
+- Exact content and wording of the Review Briefing
+- State.json schema details (full field list)
+- Config.json schema details (full field list)
+- SKILL.md auto-trigger keywords
+- Codex symlink mechanics during init
+- Exact prompt templates for parallel sessions
 
 ---
 
