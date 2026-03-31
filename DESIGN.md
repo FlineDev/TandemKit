@@ -259,15 +259,49 @@ HarnessKit/
 - Flat structure (no subfolders): Requires cleanup between missions, no archive
 - `currentMission` as integer: Doesn't match folder name directly, error-prone
 
+### 9. Spec.md format
+
+**Decision:** Spec.md is the central artifact connecting planning to execution to evaluation. It is requirements-focused, never prescriptive about implementation.
+
+**Required sections:**
+
+1. **User Intent** — The user's exact words (typo/grammar-corrected), including follow-up clarifications. Preserved as blockquotes for reference. When the user changed their mind, both the original position and the change are documented.
+
+2. **Goal** — One-paragraph summary of what we're building/fixing and why. Written in plain language the Evaluator can understand without deep codebase knowledge.
+
+3. **Context & Investigation Findings** — The Planner's actual findings from investigating the codebase:
+   - Existing architecture relevant to this mission (with file paths + line numbers)
+   - Relevant external resources with links
+   - Considerations explored during planning (tradeoffs discussed, not just final decisions)
+   - Related PlanKit features/steps (if PlanKit is present)
+
+4. **Acceptance Criteria** — Numbered, unambiguous pass/fail statements. Two independent evaluators must reach the same verdict on each criterion. No implementation details — focus on observable behavior and outcomes. The Evaluator is smart enough to figure out how to verify each criterion.
+
+5. **Edge Cases & Boundaries** — Non-obvious cases with expected behavior. Things the Generator should handle and the Evaluator should check. Includes negative cases ("must NOT do X when Y").
+
+6. **Key Decisions** — Decisions made during planning with rationale. When the user changed their mind, documents both the original position and the change with the user's words.
+
+7. **Out of Scope** — Explicit boundaries so the Generator doesn't over-build and the Evaluator doesn't flag missing features that are intentionally excluded.
+
+8. **Possible Directions & Ideas** (optional) — Soft suggestions from the Planner's investigation. Non-binding. Relevant code patterns to consider, libraries already available, architectural ideas. The Generator can take these or ignore them.
+
+**Key principles:**
+- Constrain deliverables, not implementation — specify WHAT and WHY in detail, never HOW (unless there's a specific architectural constraint)
+- Acceptance criteria stay lean — no rigid verification scripts. Modern models figure out how to verify
+- Include negative cases — what must NOT happen is as important as what must happen
+- Investigation findings are rich — links, file paths, tradeoffs explored. The Planner did work; preserve it
+- Spec is immutable during implementation — Generator and Evaluator work against a locked spec
+- Prune ruthlessly — if removing a line would not cause the Generator to make mistakes, remove it
+
+**Alternatives considered:**
+- Super-granular 200+ item feature lists (Anthropic Nov 2025): Outdated — Opus 4.6 runs coherently for 2+ hours without micro-decomposition
+- Sprint contracts between generator/evaluator: Removed by Anthropic in March 2026 with Opus 4.6
+- Detailed verification scripts per criterion: Unnecessary — modern evaluators figure out how to verify
+- Implementation-prescriptive specs: Causes cascading errors when the prescribed approach is wrong
+
 ---
 
 ## Open — To Be Discussed
-
-### Planning Phase Details
-
-- Single vs. dual Planner: how does the two-Planner setup work exactly?
-- How do two Planners reconcile? Same file-based protocol as Generator+Evaluator?
-- What does Spec.md look like? Format, required sections, acceptance criteria structure
 
 ### Evaluator Profiles
 
