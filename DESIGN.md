@@ -374,8 +374,8 @@ skills/harness-kit/references/
 | Tool | Purpose | Stars |
 |------|---------|-------|
 | Apple Xcode MCP (`xcrun mcpbridge`) | Build, test, SwiftUI preview screenshots (`RenderPreview`), build diagnostics | Built-in |
-| joshuayoes/ios-simulator-mcp | Tap, swipe, read accessibility tree, screenshot running app in simulator | 1,800 |
-| adoosh-afk/ios-simulator-mcp | Fork using IndigoHID — fixes tap reliability inside ScrollViews | 0 (new) |
+| anthropics/mobile-mcp | Tap, swipe, type, screenshot, accessibility tree via WebDriverAgent. No IDB needed. **Recommended.** | ~4,200 |
+| joshuayoes/ios-simulator-mcp | Tap, swipe, read accessibility tree, screenshot via Facebook IDB. More established alternative. | ~1,800 |
 | `osascript` (AppleScript) | Run/stop app via Xcode (Xcode MCP can't do this) | Built-in |
 | `xcrun simctl` | Boot/shutdown simulators, take screenshots, set dark mode, deep links | Built-in |
 

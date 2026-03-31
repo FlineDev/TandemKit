@@ -32,23 +32,48 @@ The Xcode MCP requires Xcode to be open with the project loaded. When starting a
 
 ### Tier 2 — iOS Simulator Interaction (Recommended)
 
-**joshuayoes/ios-simulator-mcp** (1,800 stars, recommended by Anthropic)
+Two main options for interacting with apps running in the iOS Simulator:
 
-Enables full UI interaction with apps running in the iOS Simulator:
-- `ui_tap` — tap at coordinates
-- `ui_swipe` — swipe gestures
-- `ui_type` — text input
-- `ui_describe_all` — full screen accessibility tree (read all UI elements)
-- `ui_describe_point` — accessibility element at specific coordinates
+#### Option A: mobile-mcp (Recommended)
+
+**GitHub:** [anthropics/mobile-mcp](https://github.com/anthropics/mobile-mcp) — ~4,200 stars
+
+Uses WebDriverAgent for simulator interaction. No external dependencies beyond Xcode.
+
+Key capabilities:
+- Tap, swipe, type text
+- Take screenshots
+- Read screen accessibility tree
+- Get device info
+
+**Setup** (add to `.mcp.json` at project root):
+```json
+{
+  "mcpServers": {
+    "mobile-mcp": {
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/mobile-mcp", "--platform", "ios"]
+    }
+  }
+}
+```
+
+**Pros:** No IDB dependency, maintained by Anthropic, WebDriverAgent-based (reliable taps including inside ScrollViews).
+**Cons:** Newer, smaller ecosystem.
+
+#### Option B: ios-simulator-mcp
+
+**GitHub:** [joshuayoes/ios-simulator-mcp](https://github.com/joshuayoes/ios-simulator-mcp) — ~1,800 stars
+
+Uses Facebook IDB for simulator interaction. More established but requires IDB installation.
+
+Key capabilities:
+- `ui_tap`, `ui_swipe`, `ui_type` — touch interaction
+- `ui_describe_all` — full screen accessibility tree
 - `ui_view` — compressed screenshot returned to LLM
 - `screenshot` — save screenshot to file
 
-**Installation:**
-```bash
-npm install -g ios-simulator-mcp
-```
-
-**Claude Code MCP config** (add to `.claude/settings.json`):
+**Setup** (add to `.mcp.json` at project root):
 ```json
 {
   "mcpServers": {
@@ -60,13 +85,18 @@ npm install -g ios-simulator-mcp
 }
 ```
 
-**Dependency:** Requires Facebook IDB (`idb`):
+**Dependency:** Requires Facebook IDB:
 ```bash
 brew install idb-companion
 pipx install fb-idb
 ```
 
-**Known issue:** Taps inside ScrollViews may fail silently due to `delaysContentTouches`. If this is a problem, consider the IndigoHID fork by adoosh-afk which uses native touch injection.
+**Pros:** More established, larger community.
+**Cons:** IDB dependency (extra install), taps inside ScrollViews may fail with IDB's CGEvent approach.
+
+#### Recommendation
+
+**mobile-mcp** is the recommended default — no extra dependencies, maintained by Anthropic, more reliable touch handling. Use ios-simulator-mcp if you need its specific features or already have IDB installed.
 
 ### Tier 3 — App Lifecycle via AppleScript
 

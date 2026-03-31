@@ -6,6 +6,19 @@ description: Initialize HarnessKit in this project. Sets up the coordination fol
 
 This command sets up HarnessKit in the current project. Run it once per project.
 
+## Important UX Rules
+
+Follow these rules throughout the entire init flow:
+
+1. **Do NOT explain what HarnessKit is.** The user already knows — they just ran the init command.
+2. **Ask questions ONE AT A TIME.** Before each question, write 2-3 sentences of context in chat explaining WHY this matters and what you recommend. Then ask using AskUserQuestion. Never batch multiple questions into one call.
+3. **Do NOT install or configure anything without explicit user approval.** Ask first, show what you want to do, get a "yes", then do it.
+4. **Before modifying any existing file** (.gitignore, settings.json, config.toml), explain what you want to change and get user approval.
+5. **When recommending external tools**, always provide: verified GitHub URL, star count, brief description of what it does, and at least one alternative. Never present a single option as the only choice.
+6. **For npm packages, use `npx -y`** (run without global install), never `npm install -g`. Check the user's permission deny list in settings.json — never recommend commands that appear there.
+7. **MCP server configurations go in `.mcp.json`** at the project root, NOT in `.claude/settings.json`. MCP tool permissions (allow rules) go in settings.json.
+8. **Start brief.** Jump straight to investigation. No preamble, no tutorial.
+
 ## Pre-Flight Check
 
 1. Verify `HarnessKit/` does not already exist in the project root. If it does, tell the user: "HarnessKit is already initialized in this project. Config is at HarnessKit/Config.json."
@@ -20,66 +33,58 @@ Check if watchman is installed:
 which watchman-wait
 ```
 
-If not installed, install it:
-- **macOS:** `brew install watchman`
-- **Linux (Debian/Ubuntu):** Guide the user to install from the official Watchman releases
-- **Other:** Direct the user to https://facebook.github.io/watchman/docs/install
+If not installed, tell the user:
+> "HarnessKit needs `watchman` for file change detection between sessions. Install with: `brew install watchman` (macOS). Want me to install it?"
 
-Verify after installation:
-```bash
-watchman-wait --version
-```
+Wait for approval before installing.
 
 ## Step 2 — Investigate the Project
 
-Before asking questions, investigate the project to make informed recommendations:
+Before asking questions, investigate the project thoroughly to make informed recommendations. Tell the user: "Let me investigate your project..." then do all of the following silently:
 
 1. **Read project documentation:**
    - `AGENTS.md` or `CLAUDE.md` — conventions, architecture, commit rules
    - `README.md` — project overview
-   - `Package.swift` / `package.json` / `Cargo.toml` / `go.mod` — detect language/framework
-   - `.claude/settings.json` or `.claude/settings.local.json` — check existing MCP servers
 
-2. **Detect project type:**
-   - `.xcodeproj` or `.xcworkspace` → Apple platform (check for SwiftUI, UIKit, AppKit)
-   - `package.json` with React/Vue/Svelte/Next → Web app
-   - `Package.swift` with no Xcode project → Swift CLI or library
+2. **Detect project type — check for ALL build systems:**
+   - `.xcodeproj` or `.xcworkspace` → Apple platform app
+   - `Package.swift` → Swift package (can coexist with .xcodeproj!)
+   - `package.json` → Node.js / web
    - `Cargo.toml` → Rust
    - `go.mod` → Go
-   - Multiple indicators → ask the user
+   - **Check submodules:** Read `.gitmodules` if it exists. Check inside submodule directories for build files too — the main project files may be in a submodule (e.g., `App/Package.swift`, `App/MyApp.xcodeproj`).
+   - **If both Package.swift AND .xcodeproj exist:** Note both. `swift build`/`swift test` may be simpler for evaluation, but `xcodebuild` may be needed for full app features. Present both options to the user.
 
 3. **Check available tools:**
-   - Is Xcode MCP connected? (check for `mcp__xcode__*` in available tools)
-   - Is Playwright configured? (check MCP servers config)
-   - Is ios-simulator-mcp installed? (check MCP servers config)
-   - What test runners exist? (`swift test`, `npm test`, `cargo test`, etc.)
+   - Read `~/.claude/settings.json` for global permissions and MCP tool allowances
+   - Read project `.claude/settings.json` and `.mcp.json` for project-level MCP servers
+   - Check what's already available: Xcode MCP? Playwright? Simulator tools?
 
 4. **Read commit conventions:**
-   - Check AGENTS.md/CLAUDE.md for commit message rules
-   - Check for conventional commits, git hooks, etc.
-   - Check for branch naming conventions
+   - Check AGENTS.md/CLAUDE.md for commit message rules, push policies, branch conventions
+   - Check for git hooks
 
-Summarize your findings to the user before asking questions.
+5. **Read the user's permission deny list** in settings.json — note any denied commands so you don't recommend them later.
+
+Present a brief summary of findings to the user before asking the first question.
 
 ## Step 3 — Ask Configuration Questions
 
-Use the AskUserQuestion tool for each question. Present your findings first, then ask.
+Ask each question ONE AT A TIME. Before each question, explain briefly in chat why it matters and what you recommend.
 
 ### Question 1: Project Type Confirmation
 
-> "Based on my investigation, this appears to be a **[detected type]** project. Is that correct, or should I categorize it differently?"
+Present your detection results, then ask:
 
-Options based on detection. If unclear, offer:
-- Apple platform app (iOS / macOS / visionOS / multi-platform)
-- Web application
-- CLI tool
-- Library / Package
-- Domain system / Expert system
-- Other
+> "I found [what you found]. Does this look right?"
+
+If the project has both Package.swift and .xcodeproj, mention both and ask which build path the user prefers for evaluation.
 
 ### Question 2: Evaluation Scope
 
-> "What aspects should the Evaluator be able to verify? The more the evaluator can check, the better the quality. I strongly recommend enabling UI verification if your project has a user interface — an evaluator that can only read code will miss visual bugs, broken navigation, and spacing issues."
+Explain that HarnessKit's evaluator can verify different aspects depending on the tools available, then ask:
+
+> "What should the Evaluator verify?"
 
 Options:
 - Code correctness (build + tests) — always included
@@ -92,95 +97,60 @@ Options:
 
 **For Apple platform projects:**
 
-Read `references/Evaluation-Strategy-ApplePlatform.md` for full details.
+Read `references/Evaluation-Strategy-ApplePlatform.md` for full details. Present available options with GitHub links and star counts:
 
-> "For the best evaluation quality, I recommend setting up these tools:
-> 1. **Xcode MCP** (built-in) — builds, tests, SwiftUI preview screenshots. [Already connected / Not yet connected]
-> 2. **ios-simulator-mcp** — lets the evaluator tap buttons, read screens, and take screenshots of your running app. This is the single most impactful tool for UI evaluation. [Install with: `npm install -g ios-simulator-mcp`]
-> 3. **AppleScript** — for running/stopping the app from Xcode. No install needed.
->
-> Want me to help set these up?"
+1. **Xcode MCP** (built into Xcode) — builds, tests, SwiftUI preview screenshots. [Already available / Not connected]
+2. **Simulator interaction** — present the options from the reference file with verified GitHub URLs and star counts. Let the user choose.
+3. **AppleScript** — for running/stopping the app from Xcode. No install needed.
 
-If the user agrees, guide them through:
-- Verifying Xcode MCP connection
-- Installing ios-simulator-mcp and adding it to `.claude/settings.json`
-- Installing IDB if needed (`brew install idb-companion && pipx install fb-idb`)
+**Do NOT start installing prerequisites or checking dependencies until the user has explicitly agreed to install a specific tool.**
+
+If the user agrees to install a tool, guide them step by step:
+- Show the exact commands they need to run (using `!` prefix for interactive commands)
+- Create the `.mcp.json` file with the correct configuration
+- Add the MCP tool permission to `.claude/settings.json` (e.g., `mcp__mobile-mcp__*`)
 
 **For web projects:**
 
-Read `references/Evaluation-Strategy-Web.md` for full details.
-
-> "For web evaluation, Playwright MCP is essential — it lets the evaluator interact with your app like a real user. [Already configured / Not configured]
->
-> Want me to help set it up?"
-
-If the user agrees, add Playwright MCP to `.claude/settings.json`.
+Read `references/Evaluation-Strategy-Web.md`. Present Playwright MCP option with setup status.
 
 **For CLI/library projects:**
 
-Read `references/Evaluation-Strategy-CLI.md`.
-
-> "For CLI/library evaluation, the test suite is the primary verification tool. I'll configure the evaluator to run `[detected test command]` before every evaluation. Anything else specific?"
+Read `references/Evaluation-Strategy-CLI.md`. Confirm the test command that will be used.
 
 **For domain systems:**
 
-Read `references/Evaluation-Strategy-Domain.md`.
-
-> "For domain systems, evaluation focuses on reasoning quality, case handling, and consistency. Do you have canonical test cases defined? If not, I'll set up a structure for defining them."
+Read `references/Evaluation-Strategy-Domain.md`. Ask about canonical test cases.
 
 ### Question 4: Git Commit Policy
 
-> "I found these commit conventions in your project: [findings from AGENTS.md/CLAUDE.md].
->
-> For HarnessKit missions:
-> 1. Should the Generator make commits automatically at milestones? (default: yes)
-> 2. Should each mission use a feature branch? (default: yes)
-> 3. Do you use a branch name prefix? (e.g., `feature/` → `feature/001-jwt-auth`, or empty for `001-jwt-auth`)
-> 4. HarnessKit coordination files (State.json, Generator/, Evaluator/) will only be committed when the mission is completed by you. Is that okay?"
+Present what you found in the project's commit conventions, then ask:
+
+> "For HarnessKit missions:"
+
+1. Should the Generator make commits automatically at milestones? (default: yes)
+2. Should each mission use a feature branch? (default: yes)
+3. Branch name prefix? (e.g., `feature/` → `feature/001-jwt-auth`, or empty for `001-jwt-auth`)
 
 ### Question 5: Codex Compatibility
 
 > "Do you want to use Codex for evaluation or planning? If yes, I'll create a symlink so the HarnessKit skill is available in Codex sessions too."
 
-If yes: note this for the symlink creation step.
+### Question 6: .gitignore Preference
+
+> "During active missions, HarnessKit creates coordination files (State.json, Generator/, Evaluator/ round reports). Do you want these gitignored during active missions? If yes, they'll be force-added at mission completion for archival. If no, you'll see them in your Git UI but need to be careful not to stage them during milestone commits."
 
 ## Step 4 — Check Permissions for Autonomous Operation
 
-HarnessKit sessions need to run autonomously (the Generator implements while the Evaluator waits, then they swap). This requires tool permissions to be pre-approved — otherwise every tool call would pause for user confirmation, breaking the coordination.
-
-**Detection-based approach:** Only mention what's actually missing. Users with good setups should see nothing here.
-
-### Claude Code Permissions
+**Detection-based:** Only speak up about what's actually missing. If permissions are already broad, say nothing.
 
 Read `~/.claude/settings.json` and project `.claude/settings.json`. Check for:
+- Core tools: `Bash`, `Read`, `Edit`, `Write`, `Glob`, `Grep`
+- MCP tools for the configured evaluation tools (e.g., `mcp__xcode__*`, `mcp__mobile-mcp__*`)
 
-1. **Core tools allowed?** Look for `Bash`, `Read`, `Edit`, `Write`, `Glob`, `Grep` in `permissions.allow`. If missing, the Generator can't implement and the Evaluator can't verify.
+If missing critical permissions, explain what's needed and why.
 
-2. **MCP tools allowed?** Based on the evaluation tools configured:
-   - Apple platform: `mcp__xcode__*` (build, test, preview)
-   - Web: `mcp__playwright-*__*` (browser interaction)
-   - iOS simulator: `mcp__ios-simulator__*` (if installed)
-
-3. **MCP servers configured?** Check if the relevant MCP servers are in `mcpServers` config.
-
-**If permissions are restrictive**, tell the user specifically what to add:
-
-> "For HarnessKit sessions to work autonomously, these tools need to be pre-allowed in your Claude Code settings. Currently missing:
-> - `Bash` — needed for builds, tests, and watchman-wait coordination
-> - `mcp__xcode__*` — needed for the Evaluator to build and take preview screenshots
->
-> Add them to `permissions.allow` in `~/.claude/settings.json` or approve them when prompted during the first mission."
-
-**If permissions are already broad** (like `Bash`, `Edit`, `Read`, `Write`, and relevant MCP tools are all in the allow list), skip this guidance entirely.
-
-### Codex Permissions (If Codex Enabled)
-
-Read `~/.codex/config.toml` if it exists. Check:
-- `sandbox_mode` — `"danger-full-access"` or `"full-auto"` enables autonomous operation. Other modes may block file writes or shell commands.
-- `approval_policy` — `"auto-edit"` or less restrictive allows autonomous editing.
-- MCP servers in `[mcp]` section.
-
-If restrictive, suggest adjustments. If already permissive, say nothing.
+If Codex is enabled, check `~/.codex/config.toml` for sandbox mode and approval policy. Only mention issues if the config is too restrictive for autonomous operation.
 
 ## Step 5 — Create the HarnessKit Directory
 
@@ -209,97 +179,47 @@ HarnessKit/
   },
   "evaluation": {
     "scope": ["code", "ui", "accessibility"],
-    "tools": ["xcode-mcp", "ios-simulator-mcp", "applescript"]
+    "tools": ["xcode-mcp", "mobile-mcp", "applescript"]
   }
 }
 ```
 
-### Planner.md
+### Planner.md, Generator.md, Evaluator.md
 
-Populate with project-specific planner context:
-- Key files to investigate
-- Planning priorities (from user input)
-- Existing documentation locations (AGENTS.md, README, PlanKit if present)
-- Domain context if applicable
+Populate each with project-specific context based on your investigation findings and the user's answers. Use the appropriate Evaluation-Strategy reference as a template for the Evaluator.md.
 
-### Generator.md
+## Step 6 — Update .gitignore (If User Agreed)
 
-Populate with project-specific generator context:
-- Architecture overview (from investigation)
-- Coding conventions (from AGENTS.md/CLAUDE.md)
-- Build and test commands
-- Important patterns to follow
-- Commit message conventions
+Only if the user said yes in Question 6. Add the entries they approved.
 
-### Evaluator.md
-
-This is the most important role file. Populate with:
-- Project type
-- Available verification tools (build, test, UI interaction, screenshots)
-- How to use each tool (exact commands, MCP tool names)
-- Evaluation priorities (from user input)
-- "Always do" rules (build, run tests, take screenshots, etc.)
-- "Never do" rules (never PASS without building, never PASS without tests, etc.)
-
-Use the appropriate Evaluation-Strategy reference as a template.
-
-## Step 6 — Update .gitignore
-
-Add entries to `.gitignore` to prevent accidental staging of active mission coordination files during milestone commits:
-
-```gitignore
-# HarnessKit — coordination files excluded during active missions
-# (committed at mission completion via force-add)
-HarnessKit/*/State.json
-HarnessKit/*/Generator/
-HarnessKit/*/Evaluator/
-HarnessKit/*/UserFeedback/
-HarnessKit/*/Planner-Conversation/
-```
-
-**Do NOT gitignore:**
-- `HarnessKit/Config.json` — project config, safe to commit anytime
-- `HarnessKit/Planner.md`, `HarnessKit/Generator.md`, `HarnessKit/Evaluator.md` — role files, safe to commit anytime
-- `HarnessKit/*/Spec.md` — the spec, safe to commit
-- `HarnessKit/*/Summary.md` — the archive, committed at completion
-
-At mission completion, the Generator uses `git add -f` to force-add the ignored files for the final archive commit.
-
-If `.gitignore` already exists, append these entries. If not, create it.
+If the user said no, skip this step entirely.
 
 ## Step 7 — Create Codex Symlink (If Requested)
 
 If the user wants Codex compatibility:
 
+First, detect if the plugin was loaded via marketplace (cache) or `--plugin-dir` (development):
+
 ```bash
-mkdir -p .agents/skills
-ln -sf "$(find ~/.claude/plugins/cache -path '*/harness-kit/skills/harness-kit' -type d 2>/dev/null | sort -V | tail -1)" .agents/skills/harness-kit
+# Check if marketplace cache exists
+CACHE_PATH=$(find ~/.claude/plugins/cache -path '*/harness-kit/skills/harness-kit' -type d 2>/dev/null | sort -V | tail -1)
 ```
 
-If the plugin is loaded via `--plugin-dir` (development mode), use the direct path instead.
+- If `CACHE_PATH` is found: use it for the symlink
+- If not found (--plugin-dir mode): ask the user for the plugin path, or detect it from the current session
 
-Also add `.agents/` to `.gitignore` if it's not already there (the symlink is local, not committed).
+```bash
+mkdir -p .agents/skills
+ln -sf "<resolved-path>" .agents/skills/harness-kit
+```
 
-Tell the user: "Codex symlink created. In Codex sessions, the HarnessKit skill will be available when you paste a prompt containing 'HarnessKit'."
+Add `.agents/skills/harness-kit` to `.gitignore` (this symlink is machine-specific and should not be committed). Document the symlink setup command in `AGENTS.md` so collaborators can recreate it.
+
+If Codex MCP servers need configuring, update `~/.codex/config.toml` with the appropriate MCP server entries and auto-approval rules.
 
 ## Step 8 — Summary
 
-Present a summary of what was set up:
+Present a brief summary table of what was set up, then end with a clear call to action:
 
-> **HarnessKit initialized!**
->
-> - Project type: [type]
-> - Evaluation tools: [list]
-> - Git: auto-commit [yes/no], feature branches [yes/no]
-> - Codex: [enabled/not enabled]
->
-> **To start your first mission:**
-> Just say "Let's use HarnessKit to [your goal]" in any Claude Code session.
->
-> **Files created:**
-> - `HarnessKit/Config.json` — project configuration
-> - `HarnessKit/Planner.md` — planner context
-> - `HarnessKit/Generator.md` — generator context
-> - `HarnessKit/Evaluator.md` — evaluator context
-
-Do NOT commit the HarnessKit/ folder now — it will be committed with the first completed mission.
+> **Next step:** To start your first mission, just say:
+> `Let's use HarnessKit to [your goal]`
