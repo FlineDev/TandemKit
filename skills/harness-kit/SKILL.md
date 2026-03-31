@@ -312,10 +312,10 @@ You are the secondary Planner in a dual-planner setup. Read `references/Dual-Ses
 
 1. Read `HarnessKit/NNN-MissionName/Planner-Conversation/Coordination.json` and `Status-B.json` to understand the current step and your status
 2. Follow the protocol for Session B:
-   - Write your findings to `Investigation-B.md`
-   - Write your review of A's findings to `Review-B.md`
-   - Respond in `Discussion/` when it's your turn
-   - Review A's draft of Spec.md and give feedback in `Draft/`
+   - Write your findings to `01-Investigation-B.md`
+   - Write your review of A's findings to `02-Review-B.md`
+   - Respond with numbered `Message-B.md` files when it's your turn (e.g., `04-Message-B.md`)
+   - Review A's draft and give feedback with numbered `Draft-B.md` files (e.g., `07-Draft-B.md`)
 3. **Never ask the user directly.** All user communication goes through Planner A.
 4. Signal state changes by updating your `Planner-Conversation/Status-B.json`
 5. When waiting for Planner A, use watchman-wait on the `Planner-Conversation/` folder

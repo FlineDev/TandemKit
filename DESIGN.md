@@ -134,20 +134,16 @@ Planner-Conversation/                  # (or Evaluator/Round-NN-Conversation/ fo
 ├── UpfrontQuestions-A.md              # (planners only)
 ├── UpfrontQuestions-B.md              # (planners only)
 ├── UserAnswers.md                     # (planners only)
-├── Investigation-A.md                 # A's findings with source refs
-├── Investigation-B.md                 # B's findings with source refs
-├── Review-A.md                        # A's review of B's investigation
-├── Review-B.md                        # B's review of A's investigation
-├── Discussion/
-│   ├── 001-A.md                       # Sequential discussion rounds
-│   ├── 002-B.md
-│   ├── 003-A.md
-│   └── 004-B.md                       # Agreement reached
-├── EndQuestions.md                     # (planners only)
-└── Draft/
-    ├── 001-A.md                       # A's draft of final document
-    ├── 002-B.md                       # B's feedback
-    └── 003-A.md                       # A's revision (B approves → done)
+├── 01-Investigation-A.md             # Parallel: both investigate
+├── 01-Investigation-B.md
+├── 02-Review-A.md                    # Parallel: both cross-review
+├── 02-Review-B.md
+├── 03-Message-A.md                   # Sequential: back and forth
+├── 04-Message-B.md
+├── 05-Message-A.md                   # Agreement reached
+├── 06-Draft-A.md                     # A writes final document draft
+├── 07-Draft-B.md                     # B approves → final document written
+└── EndQuestions.md                    # (planners only)
 ```
 
 **Coordination files for the protocol:**
@@ -156,8 +152,7 @@ Planner-Conversation/                  # (or Evaluator/Round-NN-Conversation/ fo
 ```json
 {
   "step": "parallel-investigation",
-  "discussionRound": 0,
-  "draftRound": 0,
+  "messageRound": 0,
   "updated": "2026-03-31T14:30:00Z"
 }
 ```
@@ -171,7 +166,7 @@ Planner-Conversation/                  # (or Evaluator/Round-NN-Conversation/ fo
 }
 ```
 
-Step field progresses: `upfront-questions` → `parallel-investigation` → `parallel-review` → `sequential-discussion` → `documentation` → `end-questions` → `done`
+Step field progresses: `upfront-questions` → `parallel-investigation` → `parallel-review` → `sequential-conversation` → `documentation` → `end-questions` → `done`
 
 **Why this protocol:**
 - Parallel investigation leverages different models finding different things
@@ -243,23 +238,31 @@ HarnessKit/
 │   │   │   ├── Coordination.json
 │   │   │   ├── Status-A.json
 │   │   │   ├── Status-B.json
-│   │   │   ├── Investigation-A.md
-│   │   │   ├── Investigation-B.md
-│   │   │   ├── Review-A.md
-│   │   │   ├── Review-B.md
-│   │   │   ├── Discussion/
-│   │   │   └── Draft/
+│   │   │   ├── 01-Investigation-A.md
+│   │   │   ├── 01-Investigation-B.md
+│   │   │   ├── 02-Review-A.md
+│   │   │   ├── 02-Review-B.md
+│   │   │   ├── 03-Message-A.md
+│   │   │   ├── 04-Message-B.md
+│   │   │   ├── 05-Draft-A.md
+│   │   │   └── 06-Draft-B.md
 │   │   └── Round-02.md            # Final evaluator findings (PASS)
 │   ├── Planner-Conversation/      # Only when dual planners were used
 │   │   ├── Coordination.json
 │   │   ├── Status-A.json
 │   │   ├── Status-B.json
-│   │   ├── Investigation-A.md
-│   │   ├── Investigation-B.md
-│   │   ├── Review-A.md
-│   │   ├── Review-B.md
-│   │   ├── Discussion/
-│   │   └── Draft/
+│   │   ├── UpfrontQuestions-A.md
+│   │   ├── UpfrontQuestions-B.md
+│   │   ├── UserAnswers.md
+│   │   ├── 01-Investigation-A.md
+│   │   ├── 01-Investigation-B.md
+│   │   ├── 02-Review-A.md
+│   │   ├── 02-Review-B.md
+│   │   ├── 03-Message-A.md
+│   │   ├── 04-Message-B.md
+│   │   ├── 05-Draft-A.md
+│   │   ├── 06-Draft-B.md
+│   │   └── EndQuestions.md
 │   └── UserFeedback/
 │       └── Feedback-01.md
 ├── 002-UserProfile/               # Current mission
