@@ -144,7 +144,45 @@ Read `references/EvalStrategy-Domain.md`.
 
 If yes: note this for the symlink creation step.
 
-## Step 4 — Create the HarnessKit Directory
+## Step 4 — Check Permissions for Autonomous Operation
+
+HarnessKit sessions need to run autonomously (the Generator implements while the Evaluator waits, then they swap). This requires tool permissions to be pre-approved — otherwise every tool call would pause for user confirmation, breaking the coordination.
+
+**Detection-based approach:** Only mention what's actually missing. Users with good setups should see nothing here.
+
+### Claude Code Permissions
+
+Read `~/.claude/settings.json` and project `.claude/settings.json`. Check for:
+
+1. **Core tools allowed?** Look for `Bash`, `Read`, `Edit`, `Write`, `Glob`, `Grep` in `permissions.allow`. If missing, the Generator can't implement and the Evaluator can't verify.
+
+2. **MCP tools allowed?** Based on the evaluation tools configured:
+   - Apple platform: `mcp__xcode__*` (build, test, preview)
+   - Web: `mcp__playwright-*__*` (browser interaction)
+   - iOS simulator: `mcp__ios-simulator__*` (if installed)
+
+3. **MCP servers configured?** Check if the relevant MCP servers are in `mcpServers` config.
+
+**If permissions are restrictive**, tell the user specifically what to add:
+
+> "For HarnessKit sessions to work autonomously, these tools need to be pre-allowed in your Claude Code settings. Currently missing:
+> - `Bash` — needed for builds, tests, and watchman-wait coordination
+> - `mcp__xcode__*` — needed for the Evaluator to build and take preview screenshots
+>
+> Add them to `permissions.allow` in `~/.claude/settings.json` or approve them when prompted during the first mission."
+
+**If permissions are already broad** (like `Bash`, `Edit`, `Read`, `Write`, and relevant MCP tools are all in the allow list), skip this guidance entirely.
+
+### Codex Permissions (If Codex Enabled)
+
+Read `~/.codex/config.toml` if it exists. Check:
+- `sandbox_mode` — `"danger-full-access"` or `"full-auto"` enables autonomous operation. Other modes may block file writes or shell commands.
+- `approval_policy` — `"auto-edit"` or less restrictive allows autonomous editing.
+- MCP servers in `[mcp]` section.
+
+If restrictive, suggest adjustments. If already permissive, say nothing.
+
+## Step 5 — Create the HarnessKit Directory
 
 Create the folder structure:
 
@@ -206,7 +244,32 @@ This is the most important role file. Populate with:
 
 Use the appropriate EvalStrategy reference as a template.
 
-## Step 5 — Create Codex Symlink (If Requested)
+## Step 6 — Update .gitignore
+
+Add entries to `.gitignore` to prevent accidental staging of active mission coordination files during milestone commits:
+
+```gitignore
+# HarnessKit — coordination files excluded during active missions
+# (committed at mission completion via force-add)
+HarnessKit/*/State.json
+HarnessKit/*/Gen/
+HarnessKit/*/Eval/
+HarnessKit/*/UserFeedback/
+HarnessKit/*/Planning/
+HarnessKit/*/EvalDiscussion/
+```
+
+**Do NOT gitignore:**
+- `HarnessKit/Config.json` — project config, safe to commit anytime
+- `HarnessKit/Roles/` — role files, safe to commit anytime
+- `HarnessKit/*/Spec.md` — the spec, safe to commit
+- `HarnessKit/*/Summary.md` — the archive, committed at completion
+
+At mission completion, the Generator uses `git add -f` to force-add the ignored files for the final archive commit.
+
+If `.gitignore` already exists, append these entries. If not, create it.
+
+## Step 7 — Create Codex Symlink (If Requested)
 
 If the user wants Codex compatibility:
 
@@ -221,7 +284,7 @@ Also add `.agents/` to `.gitignore` if it's not already there (the symlink is lo
 
 Tell the user: "Codex symlink created. In Codex sessions, the HarnessKit skill will be available when you paste a prompt containing 'HarnessKit'."
 
-## Step 6 — Summary
+## Step 8 — Summary
 
 Present a summary of what was set up:
 

@@ -65,18 +65,21 @@ The inner loop is fully autonomous — the Generator and Evaluator coordinate vi
 
 ## Installation
 
-### From the Marketplace
+### From the Marketplace (Coming Soon)
 
+Once published to the FlineDev Marketplace:
 ```
 /plugin marketplace add FlineDev/Marketplace
 /plugin install harness-kit
 ```
 
-### From Source
+### From Source (Current)
 
 ```bash
 claude --plugin-dir /path/to/HarnessKit
 ```
+
+**Note:** When using `--plugin-dir`, every new Claude Code session needs the same flag. If you open parallel sessions for Generator/Evaluator, each session must be started with `claude --plugin-dir /path/to/HarnessKit`. Once installed via marketplace, this is no longer needed — the plugin is available in all sessions automatically.
 
 ### Requirements
 
@@ -116,6 +119,8 @@ Read the spec and start implementing.
 HarnessKit: I'm Evaluator A for mission 001-JWTAuth.
 Read the spec and wait for the generator to signal ready.
 ```
+
+Each session needs the HarnessKit plugin loaded. If using `--plugin-dir`, start each with `claude --plugin-dir /path/to/HarnessKit`. You can also reuse the Planner session as the Generator — clear/compact it and paste the Generator prompt.
 
 The sessions coordinate automatically. You can walk away.
 
@@ -234,13 +239,26 @@ During init, HarnessKit detects your project type and recommends the right tools
 
 ## Crash Recovery
 
-If your computer crashes or you close sessions mid-mission:
+Both Claude Code and Codex restore the full session transcript when you resume. If your computer crashes or you close a terminal:
 
-1. Reopen the session
+1. Reopen the session (both tools support session resumption)
 2. Say "Continue" or "Resume"
-3. HarnessKit reads `State.json` and resumes the correct role
+3. The session has its full history — it knows what role it was playing
+4. If it was in a wait loop (the `watchman-wait` background task was killed), it checks State.json and re-enters the wait loop
 
-State.json is persistent (in the project directory) and always reflects who was doing what. Even after a full restart, both sessions can pick up where they left off.
+**Restart order doesn't matter.** Each session independently checks State.json to determine what to do. Resume whichever session you want first.
+
+## Codex Compatibility
+
+HarnessKit is designed to work with both Claude Code and Codex. During init, a symlink is created so Codex sessions can load the HarnessKit skill.
+
+**Known limitations when using Codex:**
+- `watchman-wait` requires the watchman daemon — verify it works in your Codex environment
+- MCP servers (Xcode MCP, Playwright, ios-simulator-mcp) depend on your Codex sandbox configuration
+- AppleScript execution may be restricted depending on Codex's sandbox mode
+- If Codex cannot run these tools, it can still evaluate by reading code, checking tests, and analyzing the implementation — just without interactive UI verification
+
+The Generator should always be Claude Code (it needs full file system access for implementation). The Evaluator and Planner roles are where Codex provides the most value — a different model's perspective.
 
 ## Design Philosophy
 

@@ -189,7 +189,7 @@ You are the Generator. Your job is to implement the spec faithfully and in a way
    ```
 5. **Wait for evaluation results**: Use a background bash command to watch for State.json changes. Always use the absolute path to the mission folder:
    ```bash
-   watchman-wait "$(pwd)/HarnessKit/NNN-MissionName" -p "State.json" --max-events 1 -t 600
+   GIT_ROOT=$(git rev-parse --show-toplevel) && watchman-wait "$GIT_ROOT/HarnessKit/NNN-MissionName" -p "State.json" --max-events 1 -t 600
    ```
    When the file changes, read State.json. If `evaluatorStatus` is `"done"`, read `Eval/Round-NNN.md`.
 
@@ -265,7 +265,7 @@ You are the Evaluator. Your job is to verify the Generator's work against the sp
 If the generator is still working (`generatorStatus: "working"`), wait:
 
 ```bash
-watchman-wait "$(pwd)/HarnessKit/NNN-MissionName" -p "State.json" --max-events 1 -t 600
+GIT_ROOT=$(git rev-parse --show-toplevel) && watchman-wait "$GIT_ROOT/HarnessKit/NNN-MissionName" -p "State.json" --max-events 1 -t 600
 ```
 
 When State.json changes, re-read it. If `generatorStatus` is `"ready-for-eval"`, proceed to evaluation.
@@ -443,7 +443,7 @@ State.json is shared between Generator and Evaluator, but each role only updates
 
 Always use `watchman-wait` with absolute paths to watch for State.json changes:
 ```bash
-watchman-wait "$(pwd)/HarnessKit/NNN-MissionName" -p "State.json" --max-events 1 -t 600
+GIT_ROOT=$(git rev-parse --show-toplevel) && watchman-wait "$GIT_ROOT/HarnessKit/NNN-MissionName" -p "State.json" --max-events 1 -t 600
 ```
 
 If the timeout expires (10 minutes), re-check State.json and restart the watch. This handles cases where watchman-wait misses an event.
