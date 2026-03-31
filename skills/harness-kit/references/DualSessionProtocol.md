@@ -15,8 +15,8 @@ Both sessions independently think about whether the user needs to clarify direct
 
 1. **Session A** writes questions (if any) to `UpfrontQuestions-A.md`
 2. **Session B** writes questions (if any) to `UpfrontQuestions-B.md`
-3. Each updates their own status in State.json: `"sessionA": {"status": "upfront-done"}` / `"sessionB": {"status": "upfront-done"}`
-4. **Wait for each other**: Use `watchman-wait` on State.json until both sessions show `"upfront-done"`
+3. Each updates their own signal file: Session A writes `StatusA.json` with `"status": "upfront-done"`, Session B writes `StatusB.json` with `"status": "upfront-done"`
+4. **Wait for each other**: Use `watchman-wait` on the protocol folder. When a file changes, read both StatusA.json and StatusB.json. Proceed when both show `"upfront-done"`.
 5. **Session A collects all questions** from both files. If there are questions, asks the user in its chat and documents answers in `UserAnswers.md`. If no questions from either session, A explicitly tells the user: "No upfront questions — I'll investigate first. You can step away."
 6. **Session A signals** the answers are ready by updating State.json: `"step": "parallel-investigation"`
 
@@ -32,8 +32,8 @@ Both sessions investigate independently and simultaneously. They do NOT wait for
 
 1. **Session A** writes findings to `Investigation-A.md`
 2. **Session B** writes findings to `Investigation-B.md`
-3. Each updates State.json when done: `"sessionA": {"status": "investigation-done"}` / `"sessionB": {"status": "investigation-done"}`
-4. **Wait for each other**: Use `watchman-wait` on State.json until both are done
+3. Each updates their own signal file with `"status": "investigation-done"`
+4. **Wait for each other**: Watch for file changes, check both StatusA.json and StatusB.json
 
 ### Step 3 — Parallel Cross-Review
 
@@ -46,8 +46,8 @@ Both sessions read the other's investigation and write a review. This happens in
    - Specific questions for B
 2. **Session B** reads `Investigation-A.md`, writes review to `Review-B.md`
    - Same structure
-3. Both update State.json when done: `"sessionA": {"status": "review-done"}` / `"sessionB": {"status": "review-done"}`
-4. **Wait for each other**
+3. Each updates their own signal file with `"status": "review-done"`
+4. **Wait for each other**: Watch for file changes, check both signal files
 
 ### Step 4 — Sequential Discussion
 
@@ -57,9 +57,9 @@ From here, sessions alternate. **A always goes first.**
    - Addresses B's questions and disagreements
    - Incorporates B's findings that A agrees with
    - States remaining disagreements clearly
-2. Update State.json: `"discussionRound": 1`, `"sessionA": {"status": "discussion-done"}`
+2. Update Protocol.json: `"discussionRound": 1`. Update StatusA.json: `"status": "discussion-done"`
 3. **Session B** reads `Discussion/001-A.md`, responds in `Discussion/002-B.md`
-4. Update State.json: `"discussionRound": 2`, `"sessionB": {"status": "discussion-done"}`
+4. Update Protocol.json: `"discussionRound": 2`. Update StatusB.json: `"status": "discussion-done"`
 5. Continue alternating until **both sessions agree 100% on every aspect**
    - No skipping disagreements — everything must be explicitly resolved
    - Each response must state what is now agreed and what remains unresolved
@@ -73,7 +73,7 @@ Session A writes the final document. Session B reviews it.
 **For Evaluators:** Session A writes the draft Eval/Round-NNN.md to `Draft/001-A.md`
 
 1. **Session A** writes the complete draft based on all investigations, reviews, and discussion
-2. Update State.json: `"draftRound": 1`, `"step": "documentation"`
+2. Update Protocol.json: `"draftRound": 1`, `"step": "documentation"`. Update StatusA.json: `"status": "draft-done"`
 3. **Session B** reads the draft, writes feedback to `Draft/002-B.md`
    - Points out anything missing, incorrect, or inconsistent
    - Verifies all agreed-upon points are captured
@@ -97,28 +97,29 @@ After the spec draft is approved by both planners:
 
 ---
 
-## State.json Schema for Dual-Session Protocol
+## Coordination Files
+
+### Separate Signal Files (Prevents Race Conditions)
+
+During parallel phases (Steps 1-3), both sessions work simultaneously and signal completion independently. To avoid race conditions on a shared State.json, each session writes its own signal file:
+
+- **StatusA.json** — Session A's status (only Session A writes this)
+- **StatusB.json** — Session B's status (only Session B writes this)
+- **Protocol.json** — Shared protocol state (step, discussion round, draft round). Written only during sequential phases (Steps 4-6) where turn-taking prevents conflicts.
+
+**Why separate files:** During parallel phases, both sessions finish at unpredictable times. If both read-modify-write a shared State.json, one session's update gets lost. Separate files eliminate this entirely — each session only writes its own file.
+
+### StatusA.json / StatusB.json
 
 ```json
 {
-  "step": "parallel-investigation",
-  "sessionA": {
-    "status": "investigating",
-    "tool": "claude-code"
-  },
-  "sessionB": {
-    "status": "investigating",
-    "tool": "codex"
-  },
-  "discussionRound": 0,
-  "draftRound": 0,
+  "status": "investigation-done",
+  "tool": "claude-code",
   "updated": "2026-03-31T14:30:00Z"
 }
 ```
 
-**Step values:** `upfront-questions` → `parallel-investigation` → `parallel-review` → `sequential-discussion` → `documentation` → `end-questions` → `done`
-
-**Session status values by step:**
+**Status values by step:**
 
 | Step | Possible Statuses |
 |---|---|
@@ -129,19 +130,35 @@ After the spec draft is approved by both planners:
 | documentation | `drafting`, `draft-done`, `reviewing-draft`, `approved` |
 | end-questions | `collecting`, `asking-user`, `done` |
 
+### Protocol.json
+
+```json
+{
+  "step": "parallel-investigation",
+  "discussionRound": 0,
+  "draftRound": 0,
+  "updated": "2026-03-31T14:30:00Z"
+}
+```
+
+**Step values:** `upfront-questions` → `parallel-investigation` → `parallel-review` → `sequential-discussion` → `documentation` → `end-questions` → `done`
+
+Protocol.json is updated when transitioning between steps. During parallel phases, the session that detects both are done advances the step. During sequential phases, the current speaker advances the step.
+
 ---
 
 ## Watching for State Changes
 
-Use `watchman-wait` to block until the other session updates State.json:
+To detect when the other session finishes, watch the protocol folder for ANY file change:
 
 ```bash
-watchman-wait "$(pwd)/<path-to-protocol-folder>" -p "State.json" --max-events 1 -t 600
+GIT_ROOT=$(git rev-parse --show-toplevel)
+watchman-wait "$GIT_ROOT/<path-to-protocol-folder>" -p "StatusA.json" -p "StatusB.json" -p "Protocol.json" --max-events 1 -t 600
 ```
 
-Run this with `run_in_background: true` so the session stays responsive. When the background task completes, re-read State.json and determine if it's your turn.
+Run this with `run_in_background: true` so the session stays responsive. When a file changes, read both StatusA.json and StatusB.json (and Protocol.json for sequential phases) to determine if it's your turn.
 
-If the timeout expires (10 minutes), re-read State.json anyway (the other session may have updated it while watchman-wait was starting up) and restart the watch if still waiting.
+If the timeout expires (10 minutes), re-read all status files anyway and restart the watch if still waiting.
 
 ---
 
@@ -149,7 +166,9 @@ If the timeout expires (10 minutes), re-read State.json anyway (the other sessio
 
 ```
 Planning/                              # For dual planners
-├── State.json
+├── Protocol.json                      # Shared protocol state (step, rounds)
+├── StatusA.json                       # Session A's status
+├── StatusB.json                       # Session B's status
 ├── UpfrontQuestions-A.md
 ├── UpfrontQuestions-B.md
 ├── UserAnswers.md
@@ -169,7 +188,9 @@ Planning/                              # For dual planners
     └── 003-A.md
 
 EvalDiscussion/Round-NNN/              # For dual evaluators, per eval round
-├── State.json
+├── Protocol.json
+├── StatusA.json
+├── StatusB.json
 ├── Investigation-A.md
 ├── Investigation-B.md
 ├── Review-A.md

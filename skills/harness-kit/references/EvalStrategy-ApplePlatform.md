@@ -63,7 +63,7 @@ npm install -g ios-simulator-mcp
 **Dependency:** Requires Facebook IDB (`idb`):
 ```bash
 brew install idb-companion
-pip3 install fb-idb
+pipx install fb-idb
 ```
 
 **Known issue:** Taps inside ScrollViews may fail silently due to `delaysContentTouches`. If this is a problem, consider the IndigoHID fork by adoosh-afk which uses native touch injection.

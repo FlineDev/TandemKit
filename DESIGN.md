@@ -220,7 +220,9 @@ HarnessKit/
 │   ├── Spec.md                    # Acceptance criteria (output of planning)
 │   ├── State.json                 # Coordination state (phase: "done")
 │   ├── Planning/                  # Only when dual planners were used
-│   │   ├── State.json             # Planning protocol state
+│   │   ├── Protocol.json          # Shared protocol state (step, rounds)
+│   │   ├── StatusA.json           # Session A signal file
+│   │   ├── StatusB.json           # Session B signal file
 │   │   ├── Investigation-A.md
 │   │   ├── Investigation-B.md
 │   │   ├── Review-A.md
@@ -235,7 +237,9 @@ HarnessKit/
 │   │   └── Round-002.md           # Final evaluator findings (PASS)
 │   ├── EvalDiscussion/            # Only when dual evaluators, per round
 │   │   ├── Round-001/             # Dual-session protocol files for round 1
-│   │   │   ├── State.json
+│   │   │   ├── Protocol.json
+│   │   │   ├── StatusA.json
+│   │   │   ├── StatusB.json
 │   │   │   ├── Investigation-A.md
 │   │   │   ├── Investigation-B.md
 │   │   │   ├── Review-A.md

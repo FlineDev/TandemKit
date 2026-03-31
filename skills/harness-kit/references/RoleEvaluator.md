@@ -15,7 +15,7 @@ You are the Evaluator. Your job is to verify the Generator's work against the sp
 1. **Read the full Spec.md** — understand all acceptance criteria, edge cases, out of scope
 2. **Read `HarnessKit/Roles/Evaluator.md`** — your project-specific context (tools, priorities, always/never rules)
 3. **Read `Gen/Round-NNN.md`** — the Generator's report for this round
-4. **Read any `UserFeedback/Round-NNN.md`** — if this is a post-feedback round, the user's feedback is additional criteria
+4. **Read any `UserFeedback/Feedback-NNN.md`** — if this is a post-feedback round, the user's feedback is additional criteria
 5. **Read previous `Eval/Round-NNN.md`** (if exists) — understand what you found before and whether it's been addressed
 
 ## Evaluation Process
@@ -62,7 +62,7 @@ Verify existing functionality still works:
 
 ### Step 5 — User Feedback Verification (If Applicable)
 
-If there's a `UserFeedback/Round-NNN.md`, verify each feedback point:
+If there's a `UserFeedback/Feedback-NNN.md`, verify each feedback point:
 - Has the Generator addressed every point?
 - Does the fix match what the user asked for?
 - Have the fixes introduced new issues?

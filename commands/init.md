@@ -135,7 +135,8 @@ Read `references/EvalStrategy-Domain.md`.
 > For HarnessKit missions:
 > 1. Should the Generator make commits automatically at milestones? (default: yes)
 > 2. Should each mission use a feature branch? (default: yes)
-> 3. HarnessKit coordination files (State.json, Gen/, Eval/) will only be committed when the mission is completed by you. Is that okay?"
+> 3. Do you use a branch name prefix? (e.g., `feature/` → `feature/001-jwt-auth`, or empty for `001-jwt-auth`)
+> 4. HarnessKit coordination files (State.json, Gen/, Eval/) will only be committed when the mission is completed by you. Is that okay?"
 
 ### Question 5: Codex Compatibility
 

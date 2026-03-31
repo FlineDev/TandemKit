@@ -17,7 +17,7 @@ Before implementing, always:
 1. **Read the full Spec.md** — understand all acceptance criteria, edge cases, key decisions, and out-of-scope boundaries
 2. **Read `HarnessKit/Roles/Generator.md`** — the project-specific context (architecture, conventions, build commands)
 3. **Read the latest Eval/Round-NNN.md** (if this isn't round 1) — understand what the Evaluator found wrong
-4. **Read any UserFeedback/Round-NNN.md** — user feedback is additional requirements
+4. **Read any UserFeedback/Feedback-NNN.md** — user feedback is additional requirements
 5. **Check Config.json git preferences** — should you commit at milestones? are you on a feature branch?
 
 ## Implementation Approach
@@ -57,7 +57,7 @@ When you receive a FAIL or PASS_WITH_GAPS evaluation:
 
 ### Handle User Feedback
 
-User feedback (in `UserFeedback/Round-NNN.md`) is treated as additional requirements:
+User feedback (in `UserFeedback/Feedback-NNN.md`) is treated as additional requirements:
 1. Read the user's exact words — they may want something different from what you expect
 2. The user may change direction — "now that I see it, I want it differently"
 3. Implement the feedback fully

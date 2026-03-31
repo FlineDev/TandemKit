@@ -51,6 +51,16 @@ Once the role is determined, read the corresponding reference and project role f
 
 You are starting a new mission. The user has a goal they want to accomplish.
 
+### Pre-Check — One Mission at a Time
+
+Check Config.json `currentMission`. If it's not `null`, there's already an active mission. Tell the user:
+
+> "There's an active mission: **[currentMission]**. HarnessKit supports one mission at a time to prevent file conflicts. You can:
+> 1. Continue the active mission
+> 2. Abort it first (say 'abort mission'), then start a new one"
+
+Do NOT create a new mission while another is active.
+
 ### Step 1 — Create the Mission
 
 1. Read `nextMissionNumber` from Config.json
@@ -83,10 +93,10 @@ Ask the user:
 2. Generate a prompt for the second planner session:
    ```
    HarnessKit: I'm Planner B for mission NNN-MissionName.
-   Read the planning state and begin investigating.
+   Read the planning state and join the planning process.
    ```
 3. Present this to the user: "Please open a new session and paste this prompt. Once you've done that, say 'continue' here."
-4. Create `Planning/` subfolder and `Planning/State.json` for dual-planner coordination
+4. Create `Planning/` subfolder with `Protocol.json`, `StatusA.json`, and `StatusB.json` for dual-planner coordination
 5. Follow the dual-session protocol (Steps 1-6 from DualSessionProtocol.md)
 
 **If the user wants single planning:**
@@ -152,7 +162,7 @@ You are the Generator. Your job is to implement the spec faithfully and in a way
 1. Read `references/RoleGenerator.md` for detailed guidance
 2. Read `HarnessKit/Roles/Generator.md` for project-specific context
 3. Read the mission's `Spec.md` — this is your source of truth
-4. Read `State.json` to understand the current state
+4. Read `State.json` to understand the current state. If `phase` is `"ready-for-execution"` or `"planning"`, transition it to `"generation"` — you are now the active Generator.
 5. Check for any `UserFeedback/` files — if they exist, read the latest one (this is a feedback iteration, not a fresh start)
 6. Check for any previous `Eval/Round-NNN.md` files — if they exist, read the latest one to understand what the evaluator found
 
@@ -300,15 +310,15 @@ If you are resuming after a crash and the state shows `evaluatorStatus: "pending
 
 You are the secondary Planner in a dual-planner setup. Read `references/DualSessionProtocol.md` for the full protocol.
 
-1. Read `HarnessKit/NNN-MissionName/Planning/State.json` to understand the current step
+1. Read `HarnessKit/NNN-MissionName/Planning/Protocol.json` and `StatusB.json` to understand the current step and your status
 2. Follow the protocol for Session B:
    - Write your findings to `Investigation-B.md`
    - Write your review of A's findings to `Review-B.md`
    - Respond in `Discussion/` when it's your turn
    - Review A's draft of Spec.md and give feedback in `Draft/`
 3. **Never ask the user directly.** All user communication goes through Planner A.
-4. Signal state changes by updating `Planning/State.json`
-5. When waiting for Planner A, use watchman-wait on `Planning/State.json`
+4. Signal state changes by updating your `Planning/StatusB.json`
+5. When waiting for Planner A, use watchman-wait on the `Planning/` folder
 
 ---
 
@@ -342,6 +352,20 @@ Show the current state of the active mission.
    - Show: mission name, current phase, current round, who is working/waiting
    - Show: how many Gen rounds, how many Eval rounds, any user feedback rounds
    - Show: last update timestamp
+
+---
+
+## Abort Mission
+
+If the user says "abort mission" or "cancel the mission":
+
+1. Confirm: "Are you sure? This will mark mission NNN-MissionName as abandoned."
+2. If confirmed:
+   - Update State.json: `"phase": "abandoned"`, `"updated": "..."`
+   - Update Config.json: `"currentMission": null`
+   - If on a feature branch: switch back to the main branch. Do NOT delete the feature branch (the user may want the code changes).
+   - Tell the user: "Mission abandoned. The mission folder remains at HarnessKit/NNN-MissionName/ for reference. The feature branch [branch-name] still exists with any code changes."
+3. The mission folder stays as archive (phase: "abandoned"). It's never deleted automatically.
 
 ---
 
