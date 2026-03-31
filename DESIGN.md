@@ -334,16 +334,18 @@ HarnessKit/Roles/
 
 4. Populates all three role files with project-specific context
 
-**Reference documents in the plugin** (built-in knowledge used during init and as ongoing reference):
+**Reference documents** live under the main skill (used by both init and runtime):
 ```
-skills/harness-init/references/
+skills/harness-kit/references/
+├── RolePlanner.md                   # General planner knowledge
+├── RoleGenerator.md                 # General generator knowledge
+├── RoleEvaluator.md                 # General evaluator knowledge
+├── DualSessionProtocol.md           # How two sessions coordinate
+├── SpecFormat.md                    # Spec.md structure and principles
 ├── EvalStrategy-ApplePlatform.md    # Xcode MCP + ios-simulator-mcp + AppleScript setup
 ├── EvalStrategy-Web.md              # Playwright MCP setup and patterns
 ├── EvalStrategy-CLI.md              # Test runners, output verification
-├── EvalStrategy-Domain.md           # Case-based reasoning, scenario testing
-├── RoleTemplate-Planner.md          # Template for Planner.md
-├── RoleTemplate-Generator.md        # Template for Generator.md
-└── RoleTemplate-Evaluator.md        # Template for Evaluator.md
+└── EvalStrategy-Domain.md           # Case-based reasoning, scenario testing
 ```
 
 **Apple platform evaluation tools (researched):**
@@ -362,16 +364,92 @@ skills/harness-init/references/
 - Single Config.json strategy field: Too minimal — doesn't capture tool setup, commands, or priorities
 - Full evaluator profile system (ChatGPT proposal): Over-engineered, creates maintenance burden
 
+### 11. Plugin structure: one command + one skill
+
+**Decision:** HarnessKit has exactly two components:
+
+1. **`init` command** (`commands/init.md`) — user runs `/harness-kit:init` once per project. Never auto-loads. Handles project investigation, user Q&A, tool installation, and populating `HarnessKit/Roles/`.
+
+2. **`harness-kit` skill** (`skills/harness-kit/SKILL.md`) — auto-triggers when user mentions HarnessKit, missions, etc. Contains ALL orchestration logic: planning, generation, evaluation, coordination, resumption. Role-specific references are read conditionally based on which role this session has.
+
+**Plugin directory structure:**
+```
+HarnessKit/                              # The plugin repo
+├── .claude-plugin/plugin.json
+├── commands/
+│   └── init.md                          # /harness-kit:init (manual only)
+├── skills/
+│   └── harness-kit/
+│       ├── SKILL.md                     # THE skill — orchestrates everything
+│       └── references/
+│           ├── RolePlanner.md           # How to be an effective planner
+│           ├── RoleGenerator.md         # How to be an effective generator
+│           ├── RoleEvaluator.md         # How to be an effective evaluator
+│           ├── DualSessionProtocol.md   # How two sessions coordinate
+│           ├── SpecFormat.md            # Spec.md structure and principles
+│           ├── EvalStrategy-ApplePlatform.md
+│           ├── EvalStrategy-Web.md
+│           ├── EvalStrategy-CLI.md
+│           └── EvalStrategy-Domain.md
+├── README.md
+└── LICENSE
+```
+
+**Why one skill, not three:**
+- The skill determines the role from the user's prompt (not from which skill was invoked)
+- Role-specific knowledge lives in reference files, read only when needed
+- Simpler for the user — one skill name to remember
+- The skill body contains the overall protocol; references contain the depth
+
+**How the skill determines the role:**
+- "Let's use HarnessKit to work on X" → Planner (new mission)
+- "I'm the Generator for mission X" (pasted prompt) → Generator
+- "I'm Evaluator A for mission X" (pasted prompt) → Evaluator
+- "Continue" / resumption → Check State.json, resume last role
+
+**How the skill reads role-specific context:**
+1. Reads the appropriate plugin reference (e.g., `references/RoleGenerator.md`)
+2. Reads the project-specific role file (e.g., `HarnessKit/Roles/Generator.md`)
+3. Both inform the session's behavior
+
+**User workflow:**
+
+1. **Setup (once):** `/harness-kit:init` → answers questions, creates HarnessKit/
+
+2. **New mission:** User says "Let's use HarnessKit to add JWT auth"
+   - Skill auto-loads, acts as Planner
+   - Asks: "Do you want dual planning with a parallel session?"
+   - If yes: generates a prompt for the user to paste into a second session
+   - Planning proceeds (single or dual)
+   - Spec.md written and finalized
+
+3. **Transition to execution:** Planning done →
+   - Asks: "Do you want dual evaluation?"
+   - Generates prompts for Generator + Evaluator(s) sessions
+   - User creates new sessions, pastes prompts
+   - Sessions auto-coordinate via State.json + watchman-wait
+
+4. **Resumption after crash:** User continues session, says "continue"
+   - Skill checks State.json, sees role and state
+   - Resumes (working or watching for the other session)
+
+**The generated prompts** are the key UX mechanism. The skill generates ready-to-paste text like:
+```
+HarnessKit: I'm the Generator for mission 001-JWTAuth.
+Read the spec and start implementing.
+```
+These prompts trigger the skill in the new session, which then reads the role from the prompt text and proceeds accordingly.
+
+**Codex compatibility:** During init, a symlink is created from `.agents/skills/harness-kit/` to the plugin's skill directory. When the user pastes an evaluator or planner prompt into Codex, the symlinked skill loads and follows the same instructions.
+
+**Alternatives considered:**
+- Separate skills per role (harness-plan, harness-generate, harness-eval): More commands to remember, harder to maintain, role-specific logic better handled by conditional reference loading
+- Separate /harness-kit:continue skill: Not needed — each role's logic handles resumption by checking State.json
+- Separate /harness-kit:status skill: Status is built into the main skill — user just asks "what's the status?"
+
 ---
 
 ## Open — To Be Discussed
-
-### Skill Structure
-
-- How many skills, what are they called, which are user-invocable?
-- The Planner skill vs. the Generator skill vs. the Evaluator skill
-- How does "continue" work across all roles?
-- Which skills need to be Codex-compatible?
 
 ### When Is a Mission "Done"?
 
