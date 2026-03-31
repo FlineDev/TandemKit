@@ -1,0 +1,13 @@
+{
+  "name": "harness-kit",
+  "version": "0.1.0",
+  "description": "Planner/Implementer/Evaluator orchestration harness with file-based multi-session coordination",
+  "author": {
+    "name": "Cihat Gündüz",
+    "url": "https://fline.dev"
+  },
+  "homepage": "https://github.com/FlineDev/HarnessKit",
+  "repository": "https://github.com/FlineDev/HarnessKit",
+  "license": "MIT",
+  "keywords": ["harness", "evaluator", "planner", "orchestration", "multi-session", "quality-gate"]
+}
