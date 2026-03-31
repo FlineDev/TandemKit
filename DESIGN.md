@@ -299,20 +299,79 @@ HarnessKit/
 - Detailed verification scripts per criterion: Unnecessary — modern evaluators figure out how to verify
 - Implementation-prescriptive specs: Causes cascading errors when the prescribed approach is wrong
 
+### 10. Role files and initialization
+
+**Decision:** Each project gets a `HarnessKit/Roles/` folder with three project-specific role files: `Planner.md`, `Generator.md`, `Evaluator.md`. These are populated during `harness-kit:init` based on project investigation + user Q&A. The plugin's skills contain the general protocol knowledge; the role files contain the project-specific context.
+
+**Why:** Skills in the plugin are the same for all projects (how to coordinate, how to evaluate, the dual-session protocol). But WHAT to evaluate and HOW to verify is project-specific. The role files bridge this gap. Every session reads its role file as the first thing — it's the project-specific briefing.
+
+**Role files in the target project:**
+```
+HarnessKit/Roles/
+├── Planner.md      # Key files to investigate, planning priorities, domain context
+├── Generator.md    # Architecture, conventions, build commands, test suites
+└── Evaluator.md    # Available verification tools, evaluation priorities, always/never rules
+```
+
+**Evaluator.md is the most important** because effective evaluation is the hardest and most project-specific part. It documents:
+- Available verification tools (build, test, UI interaction, screenshots)
+- How to use each tool (commands, MCP tools, scripts)
+- Evaluation priorities (from user input during init)
+- "Always do" rules (e.g., always build before evaluating, always take screenshots)
+- "Never do" rules (e.g., never mark PASS without building successfully)
+
+**The init skill (`harness-kit:init`) does:**
+
+1. Investigates the project automatically: reads AGENTS.md, CLAUDE.md, README, Package.swift / package.json, checks for Xcode project, web framework, test runners, existing MCP server configs
+
+2. Asks focused questions: project type confirmation, evaluation scope (UI? logic? performance? accessibility?), existing tools and patterns
+
+3. Guides tool setup with strong recommendations. Emphasizes that an evaluator that can only read code will miss visual bugs, broken navigation, spacing issues, and interaction problems. Recommends:
+   - **Apple platform:** Xcode MCP (built-in, for builds/previews/tests) + joshuayoes/ios-simulator-mcp (1,800 stars, Anthropic-endorsed, for UI interaction/screenshots) + AppleScript for app lifecycle
+   - **Web:** Playwright MCP for full browser interaction
+   - **CLI:** Test runners and output verification
+   - **Domain systems:** Scenario-based testing, case files
+
+4. Populates all three role files with project-specific context
+
+**Reference documents in the plugin** (built-in knowledge used during init and as ongoing reference):
+```
+skills/harness-init/references/
+├── EvalStrategy-ApplePlatform.md    # Xcode MCP + ios-simulator-mcp + AppleScript setup
+├── EvalStrategy-Web.md              # Playwright MCP setup and patterns
+├── EvalStrategy-CLI.md              # Test runners, output verification
+├── EvalStrategy-Domain.md           # Case-based reasoning, scenario testing
+├── RoleTemplate-Planner.md          # Template for Planner.md
+├── RoleTemplate-Generator.md        # Template for Generator.md
+└── RoleTemplate-Evaluator.md        # Template for Evaluator.md
+```
+
+**Apple platform evaluation tools (researched):**
+
+| Tool | Purpose | Stars |
+|------|---------|-------|
+| Apple Xcode MCP (`xcrun mcpbridge`) | Build, test, SwiftUI preview screenshots (`RenderPreview`), build diagnostics | Built-in |
+| joshuayoes/ios-simulator-mcp | Tap, swipe, read accessibility tree, screenshot running app in simulator | 1,800 |
+| adoosh-afk/ios-simulator-mcp | Fork using IndigoHID — fixes tap reliability inside ScrollViews | 0 (new) |
+| `osascript` (AppleScript) | Run/stop app via Xcode (Xcode MCP can't do this) | Built-in |
+| `xcrun simctl` | Boot/shutdown simulators, take screenshots, set dark mode, deep links | Built-in |
+
+**Alternatives considered:**
+- No role files (evaluator adapts on its own): Misses project-specific tools and priorities, inconsistent across sessions
+- YAML evaluator profiles: Rigid, hard to maintain, doesn't capture nuance
+- Single Config.json strategy field: Too minimal — doesn't capture tool setup, commands, or priorities
+- Full evaluator profile system (ChatGPT proposal): Over-engineered, creates maintenance burden
+
 ---
 
 ## Open — To Be Discussed
 
-### Evaluator Profiles
-
-- Should Config.json include a strategy field (e.g., `"evaluator": "swiftui"`) that influences evaluation?
-- Or should the evaluator just adapt based on available tools and project type?
-
 ### Skill Structure
 
 - How many skills, what are they called, which are user-invocable?
-- The Generator skill vs. the Evaluator skill vs. the Planner skill
+- The Planner skill vs. the Generator skill vs. the Evaluator skill
 - How does "continue" work across all roles?
+- Which skills need to be Codex-compatible?
 
 ### When Is a Mission "Done"?
 
