@@ -14,6 +14,13 @@ A Claude Code plugin that orchestrates **Planner / Generator / Evaluator** workf
 
 Source: [Harness design for long-running application development](https://www.anthropic.com/engineering/harness-design-long-running-apps)
 
+## Key Terminology
+
+| Term | Meaning |
+|------|---------|
+| **Mission** | A self-contained unit of work driven through the harness (plan → implement → evaluate → done). Each mission gets its own numbered subfolder (e.g., `001-AuthModule/`). |
+| **Round** | One iteration within a mission's execution phase. Round 1 = first implementation + first evaluation. Round 2 = fixes + re-evaluation. Etc. |
+
 ## Architecture Overview
 
 ### Two Phases
@@ -111,23 +118,68 @@ Each round's Gen and Eval files serve as checkpoints — even if context is lost
 
 **Why:** watchman-wait provides near-instant file change detection without polling. It's a one-time install, lightweight, and well-maintained by Meta.
 
+### 7. "Mission" as the unit of work
+
+**Decision:** Each unit of work driven through the harness is called a **mission**. Each mission gets a numbered subfolder: `001-AuthModule/`, `002-UserProfile/`, etc.
+
+**Why:** "Mission" conveys purpose and completion, works for features AND bug fixes AND refactors, fits the harness metaphor (you harness the team for a mission), and avoids conflicts with existing terms (Claude Code "tasks", CI "runs", Anthropic's removed "sprints").
+
+**Alternatives considered:**
+- Run: Too generic, conflicts with CI/test terminology
+- Goal: "Goal 002" sounds odd as a folder name
+- Task: Conflicts with Claude Code's built-in TaskCreate
+- Drive: Tech ambiguity (disk drive, Google Drive)
+- Feature: Not everything is a feature (bug fixes, refactors)
+- Cycle/Sprint: Conflicts with inner iteration rounds / Anthropic explicitly removed sprints
+
+### 8. Numbered subfolders with dates in metadata (Option C)
+
+**Decision:** Missions use numbered PascalCase subfolders (`001-AuthModule/`, `002-UserProfile/`). Config.json tracks `"currentMission": "002-UserProfile"` as a string matching the full folder name. Dates are stored in State.json and Summary.md metadata, not folder names. No cleanup needed — completed missions remain as archive.
+
+**Why:**
+- Consistent with PlanKit's proven `NNN-FeatureName` numbering
+- Clean, short folder names that sort naturally
+- Each mission is fully self-contained (move it, reference it independently)
+- No cleanup step to forget — new mission = new folder, old missions stay
+- Summary.md provides quick overview per mission without opening round files
+- `nextMissionNumber` counter in Config.json ensures unique numbering
+
+**Folder structure:**
+```
+HarnessKit/
+├── Config.json                    # Global config + currentMission + nextMissionNumber
+├── 001-AuthModule/
+│   ├── Spec.md                    # Acceptance criteria from planning
+│   ├── State.json                 # Coordination state (phase: "done")
+│   ├── Gen/
+│   │   ├── Round-001.md           # Generator's implementation report
+│   │   └── Round-002.md           # Generator's fix report
+│   ├── Eval/
+│   │   ├── Round-001.md           # Evaluator findings (FAIL)
+│   │   └── Round-002.md           # Evaluator findings (PASS)
+│   ├── Discussion/                # Only when dual evaluators
+│   │   ├── Round-001-A.md
+│   │   ├── Round-001-B.md
+│   │   └── Round-001-Consensus.md
+│   └── Summary.md                 # Auto-generated after PASS
+├── 002-UserProfile/               # Current mission
+│   ├── Spec.md
+│   ├── State.json                 # phase: "evaluation", round: 1
+│   ├── Gen/
+│   │   └── Round-001.md
+│   └── Eval/                      # (evaluator currently working)
+```
+
+**Summary.md** is auto-generated when a mission reaches PASS. It captures: goal, dates, round count, roles used, key decisions, issues found & fixed, files changed. The skill reads Summary.md files when the user asks "what have we worked on?"
+
+**Alternatives considered:**
+- Date-prefixed folders (`2026-03-31_AuthModule`): Longer names, disambiguation needed for same-day missions, not consistent with PlanKit
+- Flat structure (no subfolders): Requires cleanup between missions, no archive
+- `currentMission` as integer: Doesn't match folder name directly, error-prone
+
 ---
 
 ## Open — To Be Discussed
-
-### Folder Structure & Archiving
-
-How to organize HarnessKit/ so that:
-- Each run (planning+generation+evaluation for one goal) is self-contained
-- Completed runs serve as archive (no cleanup needed)
-- Starting a new run creates a new subfolder
-- The "current" run is clearly identifiable
-- History shows how features were built, what each role said, evaluation results
-
-Options under consideration:
-- Numbered subfolders (`001-AuthModule/`, `002-UserProfile/`)
-- Date-prefixed subfolders (`2026-03-31_AuthModule/`)
-- Pointer to current run (symlink? field in Config.json?)
 
 ### Planning Phase Details
 
@@ -151,10 +203,16 @@ Options under consideration:
 - How do Evaluator A and B communicate during reconciliation?
 - What if they disagree? Who has final say?
 
-### When Is a Run "Done"?
+### When Is a Mission "Done"?
 
 - Evaluator says PASS → what happens? Auto-commit? Summary generation? State update?
-- How is the run closed/archived?
+- How is the mission closed/archived?
+
+### Dual Planner Phase
+
+- Should the planning phase also support two parallel sessions (Claude + Codex)?
+- How do two Planners reconcile their findings into one Spec.md?
+- Is the protocol the same as Generator+Evaluator or different?
 
 ---
 
