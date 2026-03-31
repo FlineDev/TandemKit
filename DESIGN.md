@@ -100,11 +100,79 @@ Each round's Gen and Eval files serve as checkpoints — even if context is lost
 
 **Technical approach:** Codex uses `.agents/skills/<name>/SKILL.md` with similar YAML frontmatter (requires `name` + `description`). The skill body uses tool-agnostic instructions (what to do, not which specific tools to use). Both Claude Code and Codex can read project files, run shell commands, and search code.
 
-### 4. Dual Evaluator support
+### 4. Dual-session protocol (Planners & Evaluators)
 
-**Decision:** Support 1 or 2 Evaluators. When 2 are active, they evaluate independently, then Evaluator A reconciles into a consensus. The Generator always sees only one final evaluation per round.
+**Decision:** When two sessions share the same role (two Planners or two Evaluators), they follow a structured 6-step protocol. Session A is always the primary (asks user, writes final documents, goes first in sequential phase). Session B is always the secondary (reviews, never talks to user directly).
 
-**Why:** Two evaluators with different models catch more issues. The reconciliation step prevents contradictory feedback.
+**The protocol:**
+
+1. **Upfront Questions** (Planners only, parallel) — Both independently think about whether the user needs to clarify direction. Both signal done. A collects questions and asks the user. If none, A explicitly tells user "no upfront questions, I'll investigate" so user can leave.
+
+2. **Parallel Investigation** — Both investigate/research independently. Each writes findings with full source references (file paths with line numbers, links, command outputs). Each signals "investigation done."
+
+3. **Parallel Cross-Review** — Both wait until other's investigation is done. Both read the other's findings and write a review. Both signal "review done."
+
+4. **Sequential Discussion** — A goes first. They alternate responses until 100% agreement on every aspect. No skipping disagreements — everything must be resolved.
+
+5. **Documentation** — A writes the final document (Spec.md for planners, Eval/Round-NNN.md for evaluators). B reviews. A fixes. B re-reviews. Repeat until both agree the document is correct.
+
+6. **End Questions** (Planners only) — A collects remaining questions from both sessions and asks the user. If answers require re-investigation, back to Step 2.
+
+**Key rules:**
+- Steps 1-3 are parallel (both work simultaneously, then wait for each other)
+- Steps 4-6 are sequential (alternating, A always starts)
+- All findings must include source references so the other session can verify without re-investigating
+- The user is only engaged in Session A's chat, only at the start (upfront questions) and end (remaining questions)
+- From the Generator's perspective, there's always one Spec.md and one Eval/Round-NNN.md — it doesn't know or care if one or two sessions produced it
+
+**File structure for dual-session communication:**
+```
+Planning/                              # (or EvalDiscussion/ for evaluators)
+├── State.json                         # Phase tracking for the protocol
+├── UpfrontQuestions-A.md              # (planners only)
+├── UpfrontQuestions-B.md              # (planners only)
+├── UserAnswers.md                     # (planners only)
+├── Investigation-A.md                 # A's findings with source refs
+├── Investigation-B.md                 # B's findings with source refs
+├── Review-A.md                        # A's review of B's investigation
+├── Review-B.md                        # B's review of A's investigation
+├── Discussion/
+│   ├── 001-A.md                       # Sequential discussion rounds
+│   ├── 002-B.md
+│   ├── 003-A.md
+│   └── 004-B.md                       # Agreement reached
+├── EndQuestions.md                     # (planners only)
+└── Draft/
+    ├── 001-A.md                       # A's draft of final document
+    ├── 002-B.md                       # B's feedback
+    └── 003-A.md                       # A's revision (B approves → done)
+```
+
+**State.json for the protocol:**
+```json
+{
+  "step": "parallel-investigation",
+  "sessionA": { "status": "investigating", "tool": "claude-code" },
+  "sessionB": { "status": "investigating", "tool": "codex" },
+  "discussionRound": 0,
+  "draftRound": 0,
+  "updated": "2026-03-31T14:30:00Z"
+}
+```
+
+Step field progresses: `upfront-questions` → `parallel-investigation` → `parallel-review` → `sequential-discussion` → `documentation` → `end-questions` → `done`
+
+**Why this protocol:**
+- Parallel investigation leverages different models finding different things
+- Cross-review catches blind spots without redundant investigation
+- Sequential discussion resolves disagreements explicitly
+- Documentation with review ensures nothing is lost
+- The user can leave after upfront questions and return when planning is done
+
+**Alternatives considered:**
+- Simple "both write, A merges": Loses the back-and-forth that resolves disagreements
+- Fully parallel throughout: Risk of contradictory conclusions without resolution
+- Subagent-based evaluation: Black box for user, context lost between iterations, can't use Codex
 
 ### 5. Anthropic naming convention
 
@@ -149,18 +217,32 @@ Each round's Gen and Eval files serve as checkpoints — even if context is lost
 HarnessKit/
 ├── Config.json                    # Global config + currentMission + nextMissionNumber
 ├── 001-AuthModule/
-│   ├── Spec.md                    # Acceptance criteria from planning
+│   ├── Spec.md                    # Acceptance criteria (output of planning)
 │   ├── State.json                 # Coordination state (phase: "done")
+│   ├── Planning/                  # Only when dual planners were used
+│   │   ├── State.json             # Planning protocol state
+│   │   ├── Investigation-A.md
+│   │   ├── Investigation-B.md
+│   │   ├── Review-A.md
+│   │   ├── Review-B.md
+│   │   ├── Discussion/
+│   │   └── Draft/
 │   ├── Gen/
 │   │   ├── Round-001.md           # Generator's implementation report
 │   │   └── Round-002.md           # Generator's fix report
 │   ├── Eval/
-│   │   ├── Round-001.md           # Evaluator findings (FAIL)
-│   │   └── Round-002.md           # Evaluator findings (PASS)
-│   ├── Discussion/                # Only when dual evaluators
-│   │   ├── Round-001-A.md
-│   │   ├── Round-001-B.md
-│   │   └── Round-001-Consensus.md
+│   │   ├── Round-001.md           # Final evaluator findings (FAIL)
+│   │   └── Round-002.md           # Final evaluator findings (PASS)
+│   ├── EvalDiscussion/            # Only when dual evaluators, per round
+│   │   ├── Round-001/             # Dual-session protocol files for round 1
+│   │   │   ├── State.json
+│   │   │   ├── Investigation-A.md
+│   │   │   ├── Investigation-B.md
+│   │   │   ├── Review-A.md
+│   │   │   ├── Review-B.md
+│   │   │   ├── Discussion/
+│   │   │   └── Draft/
+│   │   └── Round-002/
 │   └── Summary.md                 # Auto-generated after PASS
 ├── 002-UserProfile/               # Current mission
 │   ├── Spec.md
@@ -198,21 +280,10 @@ HarnessKit/
 - The Generator skill vs. the Evaluator skill vs. the Planner skill
 - How does "continue" work across all roles?
 
-### Dual Evaluator Discussion Protocol
-
-- How do Evaluator A and B communicate during reconciliation?
-- What if they disagree? Who has final say?
-
 ### When Is a Mission "Done"?
 
 - Evaluator says PASS → what happens? Auto-commit? Summary generation? State update?
 - How is the mission closed/archived?
-
-### Dual Planner Phase
-
-- Should the planning phase also support two parallel sessions (Claude + Codex)?
-- How do two Planners reconcile their findings into one Spec.md?
-- Is the protocol the same as Generator+Evaluator or different?
 
 ---
 
