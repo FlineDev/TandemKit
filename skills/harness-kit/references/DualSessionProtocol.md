@@ -18,7 +18,7 @@ Both sessions independently think about whether the user needs to clarify direct
 3. Each updates their own signal file: Session A writes `StatusA.json` with `"status": "upfront-done"`, Session B writes `StatusB.json` with `"status": "upfront-done"`
 4. **Wait for each other**: Use `watchman-wait` on the protocol folder. When a file changes, read both StatusA.json and StatusB.json. Proceed when both show `"upfront-done"`.
 5. **Session A collects all questions** from both files. If there are questions, asks the user in its chat and documents answers in `UserAnswers.md`. If no questions from either session, A explicitly tells the user: "No upfront questions — I'll investigate first. You can step away."
-6. **Session A signals** the answers are ready by updating State.json: `"step": "parallel-investigation"`
+6. **Session A signals** the answers are ready by updating Protocol.json: `"step": "parallel-investigation"`
 
 **Evaluators skip this step entirely** — they never ask the user.
 
@@ -90,7 +90,7 @@ After the spec draft is approved by both planners:
 
 1. **Session A** collects any remaining questions that arose during investigation and discussion
 2. Presents these to the user in A's chat, documents answers in `EndQuestions.md`
-3. If answers require significant changes: update State.json to go back to Step 2 (re-investigation)
+3. If answers require significant changes: update Protocol.json to go back to Step 2 (re-investigation)
 4. If answers are minor clarifications: Session A updates the Spec.md directly
 
 **Evaluators skip this step** — they write the final evaluation and signal done.

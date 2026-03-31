@@ -128,7 +128,9 @@ Each round's Gen and Eval files serve as checkpoints — even if context is lost
 **File structure for dual-session communication:**
 ```
 Planning/                              # (or EvalDiscussion/ for evaluators)
-├── State.json                         # Phase tracking for the protocol
+├── Protocol.json                      # Shared protocol state (step, rounds)
+├── StatusA.json                       # Session A signal file
+├── StatusB.json                       # Session B signal file
 ├── UpfrontQuestions-A.md              # (planners only)
 ├── UpfrontQuestions-B.md              # (planners only)
 ├── UserAnswers.md                     # (planners only)
@@ -148,14 +150,23 @@ Planning/                              # (or EvalDiscussion/ for evaluators)
     └── 003-A.md                       # A's revision (B approves → done)
 ```
 
-**State.json for the protocol:**
+**Coordination files for the protocol:**
+
+`Protocol.json` (shared state, written only during sequential phases):
 ```json
 {
   "step": "parallel-investigation",
-  "sessionA": { "status": "investigating", "tool": "claude-code" },
-  "sessionB": { "status": "investigating", "tool": "codex" },
   "discussionRound": 0,
   "draftRound": 0,
+  "updated": "2026-03-31T14:30:00Z"
+}
+```
+
+`StatusA.json` / `StatusB.json` (each session writes only its own):
+```json
+{
+  "status": "investigating",
+  "tool": "claude-code",
   "updated": "2026-03-31T14:30:00Z"
 }
 ```
@@ -559,8 +570,8 @@ The user describes issues, changes, or refinements. This is documented in `UserF
 ```
 HarnessKit/001-JWTAuth/
 ├── UserFeedback/
-│   ├── Round-001.md       # User's first feedback after initial AI PASS
-│   ├── Round-002.md       # User's second feedback (after AI addressed round 1)
+│   ├── Feedback-001.md    # User's first feedback after initial AI PASS
+│   ├── Feedback-002.md    # User's second feedback (after AI addressed round 1)
 │   └── ...
 ```
 

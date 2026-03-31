@@ -170,14 +170,14 @@ You are the Generator. Your job is to implement the spec faithfully and in a way
 
 1. **Determine the round number**: Count existing files in `Gen/` directory. The next round is one more than the highest existing round. If no files exist, this is round 1.
 2. **Update State.json**: Set `"phase": "generation"`, `"generatorStatus": "working"`, `"round": N`, `"updated": "..."`. Only update YOUR fields (`generatorStatus`) — never overwrite `evaluatorStatus` (the Evaluator owns that field). Read-modify-write: read the full State.json first, update only your fields, write it back.
-2. **Implement** — work through the spec's acceptance criteria. Follow the project conventions from `HarnessKit/Roles/Generator.md`. Make commits at milestones if auto-commit is enabled in Config.json.
-3. **When done implementing**, write a report to `Gen/Round-NNN.md` that includes:
+3. **Implement** — work through the spec's acceptance criteria. Follow the project conventions from `HarnessKit/Roles/Generator.md`. Make commits at milestones if auto-commit is enabled in Config.json.
+4. **When done implementing**, write a report to `Gen/Round-NNN.md` that includes:
    - What was implemented/changed in this round
    - Which acceptance criteria you believe are satisfied
    - Which files were created or modified
    - Any known gaps or uncertainties
    - What the evaluator should pay special attention to
-4. **Signal the Evaluator**: Update State.json:
+5. **Signal the Evaluator**: Update State.json:
    ```json
    {
      "phase": "evaluation",
@@ -187,7 +187,7 @@ You are the Generator. Your job is to implement the spec faithfully and in a way
      "updated": "YYYY-MM-DDTHH:MM:SSZ"
    }
    ```
-5. **Wait for evaluation results**: Use a background bash command to watch for State.json changes. Always use the absolute path to the mission folder:
+6. **Wait for evaluation results**: Use a background bash command to watch for State.json changes. Always use the absolute path to the mission folder:
    ```bash
    GIT_ROOT=$(git rev-parse --show-toplevel) && watchman-wait "$GIT_ROOT/HarnessKit/NNN-MissionName" -p "State.json" --max-events 1 -t 600
    ```
@@ -241,7 +241,7 @@ When the user says "looks good" / "approved" / "done":
 
 1. Update State.json: `"phase": "complete"`, `"completedBy": "user"`, `"completed": "YYYY-MM-DDTHH:MM:SSZ"`
 2. Generate `Summary.md` — the final archive document (see Summary Format below)
-3. Commit the HarnessKit/ mission files (the coordination artifacts)
+3. Commit the HarnessKit/ mission files using `git add -f HarnessKit/NNN-MissionName/` (force-add is needed because coordination files are in .gitignore during active missions)
 4. Update Config.json: `"currentMission": null`
 5. If on a feature branch: tell the user the branch is ready for merging/PR
 6. Inform the user: "Mission NNN-MissionName complete. Summary saved."
