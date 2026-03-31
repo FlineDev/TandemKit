@@ -185,7 +185,7 @@ During init, create `HarnessKit/Evaluator.md` with:
 
 ## UI Verification Tools
 - Xcode MCP: RenderPreview for SwiftUI preview screenshots
-- [ios-simulator-mcp: tap, swipe, accessibility tree, screenshots] (if installed)
+- [mobile-mcp or ios-simulator-mcp: tap, swipe, accessibility tree, screenshots] (whichever was chosen during init)
 - [AppleScript: run/stop app via Xcode] (if applicable)
 - [xcrun simctl: simulator management] (always available)
 
