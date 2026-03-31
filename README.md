@@ -198,7 +198,7 @@ HarnessKit/
 │   │   ├── Round-001.md          # FAIL
 │   │   └── Round-002.md          # PASS
 │   ├── UserFeedback/
-│   │   └── Round-001.md
+│   │   └── Feedback-001.md
 │   └── Summary.md
 └── 002-SettingsRefactor/         # Current mission
     ├── Spec.md

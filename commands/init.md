@@ -104,7 +104,7 @@ Read `references/EvalStrategy-ApplePlatform.md` for full details.
 If the user agrees, guide them through:
 - Verifying Xcode MCP connection
 - Installing ios-simulator-mcp and adding it to `.claude/settings.json`
-- Installing IDB if needed (`brew install idb-companion && pip3 install fb-idb`)
+- Installing IDB if needed (`brew install idb-companion && pipx install fb-idb`)
 
 **For web projects:**
 

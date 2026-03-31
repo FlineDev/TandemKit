@@ -61,11 +61,11 @@ When a session restarts after a crash/update, the user says "continue" and the s
 
 | Last State in State.json | Session Role | Resume Action |
 |---|---|---|
-| `generator: "working"` | Generator | Continue implementing where it left off |
-| `generator: "ready-for-eval"` | Generator | Start watching for evaluation results |
-| `evaluator: "waiting"` | Evaluator | Start watching for generator completion |
-| `evaluator: "evaluating"` | Evaluator | Continue evaluating |
-| `evaluator: "done"` | Evaluator | Wait (generator should read results) |
+| `generatorStatus: "working"` | Generator | Continue implementing where it left off |
+| `generatorStatus: "ready-for-eval"` | Generator | Start watching for evaluation results |
+| `evaluatorStatus: "pending"` | Evaluator | Start watching for generator completion |
+| `evaluatorStatus: "evaluating"` | Evaluator | Continue evaluating |
+| `evaluatorStatus: "done"` | Evaluator | Wait (generator should read results) |
 
 Each round's Gen and Eval files serve as checkpoints — even if context is lost, the session can re-read the spec, the latest round file, and State.json to fully reconstruct what was happening.
 
@@ -550,7 +550,7 @@ The user tests the implementation. Two outcomes:
 → Mission is COMPLETE (see Step 5)
 
 **B) User has feedback:**
-The user describes issues, changes, or refinements. This is documented in `UserFeedback/Round-NNN.md`:
+The user describes issues, changes, or refinements. This is documented in `UserFeedback/Feedback-NNN.md`:
 
 ```
 HarnessKit/001-JWTAuth/
@@ -596,7 +596,7 @@ HarnessKit/001-JWTAuth/
 │   ├── Round-002.md           # PASS (first AI pass)
 │   └── Round-003.md           # PASS (after user feedback)
 ├── UserFeedback/
-│   └── Round-001.md           # User's feedback after first AI pass
+│   └── Feedback-001.md           # User's feedback after first AI pass
 ├── Planning/                  # (if dual planners were used)
 ├── EvalDiscussion/            # (if dual evaluators were used)
 └── Summary.md                 # Final archive

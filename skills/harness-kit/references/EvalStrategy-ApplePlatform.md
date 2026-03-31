@@ -6,7 +6,7 @@ This document guides the evaluator setup and verification approach for Apple pla
 
 ### Tier 1 — Apple's Native Xcode MCP (Built-in)
 
-Available since Xcode 26.3+. Provides build, test, preview, and diagnostics without any additional setup.
+Available in recent Xcode versions with MCP bridge support. Provides build, test, preview, and diagnostics without any additional setup.
 
 **Key tools:**
 - `BuildProject` — build a scheme, catch compile errors

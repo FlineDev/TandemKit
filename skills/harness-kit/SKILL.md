@@ -60,8 +60,11 @@ You are starting a new mission. The user has a goal they want to accomplish.
    ```json
    {
      "phase": "planning",
-     "role": "planner",
      "round": 0,
+     "generatorStatus": null,
+     "evaluatorStatus": null,
+     "verdict": null,
+     "userFeedbackRounds": 0,
      "started": "YYYY-MM-DDTHH:MM:SSZ",
      "updated": "YYYY-MM-DDTHH:MM:SSZ"
    }
@@ -155,7 +158,8 @@ You are the Generator. Your job is to implement the spec faithfully and in a way
 
 ### Implementation Loop
 
-1. **Update State.json**: Set `"phase": "generation"`, `"role": "generator"`, `"generatorStatus": "working"`, increment `round` if this is a new round
+1. **Determine the round number**: Count existing files in `Gen/` directory. The next round is one more than the highest existing round. If no files exist, this is round 1.
+2. **Update State.json**: Set `"phase": "generation"`, `"generatorStatus": "working"`, `"round": N`, `"updated": "..."`. Only update YOUR fields (`generatorStatus`) — never overwrite `evaluatorStatus` (the Evaluator owns that field). Read-modify-write: read the full State.json first, update only your fields, write it back.
 2. **Implement** — work through the spec's acceptance criteria. Follow the project conventions from `HarnessKit/Roles/Generator.md`. Make commits at milestones if auto-commit is enabled in Config.json.
 3. **When done implementing**, write a report to `Gen/Round-NNN.md` that includes:
    - What was implemented/changed in this round
@@ -173,9 +177,9 @@ You are the Generator. Your job is to implement the spec faithfully and in a way
      "updated": "YYYY-MM-DDTHH:MM:SSZ"
    }
    ```
-5. **Wait for evaluation results**: Use a background bash command to watch for State.json changes:
+5. **Wait for evaluation results**: Use a background bash command to watch for State.json changes. Always use the absolute path to the mission folder:
    ```bash
-   watchman-wait HarnessKit/NNN-MissionName -p "State.json" --max-events 1 -t 600
+   watchman-wait "$(pwd)/HarnessKit/NNN-MissionName" -p "State.json" --max-events 1 -t 600
    ```
    When the file changes, read State.json. If `evaluatorStatus` is `"done"`, read `Eval/Round-NNN.md`.
 
@@ -184,7 +188,7 @@ You are the Generator. Your job is to implement the spec faithfully and in a way
 Read the evaluation findings in `Eval/Round-NNN.md`:
 
 - **If FAIL**: Read the specific failures. Go back to the implementation loop (Step 1) to address each issue. This is the next round.
-- **If PASS_WITH_GAPS**: Read the gaps. Decide whether to address them (usually yes). Go back to the implementation loop.
+- **If PASS_WITH_GAPS**: All acceptance criteria passed but the Evaluator noted non-critical issues. Proceed to the Review Briefing — include the gaps in the "what the user should test" section. The user decides whether to address them.
 - **If PASS**: Proceed to the Review Briefing.
 
 ### Review Briefing
@@ -217,10 +221,9 @@ Update State.json: `"phase": "user-review"`, `"generatorStatus": "awaiting-user"
 
 If the user provides feedback (rather than approving):
 
-1. Document the feedback in `UserFeedback/Round-NNN.md` — preserve the user's exact words, plus any clarifications
-2. Update State.json: `"phase": "generation"`, `"generatorStatus": "working"`, `"userFeedbackRound": N`
-3. Signal the Evaluator that a new round is starting (update State.json so `evaluatorStatus` resets to `"pending"`)
-4. Re-enter the Implementation Loop, treating the user feedback as additional requirements
+1. Document the feedback in `UserFeedback/Feedback-NNN.md` where NNN is the user feedback sequence (001, 002, ...). This is a SEPARATE numbering from Gen/Eval rounds. Preserve the user's exact words, plus any clarifications.
+2. Update State.json: `"phase": "generation"`, `"generatorStatus": "working"`, `"userFeedbackRounds": N` (increment the count), `"evaluatorStatus": "pending"`, `"updated": "..."`
+3. Re-enter the Implementation Loop, treating the user feedback as additional requirements. The next Gen/Eval round continues the overall round numbering.
 
 ### Mission Complete
 
@@ -252,18 +255,18 @@ You are the Evaluator. Your job is to verify the Generator's work against the sp
 If the generator is still working (`generatorStatus: "working"`), wait:
 
 ```bash
-watchman-wait HarnessKit/NNN-MissionName -p "State.json" --max-events 1 -t 600
+watchman-wait "$(pwd)/HarnessKit/NNN-MissionName" -p "State.json" --max-events 1 -t 600
 ```
 
 When State.json changes, re-read it. If `generatorStatus` is `"ready-for-eval"`, proceed to evaluation.
 
-If you are resuming after a crash and the state shows `evaluatorStatus: "waiting"`, re-enter the wait loop.
+If you are resuming after a crash and the state shows `evaluatorStatus: "pending"`, re-enter the wait loop.
 
 ### Evaluation Process
 
 **If single evaluator (or Evaluator A in a dual setup with no Evaluator B):**
 
-1. Update State.json: `"evaluatorStatus": "evaluating"`
+1. Update State.json: `"evaluatorStatus": "evaluating"`, `"updated": "..."`. Only update YOUR fields (`evaluatorStatus`, `verdict`) — never overwrite `generatorStatus`. Read-modify-write.
 2. Read `Gen/Round-NNN.md` — the Generator's report for this round
 3. Read any `UserFeedback/` files if this is a post-feedback round
 4. **Evaluate against every acceptance criterion in Spec.md:**
@@ -321,7 +324,7 @@ The user is continuing after a session restart, crash, or interruption.
    - If `phase: "generation"` and `generatorStatus: "working"`: resume as Generator
    - If `phase: "generation"` and `generatorStatus: "ready-for-eval"` or `phase: "evaluation"`: this might be the Generator waiting — re-enter the watch loop
    - If `phase: "evaluation"` and `evaluatorStatus: "evaluating"`: resume as Evaluator
-   - If `phase: "evaluation"` and `evaluatorStatus: "waiting"`: re-enter the Evaluator watch loop
+   - If `phase: "evaluation"` and `evaluatorStatus: "pending"`: re-enter the Evaluator watch loop
    - If `phase: "user-review"`: present the Review Briefing again or ask for feedback
    - If `phase: "complete"`: tell the user "Mission is complete. Start a new one?"
 5. Tell the user what you found and what you're resuming as. Then proceed with that role.
@@ -390,17 +393,33 @@ Generated when a mission is completed by the user:
 | `Spec.md` | Planner (or Planner A in dual setup) |
 | `Gen/Round-NNN.md` | Generator |
 | `Eval/Round-NNN.md` | Evaluator (or Evaluator A in dual setup) |
-| `UserFeedback/Round-NNN.md` | Generator (documents user's words) |
-| `State.json` | Whoever is transitioning state (Generator signals eval, Evaluator signals done) |
+| `UserFeedback/Feedback-NNN.md` | Generator (documents user's words) |
+| `State.json` | Both — but each role only updates ITS OWN fields (see State.json Ownership below) |
 | `Summary.md` | Generator (at mission completion) |
 | `Planning/*` | Respective planner (A or B writes their own files) |
 | `EvalDiscussion/*` | Respective evaluator (A or B writes their own files) |
 
+### State.json Ownership (Prevents Race Conditions)
+
+State.json is shared between Generator and Evaluator, but each role only updates its own fields:
+
+| Field | Owned By |
+|---|---|
+| `phase` | Whoever is transitioning (Generator sets "evaluation", Evaluator sets "generation" on FAIL) |
+| `generatorStatus` | Generator only |
+| `evaluatorStatus` | Evaluator only |
+| `verdict` | Evaluator only |
+| `round` | Generator only (increments when starting a new round) |
+| `userFeedbackRounds` | Generator only |
+| `updated` | Whoever writes last |
+
+**Always read-modify-write:** Read the full State.json, update only YOUR fields, write it back. Never construct State.json from scratch — you would overwrite the other role's fields.
+
 ### watchman-wait Usage
 
-Always use `watchman-wait` to watch for State.json changes instead of polling:
+Always use `watchman-wait` with absolute paths to watch for State.json changes:
 ```bash
-watchman-wait HarnessKit/NNN-MissionName -p "State.json" --max-events 1 -t 600
+watchman-wait "$(pwd)/HarnessKit/NNN-MissionName" -p "State.json" --max-events 1 -t 600
 ```
 
 If the timeout expires (10 minutes), re-check State.json and restart the watch. This handles cases where watchman-wait misses an event.
@@ -409,7 +428,9 @@ When running `watchman-wait`, use the Bash tool with `run_in_background: true` s
 
 ### Round Numbering
 
-Round numbers are **continuous across the entire mission**. If the first inner loop was 2 rounds (Gen-001, Eval-001 FAIL, Gen-002, Eval-002 PASS), and the user gives feedback, the next round is 003. This creates a clear timeline.
+**Gen/Eval rounds** are numbered **continuously across the entire mission**. If the first inner loop was 2 rounds (Gen-001, Eval-001 FAIL, Gen-002, Eval-002 PASS), and the user gives feedback, the next round is 003. This creates a clear timeline.
+
+**User feedback** uses a **separate numbering sequence** in `UserFeedback/Feedback-001.md`, `Feedback-002.md`, etc. This is distinct from Gen/Eval round numbers.
 
 ### Spec Immutability
 

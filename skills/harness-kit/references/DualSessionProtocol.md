@@ -15,8 +15,8 @@ Both sessions independently think about whether the user needs to clarify direct
 
 1. **Session A** writes questions (if any) to `UpfrontQuestions-A.md`
 2. **Session B** writes questions (if any) to `UpfrontQuestions-B.md`
-3. Both update State.json with their status: `"upfrontQuestionsDone": true`
-4. **Wait for each other**: Use `watchman-wait` on State.json until both are done
+3. Each updates their own status in State.json: `"sessionA": {"status": "upfront-done"}` / `"sessionB": {"status": "upfront-done"}`
+4. **Wait for each other**: Use `watchman-wait` on State.json until both sessions show `"upfront-done"`
 5. **Session A collects all questions** from both files. If there are questions, asks the user in its chat and documents answers in `UserAnswers.md`. If no questions from either session, A explicitly tells the user: "No upfront questions — I'll investigate first. You can step away."
 6. **Session A signals** the answers are ready by updating State.json: `"step": "parallel-investigation"`
 
@@ -110,7 +110,6 @@ After the spec draft is approved by both planners:
     "status": "investigating",
     "tool": "codex"
   },
-  "upfrontQuestionsDone": false,
   "discussionRound": 0,
   "draftRound": 0,
   "updated": "2026-03-31T14:30:00Z"
@@ -137,7 +136,7 @@ After the spec draft is approved by both planners:
 Use `watchman-wait` to block until the other session updates State.json:
 
 ```bash
-watchman-wait <path-to-protocol-folder> -p "State.json" --max-events 1 -t 600
+watchman-wait "$(pwd)/<path-to-protocol-folder>" -p "State.json" --max-events 1 -t 600
 ```
 
 Run this with `run_in_background: true` so the session stays responsive. When the background task completes, re-read State.json and determine if it's your turn.
