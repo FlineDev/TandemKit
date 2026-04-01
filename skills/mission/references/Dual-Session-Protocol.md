@@ -60,10 +60,10 @@ From here, sessions alternate messages. **A always goes first.**
 2. Update Coordination.json: `"messageRound": 3`. Update Status-A.json: `"status": "message-done"`
 3. **Session B** reads `03-Message-A.md`, responds in `04-Message-B.md`
 4. Update Coordination.json: `"messageRound": 4`. Update Status-B.json: `"status": "message-done"`
-5. Continue alternating until **both sessions agree 100% on every aspect**
-   - No skipping disagreements — everything must be explicitly resolved
+5. Continue alternating until **both sessions agree on all points**
    - Each message must state what is now agreed and what remains unresolved
    - When fully agreed, the last message states: "Full agreement reached on all points."
+   - **Deadlock prevention:** If agreement is not reached after **5 conversation exchanges** (10 messages total), stop the discussion. Session A writes the final document noting any unresolved disagreements and escalates to the user: "We couldn't agree on [X]. Here are both positions: [A's view] vs [B's view]. Which do you prefer?" The user decides.
 
 ### Step 5 — Documentation
 

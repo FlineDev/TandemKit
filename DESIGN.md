@@ -84,13 +84,13 @@ Each round's Generator and Evaluator files serve as checkpoints — even if cont
 - Polling with `stat`: Works everywhere but has 1-second resolution on macOS, wasteful
 - `kqwait`: Fastest (~1-5ms) but requires install, no cross-platform story
 - Hybrid (pipes + files): Too complex for no real benefit
-- Claude Code Agent Teams: Cloud/API-only, extra cost, not available in Claude Code Max, no Codex support
+- Claude Code Agent Teams: Experimental, no Codex support, reduced user visibility
 
 ### 2. No Claude Code Agent Teams
 
 **Decision:** Manual parallel sessions started by the user, not Agent Teams.
 
-**Why:** Agent Teams requires API billing (not included in Claude Code Max), cannot integrate with Codex, gives user less visibility and control.
+**Why:** Agent Teams are experimental (disabled by default), cannot integrate with Codex (the user's primary cross-tool requirement), and give the user less visibility into what each agent is doing. The user wants separate terminal panes they can observe side-by-side.
 
 ### 3. Codex compatibility as hard requirement
 

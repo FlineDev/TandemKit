@@ -36,6 +36,7 @@ the copyable content goes here, using full width, no forced line breaks
 5. **Do NOT over-explain HarnessKit itself.** The user knows what it is. Be concise and action-oriented.
 6. **Do NOT use AskUserQuestion for confirmations** that aren't real choices. If the user should simply continue or leave, say so in plain text. Reserve AskUserQuestion for actual multiple-choice decisions.
 7. **Reference files** are in the `references/` subfolder next to this SKILL.md file, within the plugin directory. They are NOT in the project's `HarnessKit/` folder.
+8. **Codex compatibility:** This skill references some Claude Code-specific tools (AskUserQuestion, /rename, claude-notify). If a tool is unavailable (e.g., in a Codex session), use the equivalent — ask questions in plain text, skip /rename, etc.
 
 ## Preamble — Detect Context
 
@@ -101,6 +102,7 @@ Only after the user approves the name:
    ```json
    {
      "phase": "planning",
+     "role": null,
      "round": 0,
      "generatorStatus": null,
      "evaluatorStatus": null,
@@ -260,21 +262,8 @@ You are the Generator. Your job is to implement the spec faithfully and in a way
    - Which files were created or modified
    - Any known gaps or uncertainties
    - What the evaluator should pay special attention to
-5. **Signal the Evaluator**: Update State.json:
-   ```json
-   {
-     "phase": "evaluation",
-     "generatorStatus": "ready-for-eval",
-     "evaluatorStatus": "pending",
-     "round": N,
-     "updated": "YYYY-MM-DDTHH:MM:SSZ"
-   }
-   ```
-6. **Wait for evaluation results**: Use a background bash command to watch for State.json changes. Always use the absolute path to the mission folder:
-   ```bash
-   watchman-wait "$(pwd)/HarnessKit/NNN-MissionName" -p "State.json" --max-events 1 -t 600
-   ```
-   When the file changes, read State.json. If `evaluatorStatus` is `"done"`, read `Evaluator/Round-NN.md`.
+5. **Signal the Evaluator**: Update State.json — set `generatorStatus: "ready-for-eval"`, `evaluatorStatus: "pending"`, `phase: "evaluation"`. Read-modify-write only your fields.
+6. **Wait for evaluation**: Use watchman-wait (see "Watching for State Changes" in Important Rules). When `evaluatorStatus` is `"done"`, read `Evaluator/Round-NN.md`.
 
 ### After Receiving Evaluation
 
@@ -345,15 +334,7 @@ You are the Evaluator. Your job is to verify the Generator's work against the sp
 
 ### Waiting for Generator
 
-If the generator is still working (`generatorStatus: "working"`), wait:
-
-```bash
-watchman-wait "$(pwd)/HarnessKit/NNN-MissionName" -p "State.json" --max-events 1 -t 600
-```
-
-When State.json changes, re-read it. If `generatorStatus` is `"ready-for-eval"`, proceed to evaluation.
-
-If you are resuming after a crash and the state shows `evaluatorStatus: "pending"`, re-enter the wait loop.
+If the generator is still working (`generatorStatus: "working"` or `evaluatorStatus: "pending"`), use watchman-wait (see "Watching for State Changes" in Important Rules). When `generatorStatus` is `"ready-for-eval"`, proceed to evaluation.
 
 ### Evaluation Process
 
@@ -419,87 +400,25 @@ You are the secondary Planner in a dual-planner setup. Read `references/Dual-Ses
 
 ## ROLE: Resumption
 
-The user is continuing after a session restart, crash, or interruption.
-
-1. Read `Config.json` to find `currentMission`
-2. If no current mission: tell the user "No active mission. Start a new one or ask about past missions."
-3. Read the mission's `State.json`
-4. Determine what this session was doing based on the state:
-   - If `phase: "planning"`: resume as Planner (re-read Spec.md draft if exists)
-   - If `phase: "generation"` and `generatorStatus: "working"`: resume as Generator
-   - If `phase: "generation"` and `generatorStatus: "ready-for-eval"` or `phase: "evaluation"`: this might be the Generator waiting — re-enter the watch loop
-   - If `phase: "evaluation"` and `evaluatorStatus: "evaluating"`: resume as Evaluator
-   - If `phase: "evaluation"` and `evaluatorStatus: "pending"`: re-enter the Evaluator watch loop
-   - If `phase: "user-review"`: present the Review Briefing again or ask for feedback
-   - If `phase: "complete"`: tell the user "Mission is complete. Start a new one?"
-5. Tell the user what you found and what you're resuming as. Then proceed with that role.
+Read `Config.json` → `State.json`. Determine role from state: `generatorStatus: "working"` → resume as Generator; `evaluatorStatus: "pending"` → re-enter Evaluator watch loop; `phase: "user-review"` → present Review Briefing; `phase: "complete"` → inform user. Tell the user what you found and resume.
 
 ---
 
 ## ROLE: Status
 
-Show the current state of the active mission.
-
-1. Read Config.json for `currentMission`
-2. If no current mission: list completed missions from numbered subfolders, read their Summary.md files
-3. If active mission:
-   - Read State.json
-   - Show: mission name, current phase, current round, who is working/waiting
-   - Show: how many Gen rounds, how many Eval rounds, any user feedback rounds
-   - Show: last update timestamp
+Read Config.json `currentMission`. If active: show mission name, phase, round, who's working/waiting. If none: list completed missions via Summary.md files.
 
 ---
 
 ## Abort Mission
 
-If the user says "abort mission" or "cancel the mission":
-
-1. Confirm: "Are you sure? This will mark mission NNN-MissionName as abandoned."
-2. If confirmed:
-   - Update State.json: `"phase": "abandoned"`, `"updated": "..."`
-   - Update Config.json: `"currentMission": null`
-   - If on a feature branch: switch back to the main branch. Do NOT delete the feature branch (the user may want the code changes).
-   - Tell the user: "Mission abandoned. The mission folder remains at HarnessKit/NNN-MissionName/ for reference. The feature branch [branch-name] still exists with any code changes."
-3. The mission folder stays as archive (phase: "abandoned"). It's never deleted automatically.
+If the user says "abort mission": confirm, then set State.json `phase: "abandoned"`, Config.json `currentMission: null`. If on a feature branch, switch back to main (don't delete the branch). The mission folder stays as archive.
 
 ---
 
 ## Summary.md Format
 
-Generated when a mission is completed by the user:
-
-```markdown
-# NNN-MissionName — Summary
-
-**Goal:** [one-line goal from Spec.md]
-**Started:** YYYY-MM-DD
-**Completed:** YYYY-MM-DD
-**Rounds:** N total (M AI iterations + K user feedback rounds)
-**Generator:** Claude Code
-**Evaluator(s):** [Claude Code / Codex / dual]
-
-## What Was Built
-[2-3 paragraph summary of the implementation]
-
-## Key Decisions
-- [Decision 1 — rationale]
-- [Decision 2 — rationale]
-
-## Evaluator Findings Addressed
-- Round 1: [issue] → [fix]
-- Round 2: [issue] → [fix]
-
-## User Feedback Addressed
-- Feedback 1: [what the user said] → [what was changed]
-
-## Files Changed
-- [file list with brief descriptions]
-
-## Acceptance Criteria Results
-1. [criterion] — PASS
-2. [criterion] — PASS
-...
-```
+See `references/Summary-Format.md` for the full template. Generated by the Generator when the user completes the mission.
 
 ---
 
@@ -524,6 +443,7 @@ State.json is shared between Generator and Evaluator, but each role only updates
 
 | Field | Owned By |
 |---|---|
+| `role` | Each session sets this to its role ("generator", "evaluator", "planner") on start — helps identify sessions during recovery |
 | `phase` | Whoever is transitioning (Generator sets "evaluation", Evaluator sets "generation" on FAIL) |
 | `generatorStatus` | Generator only |
 | `evaluatorStatus` | Evaluator only |
@@ -536,29 +456,16 @@ State.json is shared between Generator and Evaluator, but each role only updates
 
 ### Watching for State Changes
 
-**Construct the watch path from Config.json's location**, NOT from `git rev-parse --show-toplevel` (which breaks in submodule projects). Find `HarnessKit/Config.json` in the project, use its parent directory:
-
+Use `watchman-wait` with `$(pwd)` paths (NOT `git rev-parse` — breaks in submodules):
 ```bash
-HARNESS_DIR="$(pwd)/HarnessKit/NNN-MissionName"
-watchman-wait "$HARNESS_DIR" -p "State.json" --max-events 1 -t 600
+watchman-wait "$(pwd)/HarnessKit/NNN-MissionName" -p "State.json" --max-events 1 -t 600
 ```
 
-Run with `run_in_background: true` so the session stays responsive.
+Run with `run_in_background: true`. **After trigger, ALWAYS re-read State.json and verify the expected status** — intermediate writes may trigger early. If not ready, re-enter the watch loop.
 
-**After watchman-wait triggers, ALWAYS re-read State.json and verify the expected status.** `watchman-wait` triggers on ANY write to State.json, including intermediate status changes (e.g., `evaluatorStatus: "evaluating"` before `"done"`). If the expected status isn't set yet, re-enter the watch loop.
+**Fallback:** If watchman-wait fails repeatedly, use md5-hash polling: `while [ "$(md5 -q file)" = "$PREV" ]; do sleep 5; done`
 
-**Fallback if watchman-wait fails** (exit code 1 = error, exit code 2 = timeout):
-
-If `watchman-wait` fails repeatedly, fall back to md5-hash polling:
-```bash
-PREV_HASH=$(md5 -q HarnessKit/NNN-MissionName/State.json)
-while [ "$(md5 -q HarnessKit/NNN-MissionName/State.json)" = "$PREV_HASH" ]; do sleep 5; done
-echo "State.json changed"
-```
-
-This is less efficient but always works. Use it as a fallback, not the default.
-
-**MCP tool timeout guidance:** If any MCP tool call (mobile-mcp, Xcode MCP, etc.) hangs for more than 60 seconds without returning, interrupt it and try an alternative approach. Do not wait indefinitely.
+**MCP timeout:** If any MCP tool call hangs >60 seconds, interrupt and try alternatives.
 
 ### Round Numbering
 
@@ -578,63 +485,10 @@ Implementation code changes (the actual feature being built) ARE committed by th
 
 ---
 
-## Self-Learning — Automatic Documentation of Learnings
+## Self-Learning
 
-HarnessKit sessions continuously improve by documenting what they learn. This happens automatically — no need to ask the user for role-file updates.
-
-### What To Document
-
-- **Build/test commands** that work (or don't) for this project
-- **Tools that are effective** (or broken/unreliable) — e.g., "mobile-mcp hangs on Xcode 26, use ExecuteSnippet instead"
-- **Workarounds** for broken tools or infrastructure
-- **User corrections** — if the user corrects your approach, document it so it's never repeated. Highest priority.
-- **Evaluation approaches** that proved effective — e.g., "ExecuteSnippet with batch test cases is effective for algorithm verification"
-- **Project conventions** discovered during investigation that weren't documented before
-- **Repeated user feedback patterns** — if the user gives similar feedback multiple times, it's a persistent preference
-
-### Where To Document
-
-| Learning Type | Where | Ask User? |
-|---|---|---|
-| Evaluator-specific (tools, verification approaches, what to always check) | `HarnessKit/Evaluator.md` | No — update automatically |
-| Generator-specific (build conventions, commit patterns, code style) | `HarnessKit/Generator.md` | No — update automatically |
-| Planner-specific (investigation patterns, question strategies) | `HarnessKit/Planner.md` | No — update automatically |
-| Project-wide (benefits sessions NOT using HarnessKit too) | `AGENTS.md` | **Yes — explain why and ask first** |
-
-**Heuristic for AGENTS.md vs role files:** If a future session that is NOT using HarnessKit would benefit from knowing this, it belongs in AGENTS.md. If it only matters during HarnessKit missions, it belongs in the role file.
-
-### How To Document
-
-Append learnings to a `## Learnings` section at the bottom of the relevant role file. Use YYYY-MM-DD date format:
-
-```markdown
-## Learnings
-
-- **2026-04-01 Tool:** mobile-mcp hangs indefinitely on Xcode 26. Use Xcode MCP ExecuteSnippet for runtime verification instead.
-- **2026-04-01 User Feedback:** User wants runtime verification for ALL algorithm changes, not just UI changes. Code review alone is never sufficient.
-```
-
-**Before appending:** Check if a similar learning already exists. Update the existing entry rather than creating a duplicate.
-
-### When To Document
-
-Write learnings **after** writing your round report/verdict **and after** updating State.json. Learning documentation is a non-blocking post-processing step — the other session can proceed while you document.
-
-- **After each round** — if you discovered effective techniques or tools that failed
-- **After user feedback** — especially corrections to approach or style (highest priority)
-- **After tool failures** — document what broke and what worked instead
-- **After discovering undocumented project conventions** — save them for future sessions
-
-### Maintenance
-
-Periodically review the `## Learnings` section:
-- **Consolidate** established patterns into the main body of the role file (e.g., an effective build command moves to the "Build & Test" section)
-- **Remove** learnings that are no longer relevant (e.g., tool bugs that were fixed)
-- **Deduplicate** similar entries
-
-### AGENTS.md Updates (Require User Approval)
-
-If you discover something that benefits the project beyond HarnessKit:
-1. Explain in chat what you learned and why you think it belongs in AGENTS.md
-2. Ask: "I noticed [X]. Should I add this to AGENTS.md, or would you prefer it in HarnessKit/[Role].md?"
-3. Only edit AGENTS.md after explicit approval
+After each round and after user feedback, document learnings in the project's role files. Read `references/Self-Learning.md` for the full protocol. Key rules:
+- Update `HarnessKit/Evaluator.md`, `Generator.md`, or `Planner.md` automatically (no user approval needed)
+- For AGENTS.md: explain why and ask the user first
+- Write learnings AFTER your round report and State.json update (non-blocking)
+- Deduplicate before appending; periodically consolidate into the main role file body

@@ -40,6 +40,8 @@ Read `HarnessKit/Generator.md` for project-specific rules:
 
 ### Commit at Milestones
 
+**When staging files for milestone commits, only stage implementation code.** Never stage `HarnessKit/*.md` role files (Planner.md, Generator.md, Evaluator.md) — these are updated by the self-learning system and committed only at mission completion. Use `git add <specific-files>` rather than `git add .` or `git add -A`.
+
 If auto-commit is enabled in Config.json:
 - Commit after completing a logical chunk of work (e.g., data model done, core logic done, UI done)
 - Each commit should be buildable — don't commit broken code
