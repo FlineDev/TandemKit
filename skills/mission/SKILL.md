@@ -54,7 +54,7 @@ Determine your role from the user's prompt:
 |---|---|---|
 | "Let's use HarnessKit to [goal]" / "Start a mission for [goal]" / "New harness mission: [goal]" | **Planner** | Create new mission, start planning |
 | "You are the Generator for mission [name]" / "Generator for [name]" | **Generator** | Read spec, start implementing |
-| "You are the Evaluator for mission [name]" / "Evaluator for [name]" | **Evaluator A** | Read spec, wait for generator |
+| "You are the Evaluator for mission [name]" / "Evaluator for [name]" | **Evaluator** | Read spec, wait for generator (treated as Evaluator A only if a second evaluator joins) |
 | "You are Evaluator B for mission [name]" | **Evaluator B** | Read spec, wait for generator |
 | "You are Planner B for mission [name]" | **Planner B** | Read planning state, join dual-planner protocol |
 | "Continue" / "Where were we?" / "Resume" | **Resumption** | Read State.json, resume last role |
