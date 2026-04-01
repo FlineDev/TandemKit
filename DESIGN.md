@@ -454,12 +454,7 @@ HarnessKit/                              # The plugin repo
    - Skill checks State.json, sees role and state
    - Resumes (working or watching for the other session)
 
-**The generated prompts** are the key UX mechanism. The skill generates ready-to-paste text like:
-```
-You are the Generator for HarnessKit mission 001-JWTAuth.
-Read the spec and start implementing.
-```
-These prompts trigger the skill in the new session, which then reads the role from the prompt text and proceeds accordingly.
+**The generated prompts** are the key UX mechanism. The skill generates full CLI startup commands (with `-n` flag for session naming) and role prompts, presented in visually framed boxes (Variant 1: double-line box with uppercase label). Each session gets a descriptive name like `Generator: 001-JWTAuth` visible in the prompt bar, so the user can instantly distinguish terminal tabs. A `/rename` fallback is provided for reusing existing sessions.
 
 **Codex compatibility:** During init, a symlink is created from `.agents/skills/mission/` to the plugin's skill directory. When the user pastes an evaluator or planner prompt into Codex, the symlinked skill loads and follows the same instructions.
 

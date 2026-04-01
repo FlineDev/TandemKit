@@ -106,21 +106,17 @@ The Planner investigates, asks questions, and produces a Spec.md.
 
 ### 3. Launch Execution Sessions
 
-After planning, HarnessKit generates prompts to paste into new sessions:
+After planning, HarnessKit generates visually framed prompts with full CLI commands. For each role, open a new terminal:
 
-**Generator session:**
 ```
-You are the Generator for HarnessKit mission 001-JWTAuth.
-Read the spec and start implementing.
+claude -n "Generator: 001-JWTAuth" --plugin-dir /path/to/HarnessKit
 ```
 
-**Evaluator session:**
-```
-You are the Evaluator for HarnessKit mission 001-JWTAuth.
-Read the spec and wait for the Generator to signal ready.
-```
+Then paste the role prompt as your first message. Each session gets a descriptive name (visible in the prompt bar) so you can instantly tell your terminal tabs apart:
+- `Generator: 001-JWTAuth`
+- `Evaluator: 001-JWTAuth`
 
-Each session needs the HarnessKit plugin loaded. If using `--plugin-dir`, start each with `claude --plugin-dir /path/to/HarnessKit`. You can also reuse the Planner session as the Generator — clear/compact it and paste the Generator prompt.
+You can also reuse the Planner session — just `/rename Generator: 001-JWTAuth` and paste the prompt.
 
 The sessions coordinate automatically. You can walk away.
 

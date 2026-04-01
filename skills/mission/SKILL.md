@@ -23,7 +23,16 @@ Follow these rules throughout ALL interactions, regardless of role:
 1. **Ask questions ONE AT A TIME.** Before each question, write 2-3 sentences of context in chat explaining WHY this matters and what you recommend. Then use AskUserQuestion. Never batch multiple questions.
 2. **NEVER create files, folders, or modify Config.json until the user has explicitly approved.** Ask first, get confirmation, then act. This includes mission folders, State.json, Spec.md, and any other artifacts.
 3. **Present FULL content in chat before writing to disk.** When drafting Spec.md, show the complete text in chat first. Only write to file after the user says it's good. Never show just a summary.
-4. **Use clear visual framing** when presenting prompts or important content. Use horizontal rules (`---`) before and after prompt blocks, not indentation or blockquotes.
+4. **Use Variant 1 visual framing** when presenting copyable content (commands, prompts, /rename lines). The format is a double-line box with an UPPERCASE label in the top border, a code block inside, and a closing border:
+
+╔═══ UPPERCASE LABEL DESCRIBING WHAT THIS IS ══════════════════════════╗
+
+```
+the copyable content goes here, using full width, no forced line breaks
+```
+
+╚══════════════════════════════════════════════════════════════════════╝
+
 5. **Do NOT over-explain HarnessKit itself.** The user knows what it is. Be concise and action-oriented.
 6. **Do NOT use AskUserQuestion for confirmations** that aren't real choices. If the user should simply continue or leave, say so in plain text. Reserve AskUserQuestion for actual multiple-choice decisions.
 7. **Reference files** are in the `references/` subfolder next to this SKILL.md file, within the plugin directory. They are NOT in the project's `HarnessKit/` folder.
@@ -108,17 +117,35 @@ Explain briefly in chat: "You can plan with a single session (faster, simpler) o
 
 **If the user wants dual planning:**
 1. Read `references/Dual-Session-Protocol.md` for the full protocol
-2. Generate a prompt for the second planner session and present it with visual framing:
+2. Generate the startup command and prompt. Present with visual framing (Variant 1 box style):
 
----
-```
-You are Planner B for HarnessKit mission NNN-MissionName.
-Read HarnessKit/NNN-MissionName/ and HarnessKit/Planner.md,
-then join the planning process following the dual-session protocol.
-```
----
+╔═══ RUN IN NEW TERMINAL ══════════════════════════════════════════════╗
 
-3. Tell the user: "Open a new session (with `--plugin-dir` if not installed via marketplace) and paste this prompt. Say 'continue' here when ready."
+```
+claude -n "Planner B: NNN-MissionName" --plugin-dir /path/to/HarnessKit
+```
+
+╚══════════════════════════════════════════════════════════════════════╝
+
+╔═══ PASTE AS FIRST MESSAGE ═══════════════════════════════════════════╗
+
+```
+You are Planner B for HarnessKit mission NNN-MissionName. Read HarnessKit/NNN-MissionName/ and HarnessKit/Planner.md, then join the planning process following the dual-session protocol.
+```
+
+╚══════════════════════════════════════════════════════════════════════╝
+
+╔═══ OR RENAME EXISTING SESSION ═══════════════════════════════════════╗
+
+```
+/rename Planner B: NNN-MissionName
+```
+
+╚══════════════════════════════════════════════════════════════════════╝
+
+Replace `/path/to/HarnessKit` with the actual plugin path. If the plugin is installed via marketplace, omit the `--plugin-dir` flag entirely.
+
+3. Tell the user: "Open a new session, paste the prompt, and say 'continue' here when ready."
 4. Create `Planner-Conversation/` subfolder with `Coordination.json`, `Status-A.json`, and `Status-B.json`
 5. Follow the dual-session protocol (Steps 1-6 from Dual-Session-Protocol.md)
 
@@ -145,32 +172,57 @@ Once Spec.md is written to file:
 
 1. Explain in chat: "The Generator implements in one session, the Evaluator verifies in another with fresh eyes. You can use one or two evaluators — two evaluators using different models catch more issues." Then ask using AskUserQuestion: "How many evaluator sessions?"
 
-2. Generate prompts and present them with clear visual framing. Use horizontal rules before and after each prompt block. Use "You are" phrasing (these are instructions TO the AI in the other session). For single evaluator, use "the Evaluator" (no A/B suffix). For dual evaluators, use "Evaluator A" and "Evaluator B".
+2. Generate prompts and present them using Variant 1 box style. Use "You are" phrasing. For single evaluator, use "the Evaluator" (no A/B). For dual, use "Evaluator A" / "Evaluator B". Replace `/path/to/HarnessKit` with the actual plugin path. If installed via marketplace, omit `--plugin-dir`.
 
-**Generator prompt:**
+**Generator:**
 
----
+╔═══ RUN IN NEW TERMINAL ══════════════════════════════════════════════╗
+
 ```
-You are the Generator for HarnessKit mission NNN-MissionName.
-Read HarnessKit/NNN-MissionName/Spec.md and HarnessKit/Generator.md,
-then start implementing against the acceptance criteria.
+claude -n "Generator: NNN-MissionName" --plugin-dir /path/to/HarnessKit
 ```
----
 
-**Evaluator prompt (single):**
+╚══════════════════════════════════════════════════════════════════════╝
 
----
+╔═══ PASTE AS FIRST MESSAGE ═══════════════════════════════════════════╗
+
 ```
-You are the Evaluator for HarnessKit mission NNN-MissionName.
-Read HarnessKit/NNN-MissionName/Spec.md and HarnessKit/Evaluator.md,
-then wait for the Generator to signal ready for evaluation.
+You are the Generator for HarnessKit mission NNN-MissionName. Read HarnessKit/NNN-MissionName/Spec.md and HarnessKit/Generator.md, then start implementing against the acceptance criteria.
 ```
----
 
-**Evaluator A / Evaluator B prompts (if dual):** Same as above but with "Evaluator A" / "Evaluator B" to distinguish.
+╚══════════════════════════════════════════════════════════════════════╝
 
-3. Tell the user in plain text (not AskUserQuestion):
-   > "Open new sessions for each role (with `--plugin-dir` if not installed via marketplace). Paste the prompts. You can also clear/compact this session and reuse it as the Generator. The sessions coordinate automatically — you can step away."
+**Evaluator (single):**
+
+╔═══ RUN IN NEW TERMINAL ══════════════════════════════════════════════╗
+
+```
+claude -n "Evaluator: NNN-MissionName" --plugin-dir /path/to/HarnessKit
+```
+
+╚══════════════════════════════════════════════════════════════════════╝
+
+╔═══ PASTE AS FIRST MESSAGE ═══════════════════════════════════════════╗
+
+```
+You are the Evaluator for HarnessKit mission NNN-MissionName. Read HarnessKit/NNN-MissionName/Spec.md and HarnessKit/Evaluator.md, then wait for the Generator to signal ready for evaluation.
+```
+
+╚══════════════════════════════════════════════════════════════════════╝
+
+**If dual evaluators:** Generate two evaluator blocks with "Evaluator A" / "Evaluator B" in both the `-n` name and the prompt text.
+
+**For reusing an existing session** (e.g., the planner session as the Generator), also provide:
+
+╔═══ OR RENAME EXISTING SESSION ═══════════════════════════════════════╗
+
+```
+/rename Generator: NNN-MissionName
+```
+
+╚══════════════════════════════════════════════════════════════════════╝
+
+3. Tell the user in plain text: "Open the sessions, paste the prompts, and the sessions will coordinate automatically. You can step away."
 
 4. Update State.json: `"phase": "ready-for-execution"`
 
