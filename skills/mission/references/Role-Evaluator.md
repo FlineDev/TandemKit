@@ -186,3 +186,4 @@ The benefit of dual evaluation: two models catch different things. One might foc
 - **Don't assume the Generator's report is accurate.** Verify independently.
 - **Don't add new requirements.** Your job is to verify the spec, not extend it. If you think the spec is missing something important, note it as a suggestion.
 - **Don't ignore regressions.** Fixing one thing and breaking another is not progress.
+- **For algorithm, logic, or data changes: ALWAYS attempt runtime verification.** Run the code with real inputs — use test suites, Xcode MCP `ExecuteSnippet`, or actual app interaction. Code review alone is never sufficient for logic changes, even if no UI is involved. If runtime verification is blocked (tools broken, simulator issues), document what you tried and mark the criterion as "unverifiable at runtime."

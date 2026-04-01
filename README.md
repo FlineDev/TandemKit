@@ -109,14 +109,20 @@ The Planner investigates, asks questions, and produces a Spec.md.
 After planning, HarnessKit generates visually framed prompts with full CLI commands. For each role, open a new terminal:
 
 ```
-claude -n "Generator: 001-JWTAuth" --plugin-dir /path/to/HarnessKit
+claude --plugin-dir /path/to/HarnessKit
 ```
 
-Then paste the role prompt as your first message. Each session gets a descriptive name (visible in the prompt bar) so you can instantly tell your terminal tabs apart:
-- `Generator: 001-JWTAuth`
-- `Evaluator: 001-JWTAuth`
+Then rename the session and paste the role prompt:
+```
+/rename 🛠️ Generator: 001-JWTAuth
+```
 
-You can also reuse the Planner session — just `/rename Generator: 001-JWTAuth` and paste the prompt.
+Each session gets a descriptive name with an emoji prefix so you can instantly tell your terminal tabs apart:
+- 📝 `Planner: 001-JWTAuth`
+- 🛠️ `Generator: 001-JWTAuth`
+- 🔍 `Evaluator: 001-JWTAuth`
+
+The prompts explicitly instruct the session to load the HarnessKit skill, which governs the full coordination protocol.
 
 The sessions coordinate automatically. You can walk away.
 

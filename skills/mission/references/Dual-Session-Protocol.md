@@ -169,11 +169,14 @@ During parallel phases (Steps 1-3), both sessions work simultaneously and signal
 To detect when the other session finishes, watch the conversation folder for ANY file change:
 
 ```bash
-GIT_ROOT=$(git rev-parse --show-toplevel)
-watchman-wait "$GIT_ROOT/<path-to-conversation-folder>" -p "Status-A.json" -p "Status-B.json" -p "Coordination.json" --max-events 1 -t 600
+watchman-wait "$(pwd)/<path-to-conversation-folder>" -p "Status-A.json" -p "Status-B.json" -p "Coordination.json" --max-events 1 -t 600
 ```
 
 Run this with `run_in_background: true` so the session stays responsive. When a file changes, read both Status-A.json and Status-B.json (and Coordination.json for sequential phases) to determine if it's your turn.
+
+**After watchman-wait triggers, always verify the expected status** — intermediate writes may trigger the watch early. If the expected status isn't set, re-enter the watch loop.
+
+**Fallback:** If watchman-wait fails repeatedly (wrong path, timeouts), use md5-hash polling: `while [ "$(md5 -q file)" = "$PREV" ]; do sleep 5; done`
 
 If the timeout expires (10 minutes), re-read all status files anyway and restart the watch if still waiting.
 

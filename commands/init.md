@@ -188,6 +188,10 @@ HarnessKit/
 
 Populate each with project-specific context based on your investigation findings and the user's answers. Use the appropriate Evaluation-Strategy reference as a template for the Evaluator.md.
 
+### Verify Build Commands
+
+After creating Evaluator.md with build/test commands, **run the build command once** to verify it works. If it fails (wrong scheme, wrong destination, missing dependencies), fix the command in Evaluator.md and Generator.md before proceeding. The user should not discover broken build commands during the first mission.
+
 ## Step 6 — Update .gitignore (If User Agreed)
 
 Only if the user said yes in Question 6. Add the entries they approved.

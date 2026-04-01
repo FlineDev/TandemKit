@@ -111,7 +111,7 @@ When the Evaluator says PASS, you present a Review Briefing to the user. This is
    - AI evaluation rounds: N (M FAIL, K PASS)
    - User feedback rounds: N (if any)
 
-3. **Issues found and fixed** — only mention significant ones the user would care about:
+3. **Evaluator Findings Addressed** — only mention significant ones the user would care about:
    - "The Evaluator found that refresh tokens weren't invalidated on password change — this is now fixed"
    - Don't list every minor code fix
 

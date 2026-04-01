@@ -273,7 +273,7 @@ HarnessKit/
 │   └── Evaluator/                 # (evaluator currently working)
 ```
 
-**Summary.md** is auto-generated when a mission reaches PASS. It captures: goal, dates, round count, roles used, key decisions, issues found & fixed, files changed. The skill reads Summary.md files when the user asks "what have we worked on?"
+**Summary.md** is auto-generated when a mission reaches PASS. It captures: goal, dates, round count, roles used, key decisions, evaluator findings addressed, files changed. The skill reads Summary.md files when the user asks "what have we worked on?"
 
 **Alternatives considered:**
 - Date-prefixed folders (`2026-03-31_AuthModule`): Longer names, disambiguation needed for same-day missions, not consistent with PlanKit
@@ -546,7 +546,7 @@ When the Evaluator says PASS, the Generator session presents a **Review Briefing
 
 1. **What was done** — high-level summary of the implementation
 2. **Stats** — files created/changed, lines of code, number of Generator/Evaluator rounds, number of user feedback rounds (if any)
-3. **Issues found and fixed** — significant bugs or problems the Evaluator caught and the Generator fixed
+3. **Evaluator Findings Addressed** — significant bugs or problems the Evaluator caught and the Generator fixed
 4. **Key decisions made** — architectural or implementation choices the Generator made
 5. **What the user should test** — specific things to check manually, with clear instructions:
    - "Open the app and navigate to Settings → Auth"

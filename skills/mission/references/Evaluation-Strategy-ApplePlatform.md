@@ -30,7 +30,22 @@ The Xcode MCP requires Xcode to be open with the project loaded. When starting a
 
 **Limitation:** Cannot run the app, interact with UI, or control the simulator. Only build, test, and preview.
 
-### Tier 2 — iOS Simulator Interaction (Recommended)
+### Tier 1.5 — Runtime Code Verification via ExecuteSnippet
+
+Xcode MCP's `ExecuteSnippet` tool compiles and runs a Swift code snippet in the project's context. This is extremely powerful for verifying algorithm and logic changes without needing a running app or simulator:
+
+- Test functions directly with real inputs
+- Compare optimized vs. original implementations
+- Run hundreds of test cases programmatically
+- Verify edge cases and boundary conditions
+
+**When to use:** For any algorithm, logic, or data model change where you need runtime verification but UI interaction isn't required. This was the most effective verification tool discovered during testing — it validated 430 test cases in one run.
+
+**Limitation:** Requires Xcode to be open with the project loaded. Cannot interact with UI.
+
+### Tier 2 — iOS Simulator Interaction
+
+**Known issue (as of 2026-04):** mobile-mcp's WebDriverAgent may be incompatible with the latest Xcode versions. If MCP tool calls hang for more than 60 seconds, abandon and use Tier 1/1.5 tools instead. Also, iOS simulator rendering bugs can cause blank white screens on recent beta simulators — try older simulator runtimes before concluding the app is broken.
 
 Two main options for interacting with apps running in the iOS Simulator:
 

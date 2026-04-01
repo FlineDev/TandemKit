@@ -119,10 +119,18 @@ Explain briefly in chat: "You can plan with a single session (faster, simpler) o
 1. Read `references/Dual-Session-Protocol.md` for the full protocol
 2. Generate the startup command and prompt. Present with visual framing (Variant 1 box style):
 
-╔═══ RUN IN NEW TERMINAL ══════════════════════════════════════════════╗
+╔═══ RENAME SESSION (paste first) ═════════════════════════════════════╗
 
 ```
-claude -n "Planner B: NNN-MissionName" --plugin-dir /path/to/HarnessKit
+/rename 📝 Planner B: NNN-MissionName
+```
+
+╚══════════════════════════════════════════════════════════════════════╝
+
+╔═══ RUN IN NEW TERMINAL (if starting fresh) ══════════════════════════╗
+
+```
+claude --plugin-dir /path/to/HarnessKit
 ```
 
 ╚══════════════════════════════════════════════════════════════════════╝
@@ -130,20 +138,12 @@ claude -n "Planner B: NNN-MissionName" --plugin-dir /path/to/HarnessKit
 ╔═══ PASTE AS FIRST MESSAGE ═══════════════════════════════════════════╗
 
 ```
-You are Planner B for HarnessKit mission NNN-MissionName. Read HarnessKit/NNN-MissionName/ and HarnessKit/Planner.md, then join the planning process following the dual-session protocol.
+📝 You are Planner B for HarnessKit mission NNN-MissionName. First, load the harness-kit:mission skill and follow the Planner B protocol. Then read the mission folder and join the planning process.
 ```
 
 ╚══════════════════════════════════════════════════════════════════════╝
 
-╔═══ OR RENAME EXISTING SESSION ═══════════════════════════════════════╗
-
-```
-/rename Planner B: NNN-MissionName
-```
-
-╚══════════════════════════════════════════════════════════════════════╝
-
-Replace `/path/to/HarnessKit` with the actual plugin path. If the plugin is installed via marketplace, omit the `--plugin-dir` flag entirely.
+Replace `/path/to/HarnessKit` with the actual plugin path. If installed via marketplace, omit `--plugin-dir`.
 
 3. Tell the user: "Open a new session, paste the prompt, and say 'continue' here when ready."
 4. Create `Planner-Conversation/` subfolder with `Coordination.json`, `Status-A.json`, and `Status-B.json`
@@ -172,14 +172,22 @@ Once Spec.md is written to file:
 
 1. Explain in chat: "The Generator implements in one session, the Evaluator verifies in another with fresh eyes. You can use one or two evaluators — two evaluators using different models catch more issues." Then ask using AskUserQuestion: "How many evaluator sessions?"
 
-2. Generate prompts and present them using Variant 1 box style. Use "You are" phrasing. For single evaluator, use "the Evaluator" (no A/B). For dual, use "Evaluator A" / "Evaluator B". Replace `/path/to/HarnessKit` with the actual plugin path. If installed via marketplace, omit `--plugin-dir`.
+2. Generate prompts and present them using Variant 1 box style. Use "You are" phrasing. For single evaluator, use "the Evaluator" (no A/B). For dual, use "Evaluator A" / "Evaluator B". Include emoji prefixes: 📝 Planner, 🛠️ Generator, 🔍 Evaluator. Replace `/path/to/HarnessKit` with the actual plugin path. If installed via marketplace, omit `--plugin-dir`. The `-n` flag for session naming is unreliable — always provide `/rename` as the primary method.
 
 **Generator:**
 
-╔═══ RUN IN NEW TERMINAL ══════════════════════════════════════════════╗
+╔═══ RENAME SESSION (paste first) ═════════════════════════════════════╗
 
 ```
-claude -n "Generator: NNN-MissionName" --plugin-dir /path/to/HarnessKit
+/rename 🛠️ Generator: NNN-MissionName
+```
+
+╚══════════════════════════════════════════════════════════════════════╝
+
+╔═══ RUN IN NEW TERMINAL (if starting fresh) ══════════════════════════╗
+
+```
+claude --plugin-dir /path/to/HarnessKit
 ```
 
 ╚══════════════════════════════════════════════════════════════════════╝
@@ -187,17 +195,25 @@ claude -n "Generator: NNN-MissionName" --plugin-dir /path/to/HarnessKit
 ╔═══ PASTE AS FIRST MESSAGE ═══════════════════════════════════════════╗
 
 ```
-You are the Generator for HarnessKit mission NNN-MissionName. Read HarnessKit/NNN-MissionName/Spec.md and HarnessKit/Generator.md, then start implementing against the acceptance criteria.
+🛠️ You are the Generator for HarnessKit mission NNN-MissionName. First, load the harness-kit:mission skill and follow the Generator protocol. Then read the Spec and start implementing.
 ```
 
 ╚══════════════════════════════════════════════════════════════════════╝
 
 **Evaluator (single):**
 
-╔═══ RUN IN NEW TERMINAL ══════════════════════════════════════════════╗
+╔═══ RENAME SESSION (paste first) ═════════════════════════════════════╗
 
 ```
-claude -n "Evaluator: NNN-MissionName" --plugin-dir /path/to/HarnessKit
+/rename 🔍 Evaluator: NNN-MissionName
+```
+
+╚══════════════════════════════════════════════════════════════════════╝
+
+╔═══ RUN IN NEW TERMINAL (if starting fresh) ══════════════════════════╗
+
+```
+claude --plugin-dir /path/to/HarnessKit
 ```
 
 ╚══════════════════════════════════════════════════════════════════════╝
@@ -205,24 +221,14 @@ claude -n "Evaluator: NNN-MissionName" --plugin-dir /path/to/HarnessKit
 ╔═══ PASTE AS FIRST MESSAGE ═══════════════════════════════════════════╗
 
 ```
-You are the Evaluator for HarnessKit mission NNN-MissionName. Read HarnessKit/NNN-MissionName/Spec.md and HarnessKit/Evaluator.md, then wait for the Generator to signal ready for evaluation.
+🔍 You are the Evaluator for HarnessKit mission NNN-MissionName. First, load the harness-kit:mission skill and follow the Evaluator protocol. Then read the Spec and wait for the Generator to signal ready.
 ```
 
 ╚══════════════════════════════════════════════════════════════════════╝
 
 **If dual evaluators:** Generate two evaluator blocks with "Evaluator A" / "Evaluator B" in both the `-n` name and the prompt text.
 
-**For reusing an existing session** (e.g., the planner session as the Generator), also provide:
-
-╔═══ OR RENAME EXISTING SESSION ═══════════════════════════════════════╗
-
-```
-/rename Generator: NNN-MissionName
-```
-
-╚══════════════════════════════════════════════════════════════════════╝
-
-3. Tell the user in plain text: "Open the sessions, paste the prompts, and the sessions will coordinate automatically. You can step away."
+3. Tell the user in plain text: "Open the sessions, rename them, paste the prompts, and they'll coordinate automatically. You can step away."
 
 4. Update State.json: `"phase": "ready-for-execution"`
 
@@ -264,7 +270,7 @@ You are the Generator. Your job is to implement the spec faithfully and in a way
    ```
 6. **Wait for evaluation results**: Use a background bash command to watch for State.json changes. Always use the absolute path to the mission folder:
    ```bash
-   GIT_ROOT=$(git rev-parse --show-toplevel) && watchman-wait "$GIT_ROOT/HarnessKit/NNN-MissionName" -p "State.json" --max-events 1 -t 600
+   watchman-wait "$(pwd)/HarnessKit/NNN-MissionName" -p "State.json" --max-events 1 -t 600
    ```
    When the file changes, read State.json. If `evaluatorStatus` is `"done"`, read `Evaluator/Round-NN.md`.
 
@@ -284,7 +290,7 @@ The Review Briefing includes:
 
 1. **What was done** — high-level summary of the implementation
 2. **Stats** — files created/changed, number of Generator/Evaluator rounds, user feedback rounds (if any)
-3. **Issues found and fixed** — significant bugs the Evaluator caught and you fixed
+3. **Evaluator Findings Addressed** — significant bugs the Evaluator caught and you fixed
 4. **Key decisions made** — architectural or implementation choices you made during generation
 5. **What the user should test** — specific manual test steps:
    - Clear instructions like "Open the app and navigate to X"
@@ -340,7 +346,7 @@ You are the Evaluator. Your job is to verify the Generator's work against the sp
 If the generator is still working (`generatorStatus: "working"`), wait:
 
 ```bash
-GIT_ROOT=$(git rev-parse --show-toplevel) && watchman-wait "$GIT_ROOT/HarnessKit/NNN-MissionName" -p "State.json" --max-events 1 -t 600
+watchman-wait "$(pwd)/HarnessKit/NNN-MissionName" -p "State.json" --max-events 1 -t 600
 ```
 
 When State.json changes, re-read it. If `generatorStatus` is `"ready-for-eval"`, proceed to evaluation.
@@ -369,6 +375,18 @@ If you are resuming after a crash and the state shows `evaluatorStatus: "pending
 6. Update State.json: `"evaluatorStatus": "done"`, `"verdict": "PASS|PASS_WITH_GAPS|FAIL"`
 
 **If dual evaluators:** Follow the dual-session protocol in `references/Dual-Session-Protocol.md`. Both evaluators investigate independently, then cross-review and discuss until consensus. Evaluator A writes the final `Evaluator/Round-NN.md`. The `Evaluator/Round-NN-Conversation/` folder holds the intermediate files.
+
+### After Writing Verdict — Keep Watching
+
+**Do NOT go idle after writing the verdict.** The user may give feedback that triggers another round. After writing your verdict:
+
+1. Inform the user of the verdict in chat (summarize findings)
+2. **Re-enter the watch loop** — watch for State.json changes
+3. If `evaluatorStatus` changes back to `"pending"` (meaning the Generator started a new round after user feedback): proceed with a new evaluation round
+4. If `phase` changes to `"complete"`: the mission is done, you can stop
+5. If `phase` changes to `"user-review"`: the Generator is presenting the Review Briefing, keep watching in case user feedback triggers another round
+
+**This ensures the Evaluator is always available for additional rounds** without the user having to manually relay instructions.
 
 ### Evaluation Principles
 
@@ -465,7 +483,7 @@ Generated when a mission is completed by the user:
 - [Decision 1 — rationale]
 - [Decision 2 — rationale]
 
-## Issues Found & Fixed
+## Evaluator Findings Addressed
 - Round 1: [issue] → [fix]
 - Round 2: [issue] → [fix]
 
@@ -514,16 +532,31 @@ State.json is shared between Generator and Evaluator, but each role only updates
 
 **Always read-modify-write:** Read the full State.json, update only YOUR fields, write it back. Never construct State.json from scratch — you would overwrite the other role's fields.
 
-### watchman-wait Usage
+### Watching for State Changes
 
-Always use `watchman-wait` with absolute paths to watch for State.json changes:
+**Construct the watch path from Config.json's location**, NOT from `git rev-parse --show-toplevel` (which breaks in submodule projects). Find `HarnessKit/Config.json` in the project, use its parent directory:
+
 ```bash
-GIT_ROOT=$(git rev-parse --show-toplevel) && watchman-wait "$GIT_ROOT/HarnessKit/NNN-MissionName" -p "State.json" --max-events 1 -t 600
+HARNESS_DIR="$(pwd)/HarnessKit/NNN-MissionName"
+watchman-wait "$HARNESS_DIR" -p "State.json" --max-events 1 -t 600
 ```
 
-If the timeout expires (10 minutes), re-check State.json and restart the watch. This handles cases where watchman-wait misses an event.
+Run with `run_in_background: true` so the session stays responsive.
 
-When running `watchman-wait`, use the Bash tool with `run_in_background: true` so the session stays responsive. When the background task completes (file changed or timeout), read State.json and decide what to do next.
+**After watchman-wait triggers, ALWAYS re-read State.json and verify the expected status.** `watchman-wait` triggers on ANY write to State.json, including intermediate status changes (e.g., `evaluatorStatus: "evaluating"` before `"done"`). If the expected status isn't set yet, re-enter the watch loop.
+
+**Fallback if watchman-wait fails** (exit code 1 = error, exit code 2 = timeout):
+
+If `watchman-wait` fails repeatedly, fall back to md5-hash polling:
+```bash
+PREV_HASH=$(md5 -q HarnessKit/NNN-MissionName/State.json)
+while [ "$(md5 -q HarnessKit/NNN-MissionName/State.json)" = "$PREV_HASH" ]; do sleep 5; done
+echo "State.json changed"
+```
+
+This is less efficient but always works. Use it as a fallback, not the default.
+
+**MCP tool timeout guidance:** If any MCP tool call (mobile-mcp, Xcode MCP, etc.) hangs for more than 60 seconds without returning, interrupt it and try an alternative approach. Do not wait indefinitely.
 
 ### Round Numbering
 
