@@ -202,7 +202,7 @@ First, detect if the plugin was loaded via marketplace (cache) or `--plugin-dir`
 
 ```bash
 # Check if marketplace cache exists
-CACHE_PATH=$(find ~/.claude/plugins/cache -path '*/harness-kit/skills/harness-kit' -type d 2>/dev/null | sort -V | tail -1)
+CACHE_PATH=$(find ~/.claude/plugins/cache -path '*/harness-kit/skills/mission' -type d 2>/dev/null | sort -V | tail -1)
 ```
 
 - If `CACHE_PATH` is found: use it for the symlink
@@ -210,10 +210,10 @@ CACHE_PATH=$(find ~/.claude/plugins/cache -path '*/harness-kit/skills/harness-ki
 
 ```bash
 mkdir -p .agents/skills
-ln -sf "<resolved-path>" .agents/skills/harness-kit
+ln -sf "<resolved-path>" .agents/skills/mission
 ```
 
-Add `.agents/skills/harness-kit` to `.gitignore` (this symlink is machine-specific and should not be committed). Document the symlink setup command in `AGENTS.md` so collaborators can recreate it.
+Add `.agents/skills/mission` to `.gitignore` (this symlink is machine-specific and should not be committed). Document the symlink setup command in `AGENTS.md` so collaborators can recreate it.
 
 If Codex MCP servers need configuring, update `~/.codex/config.toml` with the appropriate MCP server entries and auto-approval rules.
 

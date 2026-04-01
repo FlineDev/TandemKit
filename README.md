@@ -110,14 +110,14 @@ After planning, HarnessKit generates prompts to paste into new sessions:
 
 **Generator session:**
 ```
-HarnessKit: I'm the Generator for mission 001-JWTAuth.
+You are the Generator for HarnessKit mission 001-JWTAuth.
 Read the spec and start implementing.
 ```
 
 **Evaluator session:**
 ```
-HarnessKit: I'm Evaluator A for mission 001-JWTAuth.
-Read the spec and wait for the generator to signal ready.
+You are the Evaluator for HarnessKit mission 001-JWTAuth.
+Read the spec and wait for the Generator to signal ready.
 ```
 
 Each session needs the HarnessKit plugin loaded. If using `--plugin-dir`, start each with `claude --plugin-dir /path/to/HarnessKit`. You can also reuse the Planner session as the Generator — clear/compact it and paste the Generator prompt.
@@ -167,7 +167,7 @@ HarnessKit/
 ├── commands/
 │   └── init.md                    # /harness-kit:init
 ├── skills/
-│   └── harness-kit/
+│   └── mission/
 │       ├── SKILL.md               # The orchestration skill
 │       └── references/
 │           ├── Role-Planner.md

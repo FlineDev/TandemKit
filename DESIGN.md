@@ -357,7 +357,7 @@ HarnessKit/
 
 **Reference documents** live under the main skill (used by both init and runtime):
 ```
-skills/harness-kit/references/
+skills/mission/references/
 ├── Role-Planner.md                   # General planner knowledge
 ├── Role-Generator.md                 # General generator knowledge
 ├── Role-Evaluator.md                 # General evaluator knowledge
@@ -391,7 +391,7 @@ skills/harness-kit/references/
 
 1. **`init` command** (`commands/init.md`) — user runs `/harness-kit:init` once per project. Never auto-loads. Handles project investigation, user Q&A, tool installation, and populating `HarnessKit/` role files.
 
-2. **`harness-kit` skill** (`skills/harness-kit/SKILL.md`) — auto-triggers when user mentions HarnessKit, missions, etc. Contains ALL orchestration logic: planning, generation, evaluation, coordination, resumption. Role-specific references are read conditionally based on which role this session has.
+2. **`harness-kit` skill** (`skills/mission/SKILL.md`) — auto-triggers when user mentions HarnessKit, missions, etc. Contains ALL orchestration logic: planning, generation, evaluation, coordination, resumption. Role-specific references are read conditionally based on which role this session has.
 
 **Plugin directory structure:**
 ```
@@ -424,8 +424,8 @@ HarnessKit/                              # The plugin repo
 
 **How the skill determines the role:**
 - "Let's use HarnessKit to work on X" → Planner (new mission)
-- "I'm the Generator for mission X" (pasted prompt) → Generator
-- "I'm Evaluator A for mission X" (pasted prompt) → Evaluator
+- "You are the Generator for mission X" (pasted prompt) → Generator
+- "You are the Evaluator for mission X" (pasted prompt) → Evaluator
 - "Continue" / resumption → Check State.json, resume last role
 
 **How the skill reads role-specific context:**
@@ -456,12 +456,12 @@ HarnessKit/                              # The plugin repo
 
 **The generated prompts** are the key UX mechanism. The skill generates ready-to-paste text like:
 ```
-HarnessKit: I'm the Generator for mission 001-JWTAuth.
+You are the Generator for HarnessKit mission 001-JWTAuth.
 Read the spec and start implementing.
 ```
 These prompts trigger the skill in the new session, which then reads the role from the prompt text and proceeds accordingly.
 
-**Codex compatibility:** During init, a symlink is created from `.agents/skills/harness-kit/` to the plugin's skill directory. When the user pastes an evaluator or planner prompt into Codex, the symlinked skill loads and follows the same instructions.
+**Codex compatibility:** During init, a symlink is created from `.agents/skills/mission/` to the plugin's skill directory. When the user pastes an evaluator or planner prompt into Codex, the symlinked skill loads and follows the same instructions.
 
 **Alternatives considered:**
 - Separate skills per role (harness-plan, harness-generate, harness-eval): More commands to remember, harder to maintain, role-specific logic better handled by conditional reference loading

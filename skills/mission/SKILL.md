@@ -1,5 +1,5 @@
 ---
-name: harness-kit
+name: mission
 description: >
   Orchestrate Planner/Generator/Evaluator workflows across parallel sessions
   with file-based coordination. Use when the user wants to start a HarnessKit
@@ -15,6 +15,18 @@ description: >
 # HarnessKit — Planner / Generator / Evaluator Orchestration
 
 Coordinate parallel sessions for structured implementation and evaluation. Based on Anthropic's March 2026 harness architecture (Planner/Generator/Evaluator).
+
+## Important UX Rules
+
+Follow these rules throughout ALL interactions, regardless of role:
+
+1. **Ask questions ONE AT A TIME.** Before each question, write 2-3 sentences of context in chat explaining WHY this matters and what you recommend. Then use AskUserQuestion. Never batch multiple questions.
+2. **NEVER create files, folders, or modify Config.json until the user has explicitly approved.** Ask first, get confirmation, then act. This includes mission folders, State.json, Spec.md, and any other artifacts.
+3. **Present FULL content in chat before writing to disk.** When drafting Spec.md, show the complete text in chat first. Only write to file after the user says it's good. Never show just a summary.
+4. **Use clear visual framing** when presenting prompts or important content. Use horizontal rules (`---`) before and after prompt blocks, not indentation or blockquotes.
+5. **Do NOT over-explain HarnessKit itself.** The user knows what it is. Be concise and action-oriented.
+6. **Do NOT use AskUserQuestion for confirmations** that aren't real choices. If the user should simply continue or leave, say so in plain text. Reserve AskUserQuestion for actual multiple-choice decisions.
+7. **Reference files** are in the `references/` subfolder next to this SKILL.md file, within the plugin directory. They are NOT in the project's `HarnessKit/` folder.
 
 ## Preamble — Detect Context
 
@@ -32,10 +44,10 @@ Determine your role from the user's prompt:
 | User says | Role | Action |
 |---|---|---|
 | "Let's use HarnessKit to [goal]" / "Start a mission for [goal]" / "New harness mission: [goal]" | **Planner** | Create new mission, start planning |
-| "I'm the Generator for mission [name]" / "Generator for [name]" | **Generator** | Read spec, start implementing |
-| "I'm Evaluator A for mission [name]" / "Evaluator for [name]" | **Evaluator A** | Read spec, wait for generator |
-| "I'm Evaluator B for mission [name]" | **Evaluator B** | Read spec, wait for generator |
-| "I'm Planner B for mission [name]" | **Planner B** | Read planning state, join dual-planner protocol |
+| "You are the Generator for mission [name]" / "Generator for [name]" | **Generator** | Read spec, start implementing |
+| "You are the Evaluator for mission [name]" / "Evaluator for [name]" | **Evaluator A** | Read spec, wait for generator |
+| "You are Evaluator B for mission [name]" | **Evaluator B** | Read spec, wait for generator |
+| "You are Planner B for mission [name]" | **Planner B** | Read planning state, join dual-planner protocol |
 | "Continue" / "Where were we?" / "Resume" | **Resumption** | Read State.json, resume last role |
 | "What's the status?" / "Mission status" | **Status** | Show current mission state |
 | User gives feedback after a Review Briefing | **User Feedback** | Document feedback, resume inner loop |
@@ -61,12 +73,20 @@ Check Config.json `currentMission`. If it's not `null`, there's already an activ
 
 Do NOT create a new mission while another is active.
 
-### Step 1 — Create the Mission
+### Step 1 — Mission Name
 
-1. Read `nextMissionNumber` from Config.json
-2. Ask the user for a short PascalCase name for the mission (e.g., "JWTAuth", "SettingsRefactor"). Suggest one based on their goal.
-3. Create the mission folder: `HarnessKit/NNN-MissionName/`
-4. Create `State.json` with initial state:
+Read `nextMissionNumber` from Config.json. Suggest a short PascalCase name based on the user's goal. Explain your suggestion in chat, then ask using AskUserQuestion:
+
+> "I'd suggest **NNN-SuggestedName** for this mission. What name would you like?"
+
+**Wait for the user to confirm.** Do NOT create any folders or files until they approve the name.
+
+### Step 1b — Create the Mission (After User Confirms Name)
+
+Only after the user approves the name:
+
+1. Create the mission folder: `HarnessKit/NNN-MissionName/` (just the folder, no subfolders — `Generator/`, `Evaluator/`, `UserFeedback/` are created on-demand when the first file is written)
+2. Create `State.json`:
    ```json
    {
      "phase": "planning",
@@ -79,24 +99,27 @@ Do NOT create a new mission while another is active.
      "updated": "YYYY-MM-DDTHH:MM:SSZ"
    }
    ```
-5. Update Config.json: set `currentMission` to the folder name, increment `nextMissionNumber`
-6. If git feature branches are enabled: create and switch to a branch named after the mission (lowercase, dashes, e.g., `001-jwt-auth`)
+3. Update Config.json: set `currentMission` to the folder name, increment `nextMissionNumber`
+4. If git feature branches are enabled: create and switch to a branch named after the mission (lowercase, dashes, e.g., `001-jwt-auth`)
 
 ### Step 2 — Ask About Dual Planning
 
-Ask the user:
-
-> "Do you want to plan this mission with a parallel session? Using two planners (e.g., Claude + Codex) provides diverse investigation — different models find different things. If yes, I'll generate a prompt for the second session."
+Explain briefly in chat: "You can plan with a single session (faster, simpler) or with two parallel sessions using different models for diverse investigation." Then ask using AskUserQuestion.
 
 **If the user wants dual planning:**
 1. Read `references/Dual-Session-Protocol.md` for the full protocol
-2. Generate a prompt for the second planner session:
-   ```
-   HarnessKit: I'm Planner B for mission NNN-MissionName.
-   Read the planning state and join the planning process.
-   ```
-3. Present this to the user: "Please open a new session and paste this prompt. Once you've done that, say 'continue' here."
-4. Create `Planner-Conversation/` subfolder with `Coordination.json`, `Status-A.json`, and `Status-B.json` for dual-planner coordination
+2. Generate a prompt for the second planner session and present it with visual framing:
+
+---
+```
+You are Planner B for HarnessKit mission NNN-MissionName.
+Read HarnessKit/NNN-MissionName/ and HarnessKit/Planner.md,
+then join the planning process following the dual-session protocol.
+```
+---
+
+3. Tell the user: "Open a new session (with `--plugin-dir` if not installed via marketplace) and paste this prompt. Say 'continue' here when ready."
+4. Create `Planner-Conversation/` subfolder with `Coordination.json`, `Status-A.json`, and `Status-B.json`
 5. Follow the dual-session protocol (Steps 1-6 from Dual-Session-Protocol.md)
 
 **If the user wants single planning:**
@@ -110,44 +133,44 @@ Read `references/Role-Planner.md` for detailed planner guidance. The high-level 
 2. **Investigate the codebase** — read relevant files, check architecture, look for PlanKit files, examine existing patterns. Tell the user what you're investigating.
 3. **Ask upfront questions** (only if truly needed for direction) — if you have no upfront questions, explicitly say "No upfront questions — let me investigate first" so the user can leave
 4. **Research and explore** — investigate thoroughly. Document findings with file paths, line numbers, links.
-5. **Draft the Spec.md** — follow the format in `references/Spec-Format.md`. Present it to the user.
-6. **Iterate with user** — the user may adjust, add, remove, or change direction. Document all changes including original positions.
-7. **Finalize Spec.md** — write the final spec to `HarnessKit/NNN-MissionName/Spec.md`
-8. **Ask remaining questions** — if any edge cases or details need clarification
+5. **Draft the Spec.md** — follow the format in `references/Spec-Format.md`. **Present the COMPLETE spec text in chat.** Do NOT write to file yet. Do NOT show just a summary — show every section, every criterion, every detail.
+6. **Ask for approval** — "Does this spec look good, or do you want to adjust anything?" using AskUserQuestion.
+7. **Iterate if needed** — the user may adjust, add, remove, or change direction. Show the updated spec in chat again after changes.
+8. **Write to file only after approval** — once the user says it's good, write to `HarnessKit/NNN-MissionName/Spec.md`
+9. **Ask remaining questions** — if any edge cases or details need clarification
 
 ### Step 4 — Transition to Execution
 
-Once Spec.md is finalized:
+Once Spec.md is written to file:
 
-1. Ask the user: "Do you want dual evaluation (two evaluators for more thorough review)?"
-2. Generate prompts for the execution sessions:
+1. Explain in chat: "The Generator implements in one session, the Evaluator verifies in another with fresh eyes. You can use one or two evaluators — two evaluators using different models catch more issues." Then ask using AskUserQuestion: "How many evaluator sessions?"
+
+2. Generate prompts and present them with clear visual framing. Use horizontal rules before and after each prompt block. Use "You are" phrasing (these are instructions TO the AI in the other session). For single evaluator, use "the Evaluator" (no A/B suffix). For dual evaluators, use "Evaluator A" and "Evaluator B".
 
 **Generator prompt:**
-```
-HarnessKit: I'm the Generator for mission NNN-MissionName.
-Read the spec and start implementing.
-```
 
-**Evaluator A prompt:**
+---
 ```
-HarnessKit: I'm Evaluator A for mission NNN-MissionName.
-Read the spec and wait for the generator to signal ready.
+You are the Generator for HarnessKit mission NNN-MissionName.
+Read HarnessKit/NNN-MissionName/Spec.md and HarnessKit/Generator.md,
+then start implementing against the acceptance criteria.
 ```
+---
 
-**Evaluator B prompt (if dual):**
-```
-HarnessKit: I'm Evaluator B for mission NNN-MissionName.
-Read the spec and wait for the generator to signal ready.
-```
+**Evaluator prompt (single):**
 
-3. Present these prompts and instruct the user:
-   > "Planning is complete. To start execution:
-   > 1. Open a new session for the Generator and paste the prompt above
-   > 2. Open a new session for the Evaluator and paste the prompt above
-   > 3. (Optional) Open a third session for Evaluator B
-   >
-   > You can also clear/compact this session and use it as the Generator.
-   > The sessions will coordinate automatically."
+---
+```
+You are the Evaluator for HarnessKit mission NNN-MissionName.
+Read HarnessKit/NNN-MissionName/Spec.md and HarnessKit/Evaluator.md,
+then wait for the Generator to signal ready for evaluation.
+```
+---
+
+**Evaluator A / Evaluator B prompts (if dual):** Same as above but with "Evaluator A" / "Evaluator B" to distinguish.
+
+3. Tell the user in plain text (not AskUserQuestion):
+   > "Open new sessions for each role (with `--plugin-dir` if not installed via marketplace). Paste the prompts. You can also clear/compact this session and reuse it as the Generator. The sessions coordinate automatically — you can step away."
 
 4. Update State.json: `"phase": "ready-for-execution"`
 
@@ -308,7 +331,7 @@ If you are resuming after a crash and the state shows `evaluatorStatus: "pending
 
 ## ROLE: Planner B (Dual Planning)
 
-You are the secondary Planner in a dual-planner setup. Read `references/Dual-Session-Protocol.md` for the full protocol.
+You are the secondary Planner in a dual-planner setup. Read `references/Dual-Session-Protocol.md` for the full protocol. Also read `references/Role-Planner.md` + `HarnessKit/Planner.md` for planner guidance.
 
 1. Read `HarnessKit/NNN-MissionName/Planner-Conversation/Coordination.json` and `Status-B.json` to understand the current step and your status
 2. Follow the protocol for Session B:
