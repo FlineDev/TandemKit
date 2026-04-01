@@ -105,3 +105,15 @@ Ask upfront (before investigating) ONLY if:
 - The user referenced something you can't find in the codebase
 
 Everything else can wait until after investigation. Most questions are better asked AFTER you've explored, because you can ground them in specific findings.
+
+## Self-Learning
+
+After planning each mission, update `HarnessKit/Planner.md` with what you learned:
+
+- Key files and code areas that are important for this project
+- Investigation patterns that were effective
+- User preferences about planning depth, question style, or spec format
+- If the user corrected your approach — document it so future planning sessions don't repeat the mistake
+- Domain knowledge that's relevant for future missions
+
+Append to a `## Learnings` section at the bottom. Do this automatically — no need to ask the user.

@@ -37,9 +37,64 @@ the copyable content goes here, using full width, no forced line breaks
 6. **Do NOT use AskUserQuestion for confirmations** that aren't real choices. If the user should simply continue or leave, say so in plain text. Reserve AskUserQuestion for actual multiple-choice decisions.
 7. **Reference files** are in the `references/` subfolder next to this SKILL.md file, within the plugin directory. They are NOT in the project's `HarnessKit/` folder.
 
+## Self-Learning — Automatic Documentation of Learnings
+
+HarnessKit sessions should continuously improve by documenting what they learn. This happens automatically — no need to ask the user.
+
+### What To Document
+
+- **Build/test commands** that work (or don't) for this project
+- **Tools that are effective** (or broken/unreliable) — e.g., "mobile-mcp hangs on Xcode 26, use ExecuteSnippet instead"
+- **Workarounds** for broken tools or infrastructure
+- **User corrections** — if the user corrects your approach, document it as a learning so it's never repeated
+- **Evaluation approaches** that proved effective — e.g., "ExecuteSnippet with 430 test cases verified the optimization"
+- **Project conventions** discovered during investigation that weren't documented before
+- **Repeated user feedback patterns** — if the user gives similar feedback multiple times, it's a persistent preference
+
+### Where To Document
+
+| Learning Type | Where | Ask User? |
+|---|---|---|
+| Evaluator-specific (tools, verification approaches, what to always check) | `HarnessKit/Evaluator.md` | No — update automatically |
+| Generator-specific (build conventions, commit patterns, code style) | `HarnessKit/Generator.md` | No — update automatically |
+| Planner-specific (investigation patterns, question strategies) | `HarnessKit/Planner.md` | No — update automatically |
+| Cross-role or project-wide (architecture decisions, conventions for all) | `AGENTS.md` | **Yes — explain why and ask first** |
+
+### How To Document
+
+Append learnings to the relevant role file under a `## Learnings` section. Use this format:
+
+```markdown
+## Learnings
+
+- **[Date] [Category]:** Description of what was learned.
+  Context: What happened that led to this learning.
+```
+
+Examples:
+- `**2026-04-01 Tool:** mobile-mcp hangs indefinitely on Xcode 26. Use Xcode MCP ExecuteSnippet for runtime verification instead.`
+- `**2026-04-01 User Feedback:** User wants runtime verification for ALL algorithm changes, not just UI changes. Code review alone is never sufficient.`
+- `**2026-04-01 Build:** xcodebuild -scheme App -destination 'id=F37F...' works. -scheme CrossCraft does NOT exist.`
+
+### When To Document
+
+- **After each evaluation round** — if the Evaluator discovered effective verification techniques or tools that failed
+- **After user feedback** — especially corrections to approach or style. This is the highest priority — the learning prevents repeating the same mistake
+- **After tool failures** — document what broke and what worked instead
+- **After discovering undocumented project conventions** — save them for future sessions
+
+### AGENTS.md Updates (Require User Approval)
+
+If you discover something that affects the project broadly (not just one HarnessKit role):
+1. Explain in chat what you learned and why you think it belongs in AGENTS.md
+2. Ask the user: "I noticed [X]. Should I add this to AGENTS.md? Alternatively, I can add it to HarnessKit/[Role].md."
+3. Only edit AGENTS.md after explicit approval
+
 ## Preamble — Detect Context
 
-Before doing anything, determine the current state:
+**If this skill was loaded after you already started working** (e.g., you read files, made edits, or wrote State.json before the skill was loaded): STOP. Check what you've done against the protocol below. Fix any incorrect State.json values, wrong file names, or missed steps. The skill defines the correct protocol — anything done before loading it may be wrong.
+
+Before doing anything else, determine the current state:
 
 1. **Check if HarnessKit is initialized**: Look for `HarnessKit/Config.json` in the project root. If not found, tell the user: "HarnessKit is not set up in this project. Run `/harness-kit:init` first."
 2. **Read Config.json**: Get `currentMission`, `nextMissionNumber`, `git` preferences, and any other config.

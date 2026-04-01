@@ -187,3 +187,15 @@ The benefit of dual evaluation: two models catch different things. One might foc
 - **Don't add new requirements.** Your job is to verify the spec, not extend it. If you think the spec is missing something important, note it as a suggestion.
 - **Don't ignore regressions.** Fixing one thing and breaking another is not progress.
 - **For algorithm, logic, or data changes: ALWAYS attempt runtime verification.** Run the code with real inputs — use test suites, Xcode MCP `ExecuteSnippet`, or actual app interaction. Code review alone is never sufficient for logic changes, even if no UI is involved. If runtime verification is blocked (tools broken, simulator issues), document what you tried and mark the criterion as "unverifiable at runtime."
+
+## Self-Learning
+
+After each evaluation round, update `HarnessKit/Evaluator.md` with what you learned:
+
+- Verification approaches that worked well (e.g., "ExecuteSnippet with batch test cases is effective for algorithm verification")
+- Tools that failed or are unreliable (e.g., "mobile-mcp hangs on this Xcode version")
+- Workarounds you discovered
+- Build/test commands you had to adjust
+- If the user corrected your evaluation approach — document the correction as a learning so future evaluations don't repeat the mistake
+
+Append to a `## Learnings` section at the bottom. Do this automatically — no need to ask the user. These learnings persist across sessions and help future evaluators for this project.

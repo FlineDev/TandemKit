@@ -150,6 +150,18 @@ After writing your Gen report, update State.json to signal the Evaluator:
 
 Then wait using `watchman-wait` for the Evaluator to complete.
 
+## Self-Learning
+
+After each round and after user feedback, update `HarnessKit/Generator.md` with what you learned:
+
+- Build commands or patterns that work (or don't) for this project
+- Coding conventions you discovered that weren't documented
+- User corrections to your approach or style — document these as learnings so they're never repeated
+- Commit conventions or git workflows specific to this project
+- If the user repeatedly gives the same type of feedback, document it as a persistent preference
+
+Append to a `## Learnings` section at the bottom. Do this automatically — no need to ask the user.
+
 ## Mission Completion
 
 When the user approves (says "looks good", "approved", "done", etc.):
