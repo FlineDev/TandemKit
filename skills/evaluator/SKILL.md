@@ -33,18 +33,13 @@ Before reading any files or checking State.json — ask using AskUserQuestion:
 1. Read `references/Dual-Session-Protocol.md`
 2. You are now **Evaluator A**
 3. Read `HarnessKit/Config.json` to find the current mission name
-4. Generate the Codex Evaluator B prompt using this fixed template:
+4. Generate the Codex Evaluator B prompt using the plugin's script — do NOT improvise:
 
-╔═══ CODEX EVALUATOR B PROMPT (copied to clipboard) ═══════════════════╗
-
-```
-You are Evaluator B for HarnessKit mission NNN-MissionName.
-Read HarnessKit/NNN-MissionName/Spec.md and HarnessKit/Evaluator.md, then wait for the Generator to signal ready.
+```bash
+bash "${CLAUDE_SKILL_DIR}/../../scripts/render-secondary-prompt.sh" "evaluator" "NNN-MissionName" "HarnessKit/NNN-MissionName/Evaluator/Round-NN-Conversation" "Evaluate mission NNN-MissionName against Spec.md"
 ```
 
-╚══════════════════════════════════════════════════════════════════════╝
-
-Copy to clipboard via `echo '...' | pbcopy`. Show in chat. Also suggest:
+Show the output in chat with Variant 1 framing (it's also on the clipboard). Also suggest:
 
 ╔═══ RENAME THE CODEX SESSION ═════════════════════════════════════════╗
 
@@ -120,7 +115,13 @@ Check `generatorStatus` as the authoritative signal:
 
 ## Step 5 — Keep Watching After Verdict
 
-**Do NOT go idle.** Re-enter the watch loop. Watch for:
+**Do NOT go idle.** Use the wait-for-turn script to watch for the next state change:
+
+```bash
+watchman-wait "$(pwd)/HarnessKit/NNN-MissionName" -p "State.json" --max-events 1 -t 600
+```
+
+Run with `run_in_background: true`. On wake, re-read State.json:
 - `evaluatorStatus: "pending"` → new round (user gave feedback), evaluate again
 - `phase: "complete"` → mission done, you can stop
 

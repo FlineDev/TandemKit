@@ -177,19 +177,15 @@ During parallel phases (Steps 1-3), `nextTurn` is not used — both sessions wor
 
 **Session B must NEVER stop watching** until Session A reaches the user-approval boundary. Only Session A can stop — and only at that specific point.
 
-To detect changes, watch the conversation folder:
+Use the plugin's `scripts/wait-for-turn.sh` script to block until it's your turn:
 
 ```bash
-watchman-wait "$(pwd)/<path-to-conversation-folder>" -p "Status-A.json" -p "Status-B.json" -p "Coordination.json" --max-events 1 -t 600
+bash "${CLAUDE_SKILL_DIR}/../../scripts/wait-for-turn.sh" "<conversation-folder-absolute-path>" "<A-or-B>" "<parallel-or-sequential>"
 ```
 
-Run this with `run_in_background: true` so the session stays responsive. When a file changes, read both Status-A.json and Status-B.json (and Coordination.json for sequential phases) to determine if it's your turn.
+Run with `run_in_background: true`. The script handles watchman-wait, fallback polling, state checking, and re-verification automatically. When it exits with "READY", read the output and proceed.
 
-**After watchman-wait triggers, always verify the expected status** — intermediate writes may trigger the watch early. If the expected status isn't set, re-enter the watch loop.
-
-**Fallback:** If watchman-wait fails repeatedly (wrong path, timeouts), use md5-hash polling: `while [ "$(md5 -q file)" = "$PREV" ]; do sleep 5; done`
-
-If the timeout expires (10 minutes), re-read all status files anyway and restart the watch if still waiting.
+Do NOT implement your own watching logic. Use the script.
 
 ---
 

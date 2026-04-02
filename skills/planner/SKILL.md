@@ -93,21 +93,15 @@ Only after the user approves the name via AskUserQuestion:
 3. Update Config.json: set `currentMission`, increment `nextMissionNumber`
 4. If git feature branches are enabled: create and switch to a branch following the project's branch naming pattern
 
-**If dual planning:** Also create `Planner-Conversation/` with `Coordination.json`, `Status-A.json`, `Status-B.json`. Then generate the Codex Planner B prompt using this fixed template:
+**If dual planning:** Also create `Planner-Conversation/` with `Coordination.json` (include `"nextTurn": "A"`), `Status-A.json`, `Status-B.json`.
 
-╔═══ CODEX PLANNER B PROMPT (copied to clipboard) ════════════════════╗
+Then generate the Codex Planner B prompt using the plugin's script — do NOT improvise the prompt:
 
-```
-You are Planner B for HarnessKit mission NNN-MissionName.
-Conversation folder: HarnessKit/NNN-MissionName/Planner-Conversation/
-[user's original goal text, exactly as they wrote it]
+```bash
+bash "${CLAUDE_SKILL_DIR}/../../scripts/render-secondary-prompt.sh" "planner" "NNN-MissionName" "HarnessKit/NNN-MissionName/Planner-Conversation" "<user's original goal text>"
 ```
 
-╚══════════════════════════════════════════════════════════════════════╝
-
-Copy to clipboard via `echo '...' | pbcopy`. Show in chat. Tell user: "Prompt copied to clipboard. Start a Codex session and paste it. Say 'continue' here when ready."
-
-Also suggest Codex rename:
+Show the script's output in chat with Variant 1 framing. The script also copies it to the clipboard. Then suggest the Codex rename:
 
 ╔═══ RENAME THE CODEX SESSION ═════════════════════════════════════════╗
 
@@ -181,19 +175,15 @@ Update State.json: `"phase": "ready-for-execution"`
 
 ## Active Watching (Dual Mode)
 
-**After EVERY `-done` state write, IMMEDIATELY enter a watch loop.** Do not go idle. Do not wait passively.
-
-Before claiming you are waiting, re-read `Coordination.json` and both Status files. If it's already your turn, proceed immediately.
+**After EVERY `-done` state write, IMMEDIATELY run the wait-for-turn script.** Do not go idle. Do not wait passively. Do not rely on memory or judgment — use the script.
 
 ```bash
-watchman-wait "$(pwd)/HarnessKit/NNN-MissionName/Planner-Conversation" -p "Status-A.json" -p "Status-B.json" -p "Coordination.json" --max-events 1 -t 600
+bash "${CLAUDE_SKILL_DIR}/../../scripts/wait-for-turn.sh" "$(pwd)/HarnessKit/NNN-MissionName/Planner-Conversation" "A" "parallel"
 ```
 
-Run with `run_in_background: true`. After trigger, re-read ALL state files and check `nextTurn` field. If it's your turn, proceed. If not, re-enter the watch loop.
+Replace `"A"` with your session letter, and `"parallel"` with `"sequential"` for Steps 4-6. Run with `run_in_background: true`. When it exits (prints "READY"), read the output and proceed.
 
-**Planner B must NEVER stop watching** until Planner A reaches the user-approval boundary (Spec.md presented to user). Only Planner A can stop — and only at that specific point.
-
-Fallback if watchman-wait fails: md5-hash polling every 5 seconds.
+**Planner B must NEVER stop running this script** until Planner A reaches the user-approval boundary. Only Planner A can stop — and only at that specific point.
 
 ## Self-Learning
 
