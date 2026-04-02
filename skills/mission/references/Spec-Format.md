@@ -2,6 +2,19 @@
 
 The Spec.md is the central artifact of every mission. The Planner creates it, the Generator implements against it, and the Evaluator verifies against it. It must be clear enough that all three roles can do their job without ambiguity.
 
+## Mission Type
+
+Every Spec.md should declare its mission type near the top. This guides the Evaluator's verification path:
+
+```markdown
+**Mission Type:** code | documentation | domain | mixed
+```
+
+- **code** — the mission produces code changes. Evaluator: build, test, preview, runtime verification.
+- **documentation** — the mission produces skill files, docs, or reference material. Evaluator: verify claims against source code, test results, and authoritative sources. Build/test is NOT required for PASS.
+- **domain** — the mission involves domain-specific content (tax rules, knowledge bases). Evaluator: verify against primary sources, canonical cases, consistency checks.
+- **mixed** — both code and content. Evaluator: apply both code and content verification paths.
+
 ## Required Sections
 
 ### 1. User Intent

@@ -91,8 +91,14 @@ xcodebuild test -scheme App -destination 'platform=iOS Simulator,name=iPhone 16 
 ### iOS / visionOS — Full Support
 XcodeBuildMCP provides complete build/run/test/UI automation for simulator and device.
 
-### macOS — Build/Test Only, No GUI Automation
-XcodeBuildMCP supports `build_run_macos`, `test_macos`, `launch_mac_app`, `stop_mac_app`. But there are **no macOS GUI automation tools** (tap, screenshot, accessibility tree for macOS apps). For macOS UI verification, use `screencapture` via Bash or manual testing.
+### macOS — Build/Test + Preview-First UI Verification
+XcodeBuildMCP supports `build_run_macos`, `test_macos`, `launch_mac_app`, `stop_mac_app`. There are **no macOS GUI automation tools** (tap, accessibility tree for running macOS apps).
+
+**UI verification strategy for macOS:**
+- **SwiftUI views** → `#Preview` blocks + Xcode MCP `RenderPreview`. This is the primary UI verification path. If a view needs verification but has no preview, the Generator should ADD a `#Preview` block (in `#if DEBUG`) as part of the implementation.
+- **AppKit or integrated app flows** → manual testing by the user. The Evaluator cannot navigate these programmatically.
+- **`screencapture`** → useful as evidence capture after the user has manually navigated to a screen, but NOT as an automated verification strategy (there's no way to navigate first).
+- **Non-SwiftUI code** → use preview-friendly ViewModels with mock factory methods to verify data transformations visually through preview blocks.
 
 ## Evaluation Checklist
 

@@ -348,7 +348,12 @@ Check `generatorStatus` as the authoritative signal:
 
 1. Update State.json: `"evaluatorStatus": "evaluating"`, `"updated": "..."`. Read-modify-write only your fields.
 2. Read any `UserFeedback/` files if this is a post-feedback round.
-3. **Independently verify every acceptance criterion in Spec.md** — see `references/Role-Evaluator.md` for the mandatory verification checklist. Use tools (build, test, screenshots, runtime execution) as the primary verification method. Code review is supplementary.
+3. **Check the Mission Type** declared in Spec.md (code / documentation / domain / mixed). This determines your verification path:
+   - **code**: Build, test, preview, runtime verification are primary. Code review is supplementary.
+   - **documentation**: Verify claims against source files, test results, and authoritative sources. Build/test is NOT required unless the spec includes code changes.
+   - **domain**: Canonical cases, primary source verification, consistency checks.
+   - **mixed**: Apply both code and content verification paths.
+   Then **independently verify every acceptance criterion** — see `references/Role-Evaluator.md` for the mandatory verification checklist.
 4. **ONLY AFTER your independent evaluation:** Read `Generator/Round-NN.md` to check if there are areas you missed or uncertainties the Generator flagged. Do NOT let this change your existing verdicts — only use it to investigate things you haven't checked yet.
 5. Write findings to `Evaluator/Round-NN.md`:
    - **Verdict**: PASS, PASS_WITH_GAPS, FAIL, or BLOCKED
