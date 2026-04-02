@@ -124,7 +124,9 @@ Each session gets a descriptive name with an emoji prefix so you can instantly t
 
 The prompts instruct each session to load the HarnessKit skill, which governs the coordination protocol.
 
-Once the skill loads, the sessions coordinate via file-based signaling. You can walk away. The Evaluator uses `--effort high` for deeper analysis.
+For Claude Evaluator sessions, start with the hardened system prompt: `claude --append-system-prompt-file HarnessKit/ClaudeEvaluatorPrompt.md`. For Generator/Planner sessions or Codex Evaluators, start normally with `claude`.
+
+Once the skill loads, the sessions coordinate via file-based signaling. You can walk away.
 
 ### 4. Review When Ready
 

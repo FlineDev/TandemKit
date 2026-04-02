@@ -233,7 +233,7 @@ If using `--plugin-dir` (dev mode), add it to the same command. The command must
 
 ╚══════════════════════════════════════════════════════════════════════╝
 
-**If dual evaluators:** Generate two evaluator blocks with "Evaluator A" / "Evaluator B" in both the `-n` name and the prompt text.
+**If dual evaluators:** Generate two evaluator blocks with "Evaluator A" / "Evaluator B". For each block, include `--append-system-prompt-file` only if that evaluator is a Claude session (not Codex). In a mixed Claude/Codex pair, only the Claude block gets the hardened startup command.
 
 3. Tell the user in plain text: "Open the sessions, rename them, paste the prompts, and they'll coordinate automatically. You can step away."
 

@@ -196,7 +196,7 @@ harness-kit/
 
 ### ClaudeEvaluatorPrompt.md
 
-Copy from the plugin's `system-prompts/claude-evaluator.md` template. This file contains the hardened system prompt for Claude-as-Evaluator sessions — it overrides Claude's default efficiency-optimized behavior with adversarial evaluation rules.
+Copy from the plugin's `system-prompts/claude-evaluator.md` template. This file contains the hardened system prompt for Claude-as-Evaluator sessions — it overrides Claude's default efficiency-optimized behavior with independent, skeptical, evidence-driven evaluation rules.
 
 **If the file already exists** (re-init): do NOT overwrite it. The user may have customized it per project. Ask first.
 
