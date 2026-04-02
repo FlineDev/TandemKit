@@ -228,7 +228,7 @@ HarnessKit/
 ├── 001-AuthModule/
 │   ├── Spec.md                    # Acceptance criteria (output of planning)
 │   ├── State.json                 # Coordination state (phase: "done")
-│   ├── Summary.md                 # Auto-generated after PASS
+│   ├── Summary.md                 # Generated at mission completion (user approval)
 │   ├── Generator/
 │   │   ├── Round-01.md            # Generator's implementation report
 │   │   └── Round-02.md            # Generator's fix report
@@ -273,7 +273,7 @@ HarnessKit/
 │   └── Evaluator/                 # (evaluator currently working)
 ```
 
-**Summary.md** is auto-generated when a mission reaches PASS. It captures: goal, dates, round count, roles used, key decisions, evaluator findings addressed, files changed. The skill reads Summary.md files when the user asks "what have we worked on?"
+**Summary.md** is generated when the user completes the mission (says "looks good"). It captures: goal, dates, round count, roles used, key decisions, evaluator findings addressed, files changed. The skill reads Summary.md files when the user asks "what have we worked on?"
 
 **Alternatives considered:**
 - Date-prefixed folders (`2026-03-31_AuthModule`): Longer names, disambiguation needed for same-day missions, not consistent with PlanKit
@@ -348,7 +348,7 @@ HarnessKit/
 2. Asks focused questions: project type confirmation, evaluation scope (UI? logic? performance? accessibility?), existing tools and patterns
 
 3. Guides tool setup with strong recommendations. Emphasizes that an evaluator that can only read code will miss visual bugs, broken navigation, spacing issues, and interaction problems. Recommends:
-   - **Apple platform:** Xcode MCP (built-in, for builds/previews/tests) + joshuayoes/ios-simulator-mcp (1,800 stars, Anthropic-endorsed, for UI interaction/screenshots) + AppleScript for app lifecycle
+   - **Apple platform:** Xcode MCP (built-in, for builds/previews/tests) + mobile-mcp or ios-simulator-mcp (for UI interaction/screenshots) + Xcode MCP ExecuteSnippet (for runtime code verification) + AppleScript for app lifecycle
    - **Web:** Playwright MCP for full browser interaction
    - **CLI:** Test runners and output verification
    - **Domain systems:** Scenario-based testing, case files
@@ -363,7 +363,7 @@ skills/mission/references/
 ├── Role-Evaluator.md                 # General evaluator knowledge
 ├── Dual-Session-Protocol.md           # How two sessions coordinate
 ├── Spec-Format.md                    # Spec.md structure and principles
-├── Evaluation-Strategy-ApplePlatform.md    # Xcode MCP + ios-simulator-mcp + AppleScript setup
+├── Evaluation-Strategy-ApplePlatform.md    # Xcode MCP + mobile-mcp + ExecuteSnippet + AppleScript
 ├── Evaluation-Strategy-Web.md              # Playwright MCP setup and patterns
 ├── Evaluation-Strategy-CLI.md              # Test runners, output verification
 └── Evaluation-Strategy-Domain.md           # Case-based reasoning, scenario testing

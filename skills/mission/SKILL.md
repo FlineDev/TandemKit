@@ -102,7 +102,6 @@ Only after the user approves the name:
    ```json
    {
      "phase": "planning",
-     "role": null,
      "round": 0,
      "generatorStatus": null,
      "evaluatorStatus": null,
@@ -313,7 +312,7 @@ When the user says "looks good" / "approved" / "done":
 
 1. Update State.json: `"phase": "complete"`, `"completedBy": "user"`, `"completed": "YYYY-MM-DDTHH:MM:SSZ"`
 2. Generate `Summary.md` — the final archive document (see Summary Format below)
-3. Commit the HarnessKit/ mission files using `git add -f HarnessKit/NNN-MissionName/` (force-add is needed because coordination files are in .gitignore during active missions)
+3. Commit the HarnessKit/ mission files AND role files: `git add -f HarnessKit/NNN-MissionName/ HarnessKit/Planner.md HarnessKit/Generator.md HarnessKit/Evaluator.md` (force-add for mission folder if gitignored; role files include self-learning updates accumulated during the mission)
 4. Update Config.json: `"currentMission": null`
 5. If on a feature branch: tell the user the branch is ready for merging/PR
 6. Inform the user: "Mission NNN-MissionName complete. Summary saved."
@@ -334,7 +333,9 @@ You are the Evaluator. Your job is to verify the Generator's work against the sp
 
 ### Waiting for Generator
 
-If the generator is still working (`generatorStatus: "working"` or `evaluatorStatus: "pending"`), use watchman-wait (see "Watching for State Changes" in Important Rules). When `generatorStatus` is `"ready-for-eval"`, proceed to evaluation.
+Check `generatorStatus` as the authoritative signal:
+- `generatorStatus: "working"` → Generator is still implementing. Use watchman-wait (see "Watching for State Changes" in Important Rules).
+- `generatorStatus: "ready-for-eval"` → Generator is done. **Proceed to evaluation immediately**, regardless of what `evaluatorStatus` says.
 
 ### Evaluation Process
 
@@ -400,7 +401,7 @@ You are the secondary Planner in a dual-planner setup. Read `references/Dual-Ses
 
 ## ROLE: Resumption
 
-Read `Config.json` → `State.json`. Determine role from state: `generatorStatus: "working"` → resume as Generator; `evaluatorStatus: "pending"` → re-enter Evaluator watch loop; `phase: "user-review"` → present Review Briefing; `phase: "complete"` → inform user. Tell the user what you found and resume.
+Read `Config.json` → `State.json`. Determine role from state: `generatorStatus: "working"` → resume as Generator; `generatorStatus: "ready-for-eval"` → if you're the Evaluator, start evaluating immediately; if you're the Generator, re-enter watch loop; `phase: "user-review"` → present Review Briefing; `phase: "complete"` → inform user. Tell the user what you found and resume.
 
 ---
 
@@ -443,7 +444,6 @@ State.json is shared between Generator and Evaluator, but each role only updates
 
 | Field | Owned By |
 |---|---|
-| `role` | Each session sets this to its role ("generator", "evaluator", "planner") on start — helps identify sessions during recovery |
 | `phase` | Whoever is transitioning (Generator sets "evaluation", Evaluator sets "generation" on FAIL) |
 | `generatorStatus` | Generator only |
 | `evaluatorStatus` | Evaluator only |
