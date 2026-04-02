@@ -70,16 +70,13 @@ User feedback (in `UserFeedback/Feedback-NN.md`) is treated as additional requir
 
 After each implementation round, write a clear report:
 
+**Do NOT self-score acceptance criteria.** Determining whether criteria are satisfied is the Evaluator's job, not yours. Self-scoring anchors the Evaluator and undermines independent evaluation.
+
 ```markdown
 # Generator Report — Round NN
 
 ## What Was Done
-[Brief description of implementation work in this round]
-
-## Acceptance Criteria Status
-1. [Criterion from spec] — Implemented / Addressed / Not applicable this round
-2. [Criterion] — Implemented
-...
+[Description of implementation work in this round]
 
 ## Files Created or Modified
 - `path/to/file.swift` — [what was changed]
@@ -87,13 +84,10 @@ After each implementation round, write a clear report:
 
 ## User Feedback Addressed (if applicable)
 - [Feedback point 1] — [How it was addressed]
-- [Feedback point 2] — [How it was addressed]
 
-## Known Gaps or Uncertainties
+## Uncertainties and Notes for Evaluator
 - [Anything you're not confident about]
-- [Anything the evaluator should pay special attention to]
-
-## Notes for the Evaluator
+- [Areas that need special attention]
 - [Specific things to check]
 - [Areas where your implementation makes trade-offs]
 ```

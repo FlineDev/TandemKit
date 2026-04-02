@@ -122,9 +122,9 @@ Each session gets a descriptive name with an emoji prefix so you can instantly t
 - 🛠️ `Generator: 001-JWTAuth`
 - 🔍 `Evaluator: 001-JWTAuth`
 
-The prompts explicitly instruct the session to load the HarnessKit skill, which governs the full coordination protocol.
+The prompts instruct each session to load the HarnessKit skill, which governs the coordination protocol.
 
-The sessions coordinate automatically. You can walk away.
+Once the skill loads, the sessions coordinate via file-based signaling. You can walk away. The Evaluator uses `--effort high` for deeper analysis.
 
 ### 4. Review When Ready
 
@@ -142,7 +142,7 @@ Use two Evaluator sessions for more thorough review. They evaluate independently
 
 ### Codex Compatibility
 
-The Evaluator and Planner skills work in both Claude Code and Codex. During init, a symlink is created so Codex sessions can load the HarnessKit skill. Use different models for Generator and Evaluator — different models catch different bugs.
+The Evaluator and Planner skills work in both Claude Code and Codex. During init, a symlink is created so Codex sessions can load the HarnessKit skill. For higher-risk or domain-heavy work, using different models for Generator and Evaluator is recommended — different models have different blind spots and catch different issues. Testing showed that Claude evaluating Claude's work has a systematic leniency bias; using Codex as evaluator consistently found more issues.
 
 ### User Feedback Loop
 

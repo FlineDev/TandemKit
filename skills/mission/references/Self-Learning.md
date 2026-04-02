@@ -11,6 +11,7 @@ HarnessKit sessions continuously improve by documenting what they learn. This ha
 - **Evaluation approaches** that proved effective — e.g., "ExecuteSnippet with batch test cases is effective for algorithm verification"
 - **Project conventions** discovered during investigation that weren't documented before
 - **Repeated user feedback patterns** — if the user gives similar feedback multiple times, it's a persistent preference
+- **Evaluation depth failures** — if the user notes that verification was too shallow, document the specific deeper checks that should have been done, so future evaluations don't repeat the mistake
 
 ## Where To Document
 

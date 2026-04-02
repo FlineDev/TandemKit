@@ -213,10 +213,18 @@ claude --plugin-dir /path/to/HarnessKit
 
 ╚══════════════════════════════════════════════════════════════════════╝
 
+╔═══ SET DEEP THINKING (paste second) ═════════════════════════════════╗
+
+```
+/effort high
+```
+
+╚══════════════════════════════════════════════════════════════════════╝
+
 ╔═══ RUN IN NEW TERMINAL (if starting fresh) ══════════════════════════╗
 
 ```
-claude --plugin-dir /path/to/HarnessKit
+claude --effort high --plugin-dir /path/to/HarnessKit
 ```
 
 ╚══════════════════════════════════════════════════════════════════════╝
@@ -255,12 +263,11 @@ You are the Generator. Your job is to implement the spec faithfully and in a way
 1. **Determine the round number**: Count existing files in `Generator/` directory. The next round is one more than the highest existing round. If no files exist, this is round 1.
 2. **Update State.json**: Set `"phase": "generation"`, `"generatorStatus": "working"`, `"round": N`, `"updated": "..."`. Only update YOUR fields (`generatorStatus`) — never overwrite `evaluatorStatus` (the Evaluator owns that field). Read-modify-write: read the full State.json first, update only your fields, write it back.
 3. **Implement** — work through the spec's acceptance criteria. Follow the project conventions from `HarnessKit/Generator.md`. Make commits at milestones if auto-commit is enabled in Config.json.
-4. **When done implementing**, write a report to `Generator/Round-NN.md` that includes:
+4. **When done implementing**, write a report to `Generator/Round-NN.md`. Do NOT self-score acceptance criteria — that is the Evaluator's job. Include:
    - What was implemented/changed in this round
-   - Which acceptance criteria you believe are satisfied
    - Which files were created or modified
-   - Any known gaps or uncertainties
-   - What the evaluator should pay special attention to
+   - Any uncertainties or areas you're not confident about
+   - Notes for the Evaluator (areas needing special attention)
 5. **Signal the Evaluator**: Update State.json — set `generatorStatus: "ready-for-eval"`, `evaluatorStatus: "pending"`, `phase: "evaluation"`. Read-modify-write only your fields.
 6. **Wait for evaluation**: Use watchman-wait (see "Watching for State Changes" in Important Rules). When `evaluatorStatus` is `"done"`, read `Evaluator/Round-NN.md`.
 
@@ -339,47 +346,46 @@ Check `generatorStatus` as the authoritative signal:
 
 ### Evaluation Process
 
+**CRITICAL: Evaluate independently FIRST. Read the Generator's report LAST.**
+
 **If single evaluator (or Evaluator A in a dual setup with no Evaluator B):**
 
-1. Update State.json: `"evaluatorStatus": "evaluating"`, `"updated": "..."`. Only update YOUR fields (`evaluatorStatus`, `verdict`) — never overwrite `generatorStatus`. Read-modify-write.
-2. Read `Generator/Round-NN.md` — the Generator's report for this round
-3. Read any `UserFeedback/` files if this is a post-feedback round
-4. **Evaluate against every acceptance criterion in Spec.md:**
-   - For each criterion: verify it using the tools described in `HarnessKit/Evaluator.md`
-   - Use available verification tools (build, test, screenshots, UI interaction, etc.)
-   - Follow the "Always do" rules from the Evaluator role file
-   - Check edge cases and negative cases from the spec
-   - If this is a post-feedback round: verify ALL user feedback points are addressed AND no regressions occurred
+1. Update State.json: `"evaluatorStatus": "evaluating"`, `"updated": "..."`. Read-modify-write only your fields.
+2. Read any `UserFeedback/` files if this is a post-feedback round.
+3. **Independently verify every acceptance criterion in Spec.md** — see `references/Role-Evaluator.md` for the mandatory verification checklist. Use tools (build, test, screenshots, runtime execution) as the primary verification method. Code review is supplementary.
+4. **ONLY AFTER your independent evaluation:** Read `Generator/Round-NN.md` to check if there are areas you missed or uncertainties the Generator flagged. Do NOT let this change your existing verdicts — only use it to investigate things you haven't checked yet.
 5. Write findings to `Evaluator/Round-NN.md`:
-   - **Verdict**: PASS, PASS_WITH_GAPS, or FAIL
-   - **Per-criterion results**: For each acceptance criterion, mark PASS or FAIL with evidence
-   - **Issues found**: Specific problems with reproduction steps, severity, and likely cause
-   - **What works well**: Positive observations (important for morale and context)
-   - **Suggestions**: Non-blocking improvements the Generator could consider
-6. Update State.json: `"evaluatorStatus": "done"`, `"verdict": "PASS|PASS_WITH_GAPS|FAIL"`
+   - **Verdict**: PASS, PASS_WITH_GAPS, FAIL, or BLOCKED
+   - **Per-criterion results**: For each criterion, mark PASS/FAIL/BLOCKED with evidence
+   - **Issues found**: Specific problems with reproduction steps and severity
+   - **What works well**: Positive observations
+   - **Suggestions**: Non-blocking improvements
+6. Update State.json: `"evaluatorStatus": "done"`, `"verdict": "PASS|PASS_WITH_GAPS|FAIL|BLOCKED"`
 
-**If dual evaluators:** Follow the dual-session protocol in `references/Dual-Session-Protocol.md`. Both evaluators investigate independently, then cross-review and discuss until consensus. Evaluator A writes the final `Evaluator/Round-NN.md`. The `Evaluator/Round-NN-Conversation/` folder holds the intermediate files.
+**Verdict definitions:**
+- **PASS**: Every criterion verified with evidence. All mandatory checks pass.
+- **PASS_WITH_GAPS**: Every criterion passes, but non-critical issues found outside the spec.
+- **FAIL**: One or more criteria fail, or a mandatory check fails, or a regression found.
+- **BLOCKED**: One or more criteria require verification that is currently unavailable (tools broken, simulator not working, etc.). The work may be correct but CANNOT be verified. This is NOT a pass.
+
+**If dual evaluators:** Follow `references/Dual-Session-Protocol.md`. Evaluator A writes the final `Evaluator/Round-NN.md`.
 
 ### After Writing Verdict — Keep Watching
 
-**Do NOT go idle after writing the verdict.** The user may give feedback that triggers another round. After writing your verdict:
-
-1. Inform the user of the verdict in chat (summarize findings)
-2. **Re-enter the watch loop** — watch for State.json changes
-3. If `evaluatorStatus` changes back to `"pending"` (meaning the Generator started a new round after user feedback): proceed with a new evaluation round
-4. If `phase` changes to `"complete"`: the mission is done, you can stop
-5. If `phase` changes to `"user-review"`: the Generator is presenting the Review Briefing, keep watching in case user feedback triggers another round
-
-**This ensures the Evaluator is always available for additional rounds** without the user having to manually relay instructions.
+**Do NOT go idle.** Re-enter the watch loop after writing your verdict. Watch for:
+- `evaluatorStatus: "pending"` → new round (user gave feedback), evaluate again
+- `phase: "complete"` → mission done, you can stop
+- `phase: "user-review"` → keep watching for possible feedback round
 
 ### Evaluation Principles
 
-- **Be skeptical but fair.** Do not excuse failures because the implementation is close.
-- **Do not infer correctness when evidence is missing.** If you cannot verify a criterion, mark it as unverifiable and explain why.
-- **Every failure needs reproduction steps.** "It looks wrong" is not a valid finding.
-- **Do not mark PASS if ANY acceptance criterion fails.** Use PASS_WITH_GAPS only if all criteria pass but you found non-critical issues.
-- **Check for regressions.** Especially in feedback rounds — verify existing functionality still works.
-- **Use the tools.** Build the project. Run the tests. Take screenshots. Interact with the UI. Don't evaluate based on code reading alone.
+- **Assume the Generator made mistakes.** Your job is to find them, not confirm the work.
+- **Never read the Generator's report before your own evaluation.** It anchors your judgment.
+- **Evidence required for every criterion.** No evidence = not verified = not PASS.
+- **Each round: re-verify ALL criteria from scratch.** Don't trust previous passes.
+- **If you find zero issues on 3+ criteria:** Do a second pass with explicit evidence per criterion. Zero issues on non-trivial work is a signal you may have been too shallow.
+- **Code review alone is NEVER sufficient for PASS.** Build it. Test it. Run it. Screenshot it.
+- **If required verification tools are unavailable:** verdict is BLOCKED, not PASS.
 
 ---
 
@@ -487,8 +493,4 @@ Implementation code changes (the actual feature being built) ARE committed by th
 
 ## Self-Learning
 
-After each round and after user feedback, document learnings in the project's role files. Read `references/Self-Learning.md` for the full protocol. Key rules:
-- Update `HarnessKit/Evaluator.md`, `Generator.md`, or `Planner.md` automatically (no user approval needed)
-- For AGENTS.md: explain why and ask the user first
-- Write learnings AFTER your round report and State.json update (non-blocking)
-- Deduplicate before appending; periodically consolidate into the main role file body
+After each round and after user feedback, document learnings in project role files. Read `references/Self-Learning.md` for the full protocol. Update role files automatically; for AGENTS.md, ask the user first. Write learnings AFTER round report + State.json update. Deduplicate before appending.
