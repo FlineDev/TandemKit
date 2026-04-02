@@ -65,21 +65,51 @@ The inner loop is fully autonomous — the Generator and Evaluator coordinate vi
 
 ## Installation
 
-### From the Marketplace (Coming Soon)
+### Via Local Marketplace (Recommended for Private/Local Use)
 
-Once published to the FlineDev Marketplace:
+HarnessKit includes a marketplace manifest. Add it as a local marketplace and install:
+
+```
+/plugin marketplace add /path/to/HarnessKit
+/plugin install harness-kit@harness-kit-dev
+```
+
+Or wire it into your project's `.claude/settings.local.json` (best for private repos):
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "harness-kit-dev": {
+      "source": {
+        "source": "directory",
+        "path": "/absolute/path/to/HarnessKit"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "harness-kit@harness-kit-dev": true
+  }
+}
+```
+
+Once installed, every Claude session in the project has HarnessKit available — no flags needed. Just start `claude` normally.
+
+### Via GitHub (Once Published)
+
 ```
 /plugin marketplace add FlineDev/Marketplace
 /plugin install harness-kit
 ```
 
-### From Source (Current)
+### Fallback: --plugin-dir (For HarnessKit Development)
+
+When actively editing HarnessKit itself:
 
 ```bash
 claude --plugin-dir /path/to/HarnessKit
 ```
 
-**Note:** When using `--plugin-dir`, every new Claude Code session needs the same flag. If you open parallel sessions for Generator/Evaluator, each session must be started with `claude --plugin-dir /path/to/HarnessKit`. Once installed via marketplace, this is no longer needed — the plugin is available in all sessions automatically.
+Every new session needs the same flag. Use marketplace install for project work, `--plugin-dir` only for plugin development.
 
 ### Requirements
 

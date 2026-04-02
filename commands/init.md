@@ -219,9 +219,23 @@ Only if the user said yes in Question 6.
 
 Default to CLI mode for Codex (same as Claude) if bash is allowed. Only set up MCP server in `config.toml` if the user explicitly prefers MCP or if bash is restricted.
 
-Add `.agents/skills/mission` to `.gitignore`. Document the symlink setup in `AGENTS.md`.
+Add `.agents/skills/mission` to `.gitignore`.
 
-## Step 9 — Summary
+## Step 9 — Update AGENTS.md (Safety Net)
+
+Add a brief HarnessKit section to the project's `AGENTS.md` (or `CLAUDE.md` if that's what the project uses). This serves as a safety net — even if the plugin isn't loaded, Claude will know HarnessKit exists and what to do:
+
+```markdown
+## HarnessKit
+
+This project uses HarnessKit for multi-session Planner/Generator/Evaluator coordination. When a user mentions HarnessKit or starts a mission, load the `harness-kit:mission` skill. If the skill is not available, tell the user to install the plugin or restart with `--plugin-dir /path/to/HarnessKit`.
+
+Project-specific role files: `HarnessKit/Planner.md`, `HarnessKit/Generator.md`, `HarnessKit/Evaluator.md`.
+```
+
+Keep it brief — one short paragraph. Ask the user before editing AGENTS.md.
+
+## Step 10 — Summary
 
 Present a brief summary table of what was set up, then end with:
 
