@@ -97,18 +97,36 @@ Options:
 
 **For Apple platform projects:**
 
-Read `references/Evaluation-Strategy-ApplePlatform.md` for full details. Present available options with GitHub links and star counts:
+Read `references/Evaluation-Strategy-ApplePlatform.md` for full details. The recommended stack is:
 
-1. **Xcode MCP** (built into Xcode) — builds, tests, SwiftUI preview screenshots. [Already available / Not connected]
-2. **Simulator interaction** — present the options from the reference file with verified GitHub URLs and star counts. Let the user choose.
-3. **AppleScript** — for running/stopping the app from Xcode. No install needed.
+1. **XcodeBuildMCP** ([getsentry/XcodeBuildMCP](https://github.com/getsentry/XcodeBuildMCP), ~5,000 stars) — the primary tool. Build, test, run, UI automation (tap/swipe/type/screenshot/accessibility tree), simulator management, debugging, log capture, code coverage. CLI mode preferred for reliability.
+2. **Apple Xcode MCP** (built into Xcode) — complement for SwiftUI preview screenshots (`RenderPreview`), Swift REPL (`ExecuteSnippet`), Apple docs, live diagnostics.
 
-**Do NOT start installing prerequisites or checking dependencies until the user has explicitly agreed to install a specific tool.**
+**Do NOT start installing until the user agrees.** If they agree:
 
-If the user agrees to install a tool, guide them step by step:
-- Show the exact commands they need to run (using `!` prefix for interactive commands)
-- Create the `.mcp.json` file with the correct configuration
-- Add the MCP tool permission to `.claude/settings.json` (e.g., `mcp__mobile-mcp__*`)
+Install XcodeBuildMCP:
+```bash
+brew tap getsentry/xcodebuildmcp
+brew install xcodebuildmcp
+xcodebuildmcp init
+```
+
+This installs the CLI tool and the Claude Code CLI skill. Configure telemetry opt-out and workflow enablement in `.xcodebuildmcp/config.yaml`.
+
+For Codex users, also add MCP config to `~/.codex/config.toml`:
+```toml
+[mcp_servers.XcodeBuildMCP]
+command = "npx"
+args = ["-y", "xcodebuildmcp@latest", "mcp"]
+```
+
+Verify Xcode MCP is connected (check for `mcp__xcode__*` in available tools).
+
+**Cautions to mention:**
+- Set `XCODEBUILDMCP_SENTRY_DISABLED=true` in environment unless user opts in to telemetry
+- On iOS 26+ simulators, `snapshot_ui` may return empty — enable accessibility defaults first
+- If XcodeBuildMCP CLI or MCP has issues, fall back to `xcrun simctl` + `xcodebuild` via Bash
+- macOS apps: build/test supported but no GUI automation — UI verification needs manual testing
 
 **For web projects:**
 

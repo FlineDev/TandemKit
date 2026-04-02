@@ -234,7 +234,7 @@ HarnessKit supports different evaluation strategies based on project type:
 
 | Project Type | Primary Tools | What Gets Verified |
 |---|---|---|
-| **Apple Platform** | Xcode MCP, mobile-mcp, AppleScript | Build, tests, previews, simulator UI interaction |
+| **Apple Platform** | XcodeBuildMCP (CLI) + Apple Xcode MCP | Build, test, run, UI automation, screenshots, accessibility tree, previews, debugging, logs |
 | **Web** | Playwright MCP | Build, tests, browser interaction, screenshots |
 | **CLI / Library** | Test runners, command execution | Build, tests, output verification, API checks |
 | **Domain System** | Canonical cases, consistency tests | Reasoning quality, case handling, fact accuracy |
@@ -258,7 +258,7 @@ HarnessKit is designed to work with both Claude Code and Codex. During init, a s
 
 **Known limitations when using Codex:**
 - `watchman-wait` requires the watchman daemon — verify it works in your Codex environment
-- MCP servers (Xcode MCP, Playwright, mobile-mcp) depend on your Codex sandbox configuration
+- MCP servers (Xcode MCP, XcodeBuildMCP, Playwright) depend on your Codex sandbox configuration
 - AppleScript execution may be restricted depending on Codex's sandbox mode
 - If Codex cannot run these tools, it can still evaluate by reading code, checking tests, and analyzing the implementation — just without interactive UI verification
 

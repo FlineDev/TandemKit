@@ -348,7 +348,7 @@ HarnessKit/
 2. Asks focused questions: project type confirmation, evaluation scope (UI? logic? performance? accessibility?), existing tools and patterns
 
 3. Guides tool setup with strong recommendations. Emphasizes that an evaluator that can only read code will miss visual bugs, broken navigation, spacing issues, and interaction problems. Recommends:
-   - **Apple platform:** Xcode MCP (built-in, for builds/previews/tests) + mobile-mcp or ios-simulator-mcp (for UI interaction/screenshots) + Xcode MCP ExecuteSnippet (for runtime code verification) + AppleScript for app lifecycle
+   - **Apple platform:** XcodeBuildMCP (CLI mode, for build/test/run/UI automation/screenshots/debugging/logs) + Apple Xcode MCP (for SwiftUI previews, ExecuteSnippet, docs). Fallback: xcrun simctl + raw xcodebuild.
    - **Web:** Playwright MCP for full browser interaction
    - **CLI:** Test runners and output verification
    - **Domain systems:** Scenario-based testing, case files
@@ -363,7 +363,7 @@ skills/mission/references/
 ├── Role-Evaluator.md                 # General evaluator knowledge
 ├── Dual-Session-Protocol.md           # How two sessions coordinate
 ├── Spec-Format.md                    # Spec.md structure and principles
-├── Evaluation-Strategy-ApplePlatform.md    # Xcode MCP + mobile-mcp + ExecuteSnippet + AppleScript
+├── Evaluation-Strategy-ApplePlatform.md    # XcodeBuildMCP + Apple Xcode MCP
 ├── Evaluation-Strategy-Web.md              # Playwright MCP setup and patterns
 ├── Evaluation-Strategy-CLI.md              # Test runners, output verification
 └── Evaluation-Strategy-Domain.md           # Case-based reasoning, scenario testing
@@ -373,11 +373,9 @@ skills/mission/references/
 
 | Tool | Purpose | Stars |
 |------|---------|-------|
-| Apple Xcode MCP (`xcrun mcpbridge`) | Build, test, SwiftUI preview screenshots (`RenderPreview`), build diagnostics | Built-in |
-| anthropics/mobile-mcp | Tap, swipe, type, screenshot, accessibility tree via WebDriverAgent. No IDB needed. **Recommended.** | ~4,200 |
-| joshuayoes/ios-simulator-mcp | Tap, swipe, read accessibility tree, screenshot via Facebook IDB. More established alternative. | ~1,800 |
-| `osascript` (AppleScript) | Run/stop app via Xcode (Xcode MCP can't do this) | Built-in |
-| `xcrun simctl` | Boot/shutdown simulators, take screenshots, set dark mode, deep links | Built-in |
+| getsentry/XcodeBuildMCP | **Primary.** Build, test, run, UI automation (tap/swipe/type/screenshot/accessibility tree), simulator management, LLDB debugging, log capture, code coverage. CLI preferred. | ~5,000 |
+| Apple Xcode MCP (`xcrun mcpbridge`) | **Complement.** SwiftUI preview screenshots (`RenderPreview`), Swift REPL (`ExecuteSnippet`), Apple docs, live diagnostics. IDE-native capabilities. | Built-in |
+| `xcrun simctl` + raw `xcodebuild` | **Fallback.** Always available, no dependencies. | Built-in |
 
 **Alternatives considered:**
 - No role files (evaluator adapts on its own): Misses project-specific tools and priorities, inconsistent across sessions
