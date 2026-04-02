@@ -226,6 +226,13 @@ This file is used with `claude --append-system-prompt-file` when starting a Clau
 
 Populate each with project-specific context based on your investigation findings and the user's answers. Use the appropriate Evaluation-Strategy reference as a template for the Evaluator.md.
 
+**Evaluator.md must cover BOTH code missions AND documentation/content missions.** Not every mission will involve code changes — some missions write skill files, documentation, or reference material. The Evaluator.md should include:
+- Build/test/preview commands (for code missions)
+- Source verification guidance (for documentation/content missions — verify claims against source code and test results)
+- The "Always Do" and "Never Do" sections should distinguish between code and content missions
+
+**Planner.md should reference ALL major documentation areas** in the project, not just code docs. If the project has research docs, exploration folders, or domain-specific reference material, list them with "When to read" guidance so the Planner knows where to look for context.
+
 ### Verify Build Commands
 
 After creating Evaluator.md with build/test commands, **run the build command once** to verify it works. If it fails (wrong scheme, wrong destination, missing dependencies), fix the command in Evaluator.md and Generator.md before proceeding. The user should not discover broken build commands during the first mission.

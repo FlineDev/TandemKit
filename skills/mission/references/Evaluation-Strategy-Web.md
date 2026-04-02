@@ -70,9 +70,13 @@ Through Playwright's JavaScript execution, you can:
 12. **Verify error responses** — invalid input, unauthorized access, not found
 13. **Check CORS headers** if the API is accessed cross-origin
 
+### When the Mission Involves Documentation or Content
+Not every mission produces code. For documentation/content missions, verify claims against source code and verified test results. Build/test is not required for PASS unless the spec includes code changes.
+
 ### Never Do
-- Never mark PASS without building the project
-- Never mark PASS without running tests
+- Never mark PASS without building (code missions)
+- Never mark PASS without running tests (code missions)
+- Never mark PASS without source verification (documentation missions)
 - Never assume UI works from code alone — use Playwright to verify
 - Never skip error scenario testing — check what happens with bad input
 

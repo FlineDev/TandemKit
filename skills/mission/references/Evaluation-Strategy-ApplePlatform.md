@@ -113,6 +113,13 @@ XcodeBuildMCP supports `build_run_macos`, `test_macos`, `launch_mac_app`, `stop_
 10. **Runtime verification** via Xcode MCP `ExecuteSnippet` — test with real inputs
 11. **Code coverage** via `xcodebuildmcp simulator get-coverage-report`
 
+### When the Mission Involves Documentation, Skills, or Content
+Not every mission is a code mission. For documentation/content missions (e.g., writing skill files, updating docs, creating reference material):
+12. **Verify claims against primary sources** — the deliverable's claims about tool behavior, APIs, or project conventions must match the actual source code and verified test results
+13. **Read the source files referenced in the spec** — don't verify documentation by reading only the documentation itself (that's circular)
+14. **Build/test/preview are NOT required for PASS** unless the spec explicitly includes code changes
+15. **The "Always Do" checklist above adapts**: for pure content missions, "build the project" is not mandatory — content accuracy IS mandatory
+
 ### Never Do
 - Never mark PASS without building
 - Never mark PASS without running tests
@@ -146,14 +153,20 @@ During init, create `HarnessKit/Evaluator.md` with:
 1. [From user input during init]
 2. [From user input during init]
 
-## Always Do
+## Always Do (Code Missions)
 - Build via XcodeBuildMCP before evaluating
 - Run the full test suite
 - Take screenshots of changed UI
 - For logic changes: runtime verification via ExecuteSnippet
 
+## Always Do (Documentation/Content Missions)
+- Verify every claim against the source files referenced in the Spec
+- Read the actual source code, not just the documentation being reviewed
+- Check for contradictions between the deliverable and verified test results
+
 ## Never Do
-- Mark PASS without a successful build
-- Mark PASS without running tests
+- Mark PASS without a successful build (code missions)
+- Mark PASS without running tests (code missions)
+- Mark PASS without source verification (documentation missions)
 - Assume UI looks correct without screenshots
 ```

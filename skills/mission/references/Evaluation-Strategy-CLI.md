@@ -72,9 +72,13 @@ my-tool export --format json | jq '.items | length' | grep -q "^5$"
 12. **Test piping** — does stdin/stdout work correctly for chaining?
 13. **Test with large inputs** — performance and memory usage
 
+### When the Mission Involves Documentation or Content
+Not every mission produces code. For documentation/content missions, verify claims against source code and verified test results. Build/test is not required for PASS unless the spec includes code changes.
+
 ### Never Do
-- Never mark PASS without building
-- Never mark PASS without running the test suite
+- Never mark PASS without building (code missions)
+- Never mark PASS without running the test suite (code missions)
+- Never mark PASS without source verification (documentation missions)
 - Never assume correctness from code reading — run the actual commands
 - Never skip error case testing
 
