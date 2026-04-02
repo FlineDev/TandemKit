@@ -126,17 +126,24 @@ Every new session needs the same flag. Use marketplace install for project work,
 
 This investigates your project, asks configuration questions, installs watchman if needed, and sets up the `HarnessKit/` folder with role-specific context.
 
-### 2. Start a Mission
+### 2. Start Planning
 
 ```
-Let's use HarnessKit to add JWT authentication
+/planner Add JWT authentication with refresh tokens
 ```
 
-The Planner investigates, asks questions, and produces a Spec.md.
+The Planner asks if you want dual planning (Claude + Codex), then investigates, asks questions, and produces a Spec.md.
 
 ### 3. Launch Execution Sessions
 
-After planning, HarnessKit generates visually framed prompts. For each role, open a new Claude Code session, rename it, and paste the role prompt:
+After planning, the Planner generates prompts for the Generator and Evaluator. Open new sessions and invoke each role:
+
+```
+/generator 001-JWTAuth
+```
+```
+/evaluator 001-JWTAuth
+```
 ```
 /rename 🛠️ Generator: 001-JWTAuth
 ```
@@ -168,7 +175,7 @@ Use two Evaluator sessions for more thorough review. They evaluate independently
 
 ### Codex Compatibility
 
-The Evaluator and Planner skills work in both Claude Code and Codex. During init, a symlink is created so Codex sessions can load the HarnessKit skill. For higher-risk or domain-heavy work, using different models for Generator and Evaluator is recommended — different models have different blind spots and catch different issues. Testing showed that Claude evaluating Claude's work has a systematic leniency bias; using Codex as evaluator consistently found more issues.
+The Evaluator and Planner skills work in both Claude Code and Codex. During init, symlinks are created for all three role skills so Codex sessions can load them. For higher-risk or domain-heavy work, using different models for Generator and Evaluator is recommended — different models have different blind spots and catch different issues. Testing showed that Claude evaluating Claude's work has a systematic leniency bias; using Codex as evaluator consistently found more issues.
 
 ### User Feedback Loop
 
@@ -284,7 +291,7 @@ Both Claude Code and Codex restore the full session transcript when you resume. 
 
 ## Codex Compatibility
 
-HarnessKit is designed to work with both Claude Code and Codex. During init, a symlink is created so Codex sessions can load the HarnessKit skill.
+HarnessKit is designed to work with both Claude Code and Codex. During init, symlinks are created for all three role skills so Codex sessions can load them.
 
 **Known limitations when using Codex:**
 - `watchman-wait` requires the watchman daemon — verify it works in your Codex environment

@@ -217,9 +217,17 @@ Only if the user said yes in Question 6.
 
 ## Step 8 — Create Codex Symlink (If Requested)
 
-Default to CLI mode for Codex (same as Claude) if bash is allowed. Only set up MCP server in `config.toml` if the user explicitly prefers MCP or if bash is restricted.
+Default to CLI mode for Codex (same as Claude) if bash is allowed.
 
-Add `.agents/skills/mission` to `.gitignore`.
+Create Codex symlinks for all three role skills:
+```bash
+mkdir -p .agents/skills
+ln -sf "<plugin-path>/skills/planner" .agents/skills/planner
+ln -sf "<plugin-path>/skills/generator" .agents/skills/generator
+ln -sf "<plugin-path>/skills/evaluator" .agents/skills/evaluator
+```
+
+Add `.agents/skills/` to `.gitignore` (machine-specific symlinks).
 
 ## Step 9 — Update AGENTS.md (Safety Net)
 
@@ -228,9 +236,12 @@ Add a brief HarnessKit section to the project's `AGENTS.md` (or `CLAUDE.md` if t
 ```markdown
 ## HarnessKit
 
-This project uses HarnessKit for multi-session Planner/Generator/Evaluator coordination. When a user mentions HarnessKit or starts a mission, load the `harness-kit:mission` skill. If the skill is not available, tell the user to install the plugin or restart with `--plugin-dir /path/to/HarnessKit`.
+This project uses HarnessKit for multi-session Planner/Generator/Evaluator coordination. Use these commands to start each role:
+- `/planner` — start planning a new mission
+- `/generator` — implement a mission's spec
+- `/evaluator` — verify the Generator's work
 
-Project-specific role files: `HarnessKit/Planner.md`, `HarnessKit/Generator.md`, `HarnessKit/Evaluator.md`.
+If these commands are not available, install the HarnessKit plugin first. Project-specific role files: `HarnessKit/Planner.md`, `HarnessKit/Generator.md`, `HarnessKit/Evaluator.md`.
 ```
 
 Keep it brief — one short paragraph. Ask the user before editing AGENTS.md.
