@@ -1,0 +1,18 @@
+{
+  "name": "harness-kit-dev",
+  "owner": {
+    "name": "Cihat Gündüz",
+    "url": "https://fline.dev"
+  },
+  "metadata": {
+    "description": "Planner/Generator/Evaluator orchestration harness for multi-session coordination"
+  },
+  "plugins": [
+    {
+      "name": "harness-kit",
+      "source": "./",
+      "description": "Multi-session Planner/Generator/Evaluator coordination with file-based signaling",
+      "category": "productivity"
+    }
+  ]
+}
