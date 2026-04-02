@@ -16,36 +16,72 @@ You are the Evaluator. Your job is to verify the Generator's work against the sp
 1. **Ask questions ONE AT A TIME** with context before each.
 2. **Use Variant 1 visual framing** for copyable content.
 3. **Reference files** are in `references/` next to this SKILL.md.
+4. **In dual mode, do NOT use subagents** for evaluation. You and Evaluator B are the two independent evaluators.
+5. **Do NOT write Codex prompt files** unless the user asks. Show in chat + copy to clipboard.
 
 ## Step 1 — Dual Evaluation (Ask FIRST, Before Anything Else)
 
-Before reading any files or checking State.json:
+**If you are Evaluator B** (the prompt told you so): skip this step entirely. Go to Step 1b.
 
-Ask using AskUserQuestion:
+**If you are starting as the first Evaluator:**
 
-> "Do you want dual evaluation with Codex? Two different models catch different issues. If yes, I'll generate a prompt for the Codex session."
+Before reading any files or checking State.json — ask using AskUserQuestion:
+
+> "Do you want dual evaluation with Codex? Two different models catch different issues."
 
 **If YES (dual evaluation):**
 1. Read `references/Dual-Session-Protocol.md`
 2. You are now **Evaluator A**
-3. Generate the Codex Evaluator B prompt, present with Variant 1 framing, copy to clipboard:
-   ```bash
-   echo '<prompt text>' | pbcopy
-   ```
-4. Save to `HarnessKit/NNN-MissionName/StartEvaluatorB-Codex.md`
-5. Tell user: "Prompt copied to clipboard. Start a Codex session and paste it. Say 'continue' here when ready."
-6. Wait for confirmation, then proceed to Step 2
+3. Read `HarnessKit/Config.json` to find the current mission name
+4. Generate the Codex Evaluator B prompt using this fixed template:
+
+╔═══ CODEX EVALUATOR B PROMPT (copied to clipboard) ═══════════════════╗
+
+```
+You are Evaluator B for HarnessKit mission NNN-MissionName.
+Read HarnessKit/NNN-MissionName/Spec.md and HarnessKit/Evaluator.md, then wait for the Generator to signal ready.
+```
+
+╚══════════════════════════════════════════════════════════════════════╝
+
+Copy to clipboard via `echo '...' | pbcopy`. Show in chat. Also suggest:
+
+╔═══ RENAME THE CODEX SESSION ═════════════════════════════════════════╗
+
+```
+/rename 🔍 Evaluator B: NNN-MissionName
+```
+
+╚══════════════════════════════════════════════════════════════════════╝
+
+Tell user: "Prompt copied. Start a Codex session and paste it. Say 'continue' here when ready."
+Wait for confirmation, then proceed to Step 1b.
 
 **If NO (single evaluation):**
 - You are the sole Evaluator (no A/B suffix)
-- Proceed to Step 2
+- Proceed to Step 1b
+
+## Step 1b — Rename Session
+
+Suggest renaming:
+
+╔═══ RENAME THIS SESSION ══════════════════════════════════════════════╗
+
+```
+/rename 🔍 Evaluator: NNN-MissionName
+```
+
+╚══════════════════════════════════════════════════════════════════════╝
+
+For dual mode, use `🔍 Evaluator A: NNN-MissionName`. Recommended but not a blocker.
 
 ## Step 2 — Read Context
 
 1. Read `HarnessKit/Config.json` — find the current mission
-2. Read `references/Role-Evaluator.md` + `HarnessKit/Evaluator.md` for guidance
-3. Read the mission's `Spec.md` — this is your verification baseline
-4. Read any `UserFeedback/` files if this is a post-feedback round
+2. **Read `HarnessKit/Evaluator.md`** for project-specific evaluation context — this is mandatory, do not skip
+3. Read `references/Role-Evaluator.md` for general evaluator guidance
+4. Read the mission's `Spec.md` — this is your verification baseline
+5. Read any `UserFeedback/` files if this is a post-feedback round
 
 ## Step 3 — Wait for Generator
 

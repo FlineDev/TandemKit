@@ -129,7 +129,7 @@ This investigates your project, asks configuration questions, installs watchman 
 ### 2. Start Planning
 
 ```
-/planner Add JWT authentication with refresh tokens
+/harness-kit:planner Add JWT authentication with refresh tokens
 ```
 
 The Planner asks if you want dual planning (Claude + Codex), then investigates, asks questions, and produces a Spec.md.
@@ -139,10 +139,10 @@ The Planner asks if you want dual planning (Claude + Codex), then investigates, 
 After planning, the Planner generates prompts for the Generator and Evaluator. Open new sessions and invoke each role:
 
 ```
-/generator 001-JWTAuth
+/harness-kit:generator 001-JWTAuth
 ```
 ```
-/evaluator 001-JWTAuth
+/harness-kit:evaluator 001-JWTAuth
 ```
 ```
 /rename 🛠️ Generator: 001-JWTAuth
@@ -187,7 +187,7 @@ When using Claude as the Evaluator, sessions are launched with a hardened system
 
 ### Mission Archive
 
-Every mission is a numbered subfolder (`001-JWTAuth/`, `002-SettingsRefactor/`). Completed missions remain as archive — no cleanup needed. Each mission includes the spec, all generator/evaluator rounds, user feedback, and a summary.
+Every mission is a numbered subfolder (`001-JWTAuth/`, `002-SettingsRefactor/`). Completed missions remain as archive — no cleanup needed. Each mission includes the spec, all generator/harness-kit:evaluator rounds, user feedback, and a summary.
 
 ### Git Integration
 

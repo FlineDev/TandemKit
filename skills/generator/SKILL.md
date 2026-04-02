@@ -18,11 +18,20 @@ You are the Generator. Your job is to implement the spec faithfully, commit at m
 
 ## On Start
 
-The user invokes this skill with `/generator NNN-MissionName` (or pastes a prompt containing the mission name).
+The user invokes this skill with `/harness-kit:generator NNN-MissionName`. Suggest renaming the session if not already done:
+
+╔═══ RENAME THIS SESSION ══════════════════════════════════════════════╗
+
+```
+/rename 🛠️ Generator: NNN-MissionName
+```
+
+╚══════════════════════════════════════════════════════════════════════╝
 
 1. Read `HarnessKit/Config.json` — verify the mission exists and is current
-2. Read `references/Role-Generator.md` + `HarnessKit/Generator.md` for guidance
-3. Read the mission's `Spec.md` — this is your source of truth
+2. **Read `HarnessKit/Generator.md`** for project-specific context — this is mandatory, do not skip
+3. Read `references/Role-Generator.md` for general generator guidance
+4. Read the mission's `Spec.md` — this is your source of truth
 4. Read `State.json`. If `phase` is `"ready-for-execution"` or `"planning"`, transition it to `"generation"`
 5. Check for `UserFeedback/` files — if they exist, read the latest (this is a feedback iteration)
 6. Check for previous `Evaluator/Round-NN.md` — if exists, read the latest (evaluation feedback from previous round)

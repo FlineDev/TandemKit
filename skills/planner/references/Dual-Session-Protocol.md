@@ -155,6 +155,7 @@ During parallel phases (Steps 1-3), both sessions work simultaneously and signal
 ```json
 {
   "step": "parallel-investigation",
+  "nextTurn": "A",
   "messageRound": 0,
   "updated": "2026-03-31T14:30:00Z"
 }
@@ -162,11 +163,21 @@ During parallel phases (Steps 1-3), both sessions work simultaneously and signal
 
 **Step values:** `upfront-questions` → `parallel-investigation` → `parallel-review` → `sequential-conversation` → `documentation` → `end-questions` → `done`
 
+**`nextTurn`** is the authoritative handoff field. When you write an artifact, set `nextTurn` to the other session's letter. The other session checks `nextTurn` to know if it's their turn. Do NOT rely on timestamps — they can drift. `nextTurn` is the source of truth for turn-taking.
+
+During parallel phases (Steps 1-3), `nextTurn` is not used — both sessions work independently and watch for the other's `-done` status.
+
 ---
 
-## Watching for State Changes
+## Active Watching (MANDATORY)
 
-To detect when the other session finishes, watch the conversation folder for ANY file change:
+**After EVERY `-done` state write, IMMEDIATELY enter a watch loop.** Do not go idle. Do not wait passively. Do not stop.
+
+**Before claiming you are waiting**, re-read Coordination.json, Status-A.json, and Status-B.json. If it's already your turn (`nextTurn` matches you, or both are `-done` for parallel phases), proceed immediately.
+
+**Session B must NEVER stop watching** until Session A reaches the user-approval boundary. Only Session A can stop — and only at that specific point.
+
+To detect changes, watch the conversation folder:
 
 ```bash
 watchman-wait "$(pwd)/<path-to-conversation-folder>" -p "Status-A.json" -p "Status-B.json" -p "Coordination.json" --max-events 1 -t 600
