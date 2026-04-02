@@ -27,7 +27,8 @@ fi
 ROLE_DISPLAY=$( [[ "$ROLE" == "planner" ]] && echo "Planner" || echo "Evaluator" )
 
 # Fixed template — no improvisation
-PROMPT="You are ${ROLE_DISPLAY} B for HarnessKit mission ${MISSION}.
+# Uses $role skill invocation for Codex (equivalent to /harness-kit:role in Claude)
+PROMPT="\$${ROLE} You are ${ROLE_DISPLAY} B for HarnessKit mission ${MISSION}.
 Conversation folder: ${CONV_FOLDER}
 
 ${USER_GOAL}"

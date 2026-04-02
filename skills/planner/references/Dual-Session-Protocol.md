@@ -57,9 +57,9 @@ From here, sessions alternate messages. **A always goes first.**
    - Addresses B's questions and disagreements
    - Incorporates B's findings that A agrees with
    - States remaining disagreements clearly
-2. Update Coordination.json: `"messageRound": 3`. Update Status-A.json: `"status": "message-done"`
+2. Update Coordination.json: `"messageRound": 3`, `"nextTurn": "B"`. Update Status-A.json: `"status": "message-done"`. Then run `wait-for-turn.sh`.
 3. **Session B** reads `03-Message-A.md`, responds in `04-Message-B.md`
-4. Update Coordination.json: `"messageRound": 4`. Update Status-B.json: `"status": "message-done"`
+4. Update Coordination.json: `"messageRound": 4`, `"nextTurn": "A"`. Update Status-B.json: `"status": "message-done"`. Then run `wait-for-turn.sh`.
 5. Continue alternating until **both sessions agree on all points**
    - Each message must state what is now agreed and what remains unresolved
    - When fully agreed, the last message states: "Full agreement reached on all points."
@@ -70,8 +70,8 @@ From here, sessions alternate messages. **A always goes first.**
 Session A writes the final document. Session B reviews it.
 
 1. **Session A** writes the complete draft (next numbered file, e.g., `05-Draft-A.md`)
-2. Update Coordination.json: `"step": "documentation"`. Update Status-A.json: `"status": "draft-done"`
-3. **Session B** reads the draft, writes feedback (e.g., `06-Draft-B.md`)
+2. Update Coordination.json: `"step": "documentation"`, `"nextTurn": "B"`. Update Status-A.json: `"status": "draft-done"`. Then run `wait-for-turn.sh`.
+3. **Session B** reads the draft, writes feedback (e.g., `06-Draft-B.md`). Update Coordination.json: `"nextTurn": "A"`. Update Status-B.json.
    - Points out anything missing, incorrect, or inconsistent
    - Verifies all agreed-upon points are captured
    - Says "Approved" if the draft is complete and correct

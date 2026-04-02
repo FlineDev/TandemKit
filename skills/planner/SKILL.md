@@ -33,7 +33,7 @@ copyable content here
 
 ## Step 1 — Dual Planning (Ask FIRST, Before Anything Else)
 
-**If you are Planner B** (the prompt told you so): skip this step entirely. You already ARE the second planner. Go to Step 2.
+**If you are Planner B** (the prompt told you so): skip Steps 1-3 entirely. The mission already exists. Go directly to **Step 4 — Investigate and Plan** as Planner B. You never talk to the user — all user communication goes through Planner A. Follow the Dual-Session-Protocol from `references/Dual-Session-Protocol.md`.
 
 **If you are starting a new mission (Planner A or single):**
 
