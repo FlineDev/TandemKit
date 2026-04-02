@@ -174,13 +174,33 @@ If Codex is enabled, check `~/.codex/config.toml` for sandbox mode and approval 
 
 Create the folder structure:
 
+UpperCamelCase:
 ```
 HarnessKit/
 ├── Config.json
 ├── Planner.md
 ├── Generator.md
-└── Evaluator.md
+├── Evaluator.md
+└── ClaudeEvaluatorPrompt.md
 ```
+
+kebab-case:
+```
+harness-kit/
+├── config.json
+├── planner.md
+├── generator.md
+├── evaluator.md
+└── claude-evaluator-prompt.md
+```
+
+### ClaudeEvaluatorPrompt.md
+
+Copy from the plugin's `system-prompts/claude-evaluator.md` template. This file contains the hardened system prompt for Claude-as-Evaluator sessions — it overrides Claude's default efficiency-optimized behavior with adversarial evaluation rules.
+
+**If the file already exists** (re-init): do NOT overwrite it. The user may have customized it per project. Ask first.
+
+This file is used with `claude --append-system-prompt-file` when starting a Claude Evaluator session. It is NOT modified by the self-learning system — keep it stable. Project-specific evaluation learnings go in `Evaluator.md` instead.
 
 ### Config.json
 

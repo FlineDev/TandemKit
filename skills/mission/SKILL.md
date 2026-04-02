@@ -205,26 +205,22 @@ claude --plugin-dir /path/to/HarnessKit
 
 **Evaluator (single):**
 
-╔═══ RENAME SESSION (paste first) ═════════════════════════════════════╗
+For Claude evaluator sessions, include the hardened system prompt file. For Codex evaluators, skip `--append-system-prompt-file` (Codex doesn't support it; its different model already provides independent perspective).
+
+╔═══ RUN IN NEW TERMINAL (Claude Evaluator) ═══════════════════════════╗
+
+```
+claude --append-system-prompt-file HarnessKit/ClaudeEvaluatorPrompt.md
+```
+
+╚══════════════════════════════════════════════════════════════════════╝
+
+If using `--plugin-dir` (dev mode), add it to the same command. The command must be run from the project root. For kebab-case projects, use `harness-kit/claude-evaluator-prompt.md`.
+
+╔═══ RENAME SESSION (paste after launch) ══════════════════════════════╗
 
 ```
 /rename 🔍 Evaluator: NNN-MissionName
-```
-
-╚══════════════════════════════════════════════════════════════════════╝
-
-╔═══ SET DEEP THINKING (paste second) ═════════════════════════════════╗
-
-```
-/effort high
-```
-
-╚══════════════════════════════════════════════════════════════════════╝
-
-╔═══ RUN IN NEW TERMINAL (if starting fresh) ══════════════════════════╗
-
-```
-claude --effort high --plugin-dir /path/to/HarnessKit
 ```
 
 ╚══════════════════════════════════════════════════════════════════════╝

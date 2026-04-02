@@ -148,6 +148,10 @@ The Evaluator and Planner skills work in both Claude Code and Codex. During init
 
 AI PASS never means "done." After the inner loop completes, you review, test, and give feedback. Your feedback triggers another round of implementation and evaluation. The mission only completes when you say so.
 
+### Claude Evaluator Hardening
+
+When using Claude as the Evaluator, sessions are launched with a hardened system prompt (`ClaudeEvaluatorPrompt.md`) that overrides Claude's default efficiency-optimized behavior with independent, evidence-driven evaluation rules. This addresses a known systematic leniency bias when Claude evaluates Claude's work. The file is copied into your project during init and can be customized per-project.
+
 ### Mission Archive
 
 Every mission is a numbered subfolder (`001-JWTAuth/`, `002-SettingsRefactor/`). Completed missions remain as archive — no cleanup needed. Each mission includes the spec, all generator/evaluator rounds, user feedback, and a summary.
