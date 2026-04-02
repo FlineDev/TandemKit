@@ -130,23 +130,13 @@ Explain briefly in chat: "You can plan with a single session (faster, simpler) o
 
 ╚══════════════════════════════════════════════════════════════════════╝
 
-╔═══ RUN IN NEW TERMINAL (if starting fresh) ══════════════════════════╗
-
-```
-claude
-```
-
-╚══════════════════════════════════════════════════════════════════════╝
-
-╔═══ PASTE AS FIRST MESSAGE ═══════════════════════════════════════════╗
+╔═══ PASTE AS FIRST MESSAGE (in a new Claude Code session) ════════════╗
 
 ```
 📝 You are Planner B for HarnessKit mission NNN-MissionName. First, load the harness-kit:mission skill and follow the Planner B protocol. Then read the mission folder and join the planning process.
 ```
 
 ╚══════════════════════════════════════════════════════════════════════╝
-
-Replace `/path/to/HarnessKit` with the actual plugin path. If installed via marketplace, omit `--plugin-dir`.
 
 3. Tell the user: "Open a new session, paste the prompt, and say 'continue' here when ready."
 4. Create `Planner-Conversation/` subfolder with `Coordination.json`, `Status-A.json`, and `Status-B.json`
@@ -187,15 +177,7 @@ Once Spec.md is written to file:
 
 ╚══════════════════════════════════════════════════════════════════════╝
 
-╔═══ RUN IN NEW TERMINAL (if starting fresh) ══════════════════════════╗
-
-```
-claude
-```
-
-╚══════════════════════════════════════════════════════════════════════╝
-
-╔═══ PASTE AS FIRST MESSAGE ═══════════════════════════════════════════╗
+╔═══ PASTE AS FIRST MESSAGE (in a new Claude Code session) ════════════╗
 
 ```
 🛠️ You are the Generator for HarnessKit mission NNN-MissionName. First, load the harness-kit:mission skill and follow the Generator protocol. Then read the Spec and start implementing.
@@ -205,9 +187,9 @@ claude
 
 **Evaluator (single):**
 
-For Claude evaluator sessions, include the hardened system prompt file. For Codex evaluators, skip `--append-system-prompt-file` (Codex doesn't support it; its different model already provides independent perspective).
+For Claude evaluator sessions, start the session with the hardened system prompt. For Codex evaluators, start normally (its different model already provides independent perspective).
 
-╔═══ RUN IN NEW TERMINAL (Claude Evaluator) ═══════════════════════════╗
+╔═══ START CLAUDE EVALUATOR (run from project root) ═══════════════════╗
 
 ```
 claude --append-system-prompt-file HarnessKit/ClaudeEvaluatorPrompt.md
@@ -215,7 +197,7 @@ claude --append-system-prompt-file HarnessKit/ClaudeEvaluatorPrompt.md
 
 ╚══════════════════════════════════════════════════════════════════════╝
 
-If using `--plugin-dir` (dev mode), add it to the same command. The command must be run from the project root. For kebab-case projects, use `harness-kit/claude-evaluator-prompt.md`.
+For kebab-case projects, use `harness-kit/claude-evaluator-prompt.md`.
 
 ╔═══ RENAME SESSION (paste after launch) ══════════════════════════════╗
 

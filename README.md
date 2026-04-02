@@ -136,13 +136,7 @@ The Planner investigates, asks questions, and produces a Spec.md.
 
 ### 3. Launch Execution Sessions
 
-After planning, HarnessKit generates visually framed prompts. For each role, open a new terminal:
-
-```
-claude
-```
-
-Then rename the session and paste the role prompt:
+After planning, HarnessKit generates visually framed prompts. For each role, open a new Claude Code session, rename it, and paste the role prompt:
 ```
 /rename 🛠️ Generator: 001-JWTAuth
 ```
