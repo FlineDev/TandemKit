@@ -136,10 +136,10 @@ The Planner investigates, asks questions, and produces a Spec.md.
 
 ### 3. Launch Execution Sessions
 
-After planning, HarnessKit generates visually framed prompts with full CLI commands. For each role, open a new terminal:
+After planning, HarnessKit generates visually framed prompts. For each role, open a new terminal:
 
 ```
-claude --plugin-dir /path/to/HarnessKit
+claude
 ```
 
 Then rename the session and paste the role prompt:

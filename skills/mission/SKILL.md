@@ -133,7 +133,7 @@ Explain briefly in chat: "You can plan with a single session (faster, simpler) o
 ╔═══ RUN IN NEW TERMINAL (if starting fresh) ══════════════════════════╗
 
 ```
-claude --plugin-dir /path/to/HarnessKit
+claude
 ```
 
 ╚══════════════════════════════════════════════════════════════════════╝
@@ -190,7 +190,7 @@ Once Spec.md is written to file:
 ╔═══ RUN IN NEW TERMINAL (if starting fresh) ══════════════════════════╗
 
 ```
-claude --plugin-dir /path/to/HarnessKit
+claude
 ```
 
 ╚══════════════════════════════════════════════════════════════════════╝
