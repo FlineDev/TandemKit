@@ -10,7 +10,7 @@ This document guides the evaluator setup and verification approach for Apple pla
 
 **GitHub:** [getsentry/XcodeBuildMCP](https://github.com/getsentry/XcodeBuildMCP) — ~5,000 stars, MIT, actively maintained by Sentry
 
-The primary tool for Apple platform evaluation. Provides 82 tools across 16 workflows: build, test, run (simulator + device + macOS), UI automation (tap, swipe, type, screenshot, accessibility tree), simulator management, LLDB debugging, log capture, code coverage, and more.
+The primary tool for Apple platform evaluation. Provides 76 CLI tools across 14 workflow groups (82 in MCP mode): build, test, run (simulator + device + macOS), UI automation (tap, swipe, type, screenshot, accessibility tree), simulator management, LLDB debugging, log capture, code coverage, and more.
 
 **Key capabilities for evaluation:**
 - `build_sim` / `build_run_sim` — build and optionally launch in simulator
@@ -45,7 +45,7 @@ Or without global install (MCP mode for Codex):
 **Telemetry:** Disable by default with `XCODEBUILDMCP_SENTRY_DISABLED=true` in env.
 
 **Known issues:**
-- `snapshot_ui` may return empty on iOS 26+ fresh simulators — enable accessibility defaults: `xcrun simctl spawn booted defaults write com.apple.Accessibility AccessibilityEnabled 1`
+- `snapshot_ui` may return empty on iOS 26+ fresh simulators (#290) — enable both accessibility defaults: `xcrun simctl spawn booted defaults write com.apple.Accessibility AccessibilityEnabled 1 && xcrun simctl spawn booted defaults write com.apple.Accessibility ApplicationAccessibilityEnabled 1`
 - Test output may be truncated (#177) — fall back to `xcodebuild test` via Bash for full output
 - Security: prompt injection via build output (#291) and shell injection PRs open (#289, #292) — be cautious with untrusted dependencies
 - MCP mode: tool visibility issues reported (#220) — use CLI mode if 0 tools appear
@@ -107,7 +107,7 @@ XcodeBuildMCP supports `build_run_macos`, `test_macos`, `launch_mac_app`, `stop_
 6. **Read the accessibility tree** via `xcodebuildmcp ui-automation snapshot-ui`
 7. **Take screenshots** via `xcodebuildmcp ui-automation screenshot`
 8. **Test interaction flows** via `xcodebuildmcp ui-automation tap` / `swipe` / `type-text`
-9. **Capture logs** via `xcodebuildmcp simulator start-log-capture` / `stop-log-capture`
+9. **Capture logs** via `xcodebuildmcp log-capture start-sim-log-cap` / `stop-sim-log-cap`
 
 ### When the Mission Involves Logic/Algorithm
 10. **Runtime verification** via Xcode MCP `ExecuteSnippet` — test with real inputs

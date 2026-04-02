@@ -53,7 +53,7 @@ For EACH acceptance criterion, perform ALL applicable verification types:
 4. If no tests exist for this criterion, that's a finding — note it
 
 **For UI criteria:**
-5. Take screenshots (Xcode MCP RenderPreview, mobile-mcp, Playwright)
+5. Take screenshots (XcodeBuildMCP `screenshot`, Xcode MCP `RenderPreview`, Playwright)
 6. If possible, interact with the running app (tap, navigate, fill forms)
 
 **For domain/factual criteria:**
@@ -162,7 +162,7 @@ For FAIL, be very specific about what needs to be fixed. The Generator will read
 
 ### BLOCKED
 One or more criteria require verification that is currently unavailable:
-- Required tools are broken or hanging (e.g., mobile-mcp incompatible with current Xcode)
+- Required tools are broken or hanging (e.g., XcodeBuildMCP snapshot_ui empty on iOS 26)
 - Simulator not rendering (e.g., iOS beta rendering bug)
 - Required infrastructure not accessible
 
@@ -182,14 +182,14 @@ Use the test command from the role file. Report which tests pass and which fail.
 ### Taking Screenshots
 Use the tools documented in the role file:
 - **Xcode MCP `RenderPreview`**: For SwiftUI preview screenshots
-- **ios-simulator-mcp**: For screenshots of the running app in the simulator
+- **XcodeBuildMCP**: `screenshot`, `snapshot_ui`, `tap`, `swipe`, `type_text` for simulator interaction
 - **Playwright MCP**: For web app screenshots
 - **`xcrun simctl io booted screenshot`**: For simulator screenshots via CLI
 
 Compare screenshots against the expected UI from the spec. Note visual issues.
 
 ### Interacting with the App
-If the role file includes UI interaction tools (ios-simulator-mcp, Playwright):
+If the role file includes UI interaction tools (XcodeBuildMCP, Playwright):
 - Navigate through the implemented feature
 - Test the happy path
 - Test error cases
@@ -198,7 +198,7 @@ If the role file includes UI interaction tools (ios-simulator-mcp, Playwright):
 
 ### Running the App
 For Apple platform apps, check the role file for how to run the app:
-- AppleScript: `osascript -e 'tell application "Xcode" to tell workspace document "MyApp.xcodeproj" to run'`
+- XcodeBuildMCP: `xcodebuildmcp simulator build-and-run` to launch, `xcodebuildmcp simulator stop-app` to stop
 - Build and run the product directly if it's a CLI or Mac app
 
 ## Dual Evaluator Protocol
@@ -225,7 +225,7 @@ The benefit of dual evaluation: two models catch different things. One might foc
 After each evaluation round, update `HarnessKit/Evaluator.md` with what you learned:
 
 - Verification approaches that worked well (e.g., "ExecuteSnippet with batch test cases is effective for algorithm verification")
-- Tools that failed or are unreliable (e.g., "mobile-mcp hangs on this Xcode version")
+- Tools that failed or are unreliable (e.g., "XcodeBuildMCP snapshot_ui empty on iOS 26")
 - Workarounds you discovered
 - Build/test commands you had to adjust
 - If the user corrected your evaluation approach — document the correction as a learning so future evaluations don't repeat the mistake

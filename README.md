@@ -259,7 +259,7 @@ HarnessKit is designed to work with both Claude Code and Codex. During init, a s
 **Known limitations when using Codex:**
 - `watchman-wait` requires the watchman daemon — verify it works in your Codex environment
 - MCP servers (Xcode MCP, XcodeBuildMCP, Playwright) depend on your Codex sandbox configuration
-- AppleScript execution may be restricted depending on Codex's sandbox mode
+- XcodeBuildMCP CLI requires Homebrew installation on the host machine
 - If Codex cannot run these tools, it can still evaluate by reading code, checking tests, and analyzing the implementation — just without interactive UI verification
 
 The Generator should always be Claude Code (it needs full file system access for implementation). The Evaluator and Planner roles are where Codex provides the most value — a different model's perspective.

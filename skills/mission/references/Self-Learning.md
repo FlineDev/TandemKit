@@ -5,7 +5,7 @@ HarnessKit sessions continuously improve by documenting what they learn. This ha
 ## What To Document
 
 - **Build/test commands** that work (or don't) for this project
-- **Tools that are effective** (or broken/unreliable) — e.g., "mobile-mcp hangs on Xcode 26, use ExecuteSnippet instead"
+- **Tools that are effective** (or broken/unreliable) — e.g., "XcodeBuildMCP snapshot_ui empty on iOS 26, enable accessibility defaults first"
 - **Workarounds** for broken tools or infrastructure
 - **User corrections** — if the user corrects your approach, document it so it's never repeated. Highest priority.
 - **Evaluation approaches** that proved effective — e.g., "ExecuteSnippet with batch test cases is effective for algorithm verification"
@@ -31,7 +31,7 @@ Append learnings to a `## Learnings` section at the bottom of the relevant role 
 ```markdown
 ## Learnings
 
-- **2026-04-01 Tool:** mobile-mcp hangs indefinitely on Xcode 26. Use Xcode MCP ExecuteSnippet for runtime verification instead.
+- **2026-04-01 Tool:** XcodeBuildMCP snapshot_ui returns empty on iOS 26 simulators. Fix: enable both AccessibilityEnabled and ApplicationAccessibilityEnabled via simctl spawn.
 - **2026-04-01 User Feedback:** User wants runtime verification for ALL algorithm changes, not just UI changes. Code review alone is never sufficient.
 ```
 

@@ -164,7 +164,7 @@ Present what you found in the project's commit conventions, then ask:
 
 Read `~/.claude/settings.json` and project `.claude/settings.json`. Check for:
 - Core tools: `Bash`, `Read`, `Edit`, `Write`, `Glob`, `Grep`
-- MCP tools for the configured evaluation tools (e.g., `mcp__xcode__*`, `mcp__mobile-mcp__*`)
+- MCP tools for the configured evaluation tools (e.g., `mcp__xcode__*`, `mcp__XcodeBuildMCP__*` if using MCP mode)
 
 If missing critical permissions, explain what's needed and why.
 
@@ -197,7 +197,7 @@ HarnessKit/
   },
   "evaluation": {
     "scope": ["code", "ui", "accessibility"],
-    "tools": ["xcode-mcp", "mobile-mcp", "applescript"]
+    "tools": ["xcodebuildmcp", "xcode-mcp"]
   }
 }
 ```
