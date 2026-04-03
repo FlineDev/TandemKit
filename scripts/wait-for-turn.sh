@@ -4,10 +4,15 @@ set -euo pipefail
 # HarnessKit — wait-for-turn
 # Blocks until it's this session's turn in the dual-session protocol.
 #
-# Usage: wait-for-turn.sh <conversation-folder> <session-letter> <mode>
+# Usage: wait-for-turn.sh <conversation-folder> <session-letter> <mode> [options]
 #   conversation-folder: absolute path to the Planner-Conversation/ or Round-NN-Conversation/ folder
 #   session-letter:      A or B
 #   mode:                parallel or sequential
+#
+# Options:
+#   --wait-for <status>  exact status to wait for on the OTHER session (e.g., review-done)
+#                        without this, parallel mode uses legacy *-done matching
+#   --quiet              suppress all output except final READY line (for Codex)
 #
 # Exit 0 = it's your turn. Output includes current state summary.
 # Exit 1 = error (missing files, bad args).
@@ -15,6 +20,18 @@ set -euo pipefail
 CONV_DIR="$1"
 SESSION="$2"
 MODE="$3"
+shift 3
+
+# Parse optional flags
+WAIT_FOR=""
+QUIET=false
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --wait-for) WAIT_FOR="$2"; shift 2 ;;
+    --quiet) QUIET=true; shift ;;
+    *) echo "ERROR: Unknown argument: $1" >&2; exit 1 ;;
+  esac
+done
 
 if [[ ! -d "$CONV_DIR" ]]; then
   echo "ERROR: Conversation folder not found: $CONV_DIR" >&2
@@ -50,11 +67,20 @@ check_turn() {
   fi
 
   if [[ "$MODE" == "parallel" ]]; then
-    # In parallel mode: your turn when the other session is *-done
-    if [[ "$status_other" == *"-done" || "$status_other" == "approved" ]]; then
-      echo "READY: Mode=parallel, $OTHER status=$status_other (done). Your turn ($SESSION)."
-      echo "Your status: $status_mine"
-      return 0
+    if [[ -n "$WAIT_FOR" ]]; then
+      # Exact match mode — only return when other session has this specific status
+      if [[ "$status_other" == "$WAIT_FOR" ]]; then
+        echo "READY: Mode=parallel, $OTHER status=$status_other (matches --wait-for $WAIT_FOR). Your turn ($SESSION)."
+        echo "Your status: $status_mine"
+        return 0
+      fi
+    else
+      # Legacy mode (no --wait-for) — any -done suffix or approved
+      if [[ "$status_other" == *"-done" || "$status_other" == "approved" ]]; then
+        echo "READY: Mode=parallel, $OTHER status=$status_other (done). Your turn ($SESSION)."
+        echo "Your status: $status_mine"
+        return 0
+      fi
     fi
   else
     # In sequential mode: check nextTurn field
@@ -80,7 +106,9 @@ if check_turn; then
 fi
 
 # Not our turn — enter watch loop
-echo "WAITING: Not $SESSION's turn yet. Watching $CONV_DIR..."
+if [[ "$QUIET" != true ]]; then
+  echo "WAITING: Not $SESSION's turn yet. Watching $CONV_DIR..."
+fi
 
 while true; do
   # Try watchman-wait first
@@ -90,13 +118,11 @@ while true; do
       --max-events 1 -t 600 2>/dev/null || true
   else
     # Fallback: md5 polling
-    local prev_hash
-    prev_hash=$(cat "$CONV_DIR/Status-$OTHER.json" "$CONV_DIR/Coordination.json" 2>/dev/null | md5 -q 2>/dev/null || echo "none")
+    _prev=$(cat "$CONV_DIR/Status-$OTHER.json" "$CONV_DIR/Coordination.json" 2>/dev/null | md5 -q 2>/dev/null || echo "none")
     while true; do
       sleep 5
-      local curr_hash
-      curr_hash=$(cat "$CONV_DIR/Status-$OTHER.json" "$CONV_DIR/Coordination.json" 2>/dev/null | md5 -q 2>/dev/null || echo "none")
-      if [[ "$curr_hash" != "$prev_hash" ]]; then
+      _curr=$(cat "$CONV_DIR/Status-$OTHER.json" "$CONV_DIR/Coordination.json" 2>/dev/null | md5 -q 2>/dev/null || echo "none")
+      if [[ "$_curr" != "$_prev" ]]; then
         break
       fi
     done
@@ -107,5 +133,9 @@ while true; do
     exit 0
   fi
 
-  echo "STILL WAITING: Woke up but not $SESSION's turn yet. Continuing to watch..."
+  # Only log once, only if not quiet
+  if [[ "$QUIET" != true && -z "${_spurious_logged:-}" ]]; then
+    echo "STILL WAITING: Woke up but not $SESSION's turn yet. Continuing to watch..."
+    _spurious_logged=1
+  fi
 done

@@ -171,6 +171,6 @@ Soft suggestions from the Planner. Non-binding. The Generator can take these or 
 2. **Two evaluators must agree on pass/fail** — if criteria are ambiguous enough for disagreement, rewrite them
 3. **Include negative cases** — what must NOT happen is as important as what must happen
 4. **Investigation findings are rich** — preserve the Planner's work with links, paths, tradeoffs
-5. **Spec is immutable during implementation** — user feedback goes to UserFeedback/ files, not spec edits
+5. **Spec is immutable during implementation** — the Generator and Evaluator work against a locked spec. User feedback goes to UserFeedback/ files. Exception: the user may direct spec corrections (naming fixes, typos) if they explicitly request it. Document any spec edits in the current round's report.
 6. **Prune ruthlessly** — if removing a line would not cause the Generator to make mistakes, remove it
 7. **Preserve user's words** — User Intent is exact quotes, Key Decisions note when they changed their mind

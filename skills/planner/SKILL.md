@@ -27,13 +27,22 @@ copyable content here
 ╚══════════════════════════════════════════════════════════════════════╝
 
 5. **Do NOT over-explain HarnessKit.** The user knows what it is.
-6. **Reference files** are in `references/` next to this SKILL.md, in the plugin directory.
+6. **Templates** are in `templates/` next to this SKILL.md. **Shared protocol** is in `../../protocol/`.
 7. **In dual mode, do NOT use subagents** for investigation. You and Planner B are the two independent investigators — adding subagents undermines independence.
 8. **Do NOT write Codex prompt files** unless the protocol explicitly calls for it or the user asks. Show the prompt in chat and copy to clipboard — that's enough.
 
+## Mindset
+
+- You are an investigator and architect, not an implementer
+- Your output is requirements, not code
+- Your job is done when a Generator who has never seen the codebase could implement from your spec, and an Evaluator could verify every acceptance criterion unambiguously
+- Be thorough in investigation — the more context you capture now, the less the Generator has to rediscover
+- Be honest about uncertainties — document open questions rather than guessing
+
 ## Step 1 — Dual Planning (Ask FIRST, Before Anything Else)
 
-**If you are Planner B** (the prompt told you so): skip Steps 1-3 entirely. The mission already exists. Go directly to **Step 4 — Investigate and Plan** as Planner B. You never talk to the user — all user communication goes through Planner A. Follow the Dual-Session-Protocol from `references/Dual-Session-Protocol.md`.
+**If you are Planner B** (the prompt told you so): skip Steps 1-3 entirely. The mission already exists. Go directly to **Step 4 — Investigate and Plan** as Planner B. You never talk to the user — all user communication goes through Planner A. Follow the Dual-Session-Protocol from `../../protocol/Dual-Session-Protocol.md`.
+Note: Codex B must run all wait scripts as blocking calls (no `run_in_background`). See Dual-Session-Protocol.md.
 
 **If you are starting a new mission (Planner A or single):**
 
@@ -42,7 +51,7 @@ Before reading any project files, before investigating, before even looking at t
 > "Do you want dual planning with Codex? Two models investigating independently find different things."
 
 **If YES (dual planning):**
-1. Read `references/Dual-Session-Protocol.md` for the full protocol
+1. Read `../../protocol/Dual-Session-Protocol.md` for the full protocol
 2. You are now **Planner A**
 3. Proceed to Step 2 (mission name)
 
@@ -76,26 +85,14 @@ For dual mode, use `📝 Planner A: NNN-MissionName` instead. This is recommende
 
 Only after the user approves the name via AskUserQuestion:
 
-1. Create `HarnessKit/NNN-MissionName/` (just the folder, no subfolders yet)
-2. Create `State.json`:
-   ```json
-   {
-     "phase": "planning",
-     "round": 0,
-     "generatorStatus": null,
-     "evaluatorStatus": null,
-     "verdict": null,
-     "userFeedbackRounds": 0,
-     "started": "YYYY-MM-DDTHH:MM:SSZ",
-     "updated": "YYYY-MM-DDTHH:MM:SSZ"
-   }
+1. Run the scaffolding script to create all mission files at once:
+   ```bash
+   bash "${CLAUDE_SKILL_DIR}/../../scripts/create-mission.sh" "NNN-MissionName" "dual"
    ```
-3. Update Config.json: set `currentMission`, increment `nextMissionNumber`
-4. If git feature branches are enabled: create and switch to a branch following the project's branch naming pattern
+   Use `"single"` instead of `"dual"` for non-dual planning. The script creates State.json, updates Config.json, and for dual mode also creates Planner-Conversation/ with Coordination.json, Status-A.json, Status-B.json.
+2. If git feature branches are enabled: create and switch to a branch following the project's branch naming pattern
 
-**If dual planning:** Also create `Planner-Conversation/` with `Coordination.json` (include `"nextTurn": "A"`), `Status-A.json`, `Status-B.json`.
-
-Then generate the Codex Planner B prompt using the plugin's script — do NOT improvise the prompt:
+**If dual planning:** Generate the Codex Planner B prompt using the plugin's script — do NOT improvise the prompt:
 
 ```bash
 bash "${CLAUDE_SKILL_DIR}/../../scripts/render-secondary-prompt.sh" "planner" "NNN-MissionName" "HarnessKit/NNN-MissionName/Planner-Conversation" "<user's original goal text>"
@@ -113,21 +110,39 @@ Show the script's output in chat with Variant 1 framing. The script also copies 
 
 Wait for user confirmation before starting investigation.
 
+**If single planning:** Proceed directly to Step 4 after the mission is created.
+
 ## Step 4 — Investigate and Plan
 
 **FIRST:** Read `HarnessKit/Planner.md` for project-specific context. This is mandatory — do not skip it.
 
-Then read `references/Role-Planner.md` for general planner guidance.
-
 1. **Capture the user's goal verbatim** for the User Intent section
-2. **Investigate the codebase** — read relevant files, check architecture, look for PlanKit files. Tell the user what you're investigating. In dual mode, do NOT use subagents.
-3. **Ask upfront questions** only if truly needed. If none, say "No upfront questions — let me investigate first" so the user can leave.
-4. **Research and explore** thoroughly. Document findings with file paths, line numbers, links.
-5. **Determine the Mission Type** (code / documentation / domain / mixed) — see `references/Spec-Format.md`
-6. **Draft the Spec.md** — follow `references/Spec-Format.md`. **Present the COMPLETE text in chat.** Do NOT write to file yet.
+2. **Investigate the codebase** thoroughly:
+   - Read project docs (AGENTS.md, CLAUDE.md, README) for conventions and constraints
+   - Check for PlanKit: if `PlanKit/` exists, read roadmap and cross-reference with the goal. Reference matching features in the Context section but do NOT modify PlanKit files
+   - Explore relevant source code — note file paths and line numbers for the Context section
+   - Check existing patterns: how are similar features implemented?
+   - Look for dependencies: does this affect other parts of the system?
+   - Check test infrastructure and testing patterns
+   - Planner A / sole: tell the user what you're investigating. Planner B: document in conversation files, do NOT communicate with the user. In dual mode, do NOT use subagents.
+3. **Ask upfront questions** only if truly needed — the goal is genuinely ambiguous, there are fundamentally different directions, or the user referenced something you can't find. Most questions are better asked AFTER investigation. (Planner B: skip this — write questions to `UpfrontQuestions-B.md` per the Dual-Session-Protocol instead.)
+4. **Research and explore** — identify edge cases, negative cases (what should NOT happen), tradeoffs between approaches. Document findings with file paths, line numbers, links.
+5. **Determine the Mission Type** (code / documentation / domain / mixed) — see `templates/Spec-Format.md`
+6. **Draft the Spec.md** — follow `templates/Spec-Format.md`. **Present the COMPLETE text in chat.** Do NOT write to file yet.
+
+   **What makes a good acceptance criterion:**
+   - Good: unambiguous, verifiable — "Invalid credentials produce a 401 response", "All existing tests continue to pass"
+   - Bad: subjective, unmeasurable — "The code should be clean", "Performance should be good"
+   - Convert subjective criteria to observable outcomes: "clean code" → "functions no longer than 50 lines"; "good performance" → "response time under 200ms". If it can't be verified by the Evaluator, move it to "What the user should test manually" or remove it.
+
 7. **Ask for approval** using AskUserQuestion
 8. **Iterate if needed** — show updated spec in chat after changes
 9. **Write to file only after approval** — `HarnessKit/NNN-MissionName/Spec.md`
+10. **Optionally ask about committing:** "The spec and mission structure are ready. Want me to commit them before we start execution?" This is recommended but not mandatory — the user may prefer to commit later.
+
+════════════════════════════════════════
+  ✓ Spec ready — Your turn to approve
+════════════════════════════════════════
 
 If dual planning: follow the Dual-Session-Protocol (investigation → cross-review → conversation → documentation → end questions). **After every `-done` state write, immediately enter a watch loop** — see "Active Watching" below.
 
@@ -169,22 +184,34 @@ claude --append-system-prompt-file HarnessKit/ClaudeEvaluatorPrompt.md
 
 ╚══════════════════════════════════════════════════════════════════════╝
 
-**If dual evaluation with Codex:** Generate a Codex Evaluator B prompt using the same fixed template pattern. Copy to clipboard, show in chat. Include a `/rename 🔍 Evaluator B: NNN-MissionName` suggestion.
+**If dual evaluation:** Evaluator A will handle launching Evaluator B when the evaluation phase begins. The Planner does NOT generate the Evaluator B prompt.
 
 Update State.json: `"phase": "ready-for-execution"`
 
+════════════════════════════════════════
+  ✓ Planning Complete — Start Generator and Evaluator sessions
+════════════════════════════════════════
+
 ## Active Watching (Dual Mode)
 
-**After EVERY `-done` state write, IMMEDIATELY run the wait-for-turn script.** Do not go idle. Do not wait passively. Do not rely on memory or judgment — use the script.
+**After EVERY status signal, IMMEDIATELY run the wait-for-turn script.** Do not go idle. Do not wait passively.
 
+Use `signal-step.sh` for ALL status/coordination updates. Use `wait-for-turn.sh` with `--wait-for` for ALL waits. Do NOT hand-edit Status or Coordination JSON files directly.
+
+**Parallel phases (Steps 1-3):** Always specify `--wait-for` with the exact expected status:
 ```bash
-bash "${CLAUDE_SKILL_DIR}/../../scripts/wait-for-turn.sh" "$(pwd)/HarnessKit/NNN-MissionName/Planner-Conversation" "A" "parallel"
+bash "${CLAUDE_SKILL_DIR}/../../scripts/wait-for-turn.sh" "$(pwd)/HarnessKit/NNN-MissionName/Planner-Conversation" "A" "parallel" --wait-for investigation-done
 ```
 
-Replace `"A"` with your session letter, and `"parallel"` with `"sequential"` for Steps 4-6. Run with `run_in_background: true`. When it exits (prints "READY"), read the output and proceed.
+**Sequential phases (Steps 4-6):**
+```bash
+bash "${CLAUDE_SKILL_DIR}/../../scripts/wait-for-turn.sh" "$(pwd)/HarnessKit/NNN-MissionName/Planner-Conversation" "A" "sequential"
+```
+
+**Planner A (Claude):** Run with `run_in_background: true`.
+**Planner B (Codex):** Run as a blocking call with `--quiet` — do NOT use `run_in_background`.
+
+When the script prints "READY", read the output and proceed.
 
 **Planner B must NEVER stop running this script** until Planner A reaches the user-approval boundary. Only Planner A can stop — and only at that specific point.
 
-## Self-Learning
-
-After planning, document learnings in `HarnessKit/Planner.md`. See `references/Self-Learning.md`.

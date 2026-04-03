@@ -4,6 +4,8 @@ description: Initialize HarnessKit in this project. Sets up the coordination fol
 
 # HarnessKit — Project Initialization
 
+> **Note:** This command is for plugin-based distribution only. For local development, use direct symlinks to the HarnessKit repo instead — see DESIGN.md for setup instructions.
+
 This command sets up HarnessKit in the current project. Run it once per project.
 
 ## Important UX Rules

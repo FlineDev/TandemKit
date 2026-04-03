@@ -15,10 +15,20 @@ Both sessions independently think about whether the user needs to clarify direct
 
 1. **Session A** writes questions (if any) to `UpfrontQuestions-A.md`
 2. **Session B** writes questions (if any) to `UpfrontQuestions-B.md`
-3. Each updates their own signal file: Session A writes `Status-A.json` with `"status": "upfront-done"`, Session B writes `Status-B.json` with `"status": "upfront-done"`
-4. **Wait for each other**: Use `watchman-wait` on the conversation folder. When a file changes, read both Status-A.json and Status-B.json. Proceed when both show `"upfront-done"`.
+3. Each signals completion:
+   ```bash
+   bash "${CLAUDE_SKILL_DIR}/../../scripts/signal-step.sh" "<conv-folder>" "<A-or-B>" "upfront-done"
+   ```
+4. **Wait for each other:**
+   ```bash
+   bash "${CLAUDE_SKILL_DIR}/../../scripts/wait-for-turn.sh" "<conv-folder>" "<A-or-B>" "parallel" --wait-for upfront-done
+   ```
+   Codex sessions: add `--quiet`. Claude sessions: use `run_in_background: true`.
 5. **Session A collects all questions** from both files. If there are questions, asks the user in its chat and documents answers in `UserAnswers.md`. If no questions from either session, A explicitly tells the user: "No upfront questions — I'll investigate first. You can step away."
-6. **Session A signals** the answers are ready by updating Coordination.json: `"step": "parallel-investigation"`
+6. **Session A advances the step:**
+   ```bash
+   bash "${CLAUDE_SKILL_DIR}/../../scripts/signal-step.sh" "<conv-folder>" "A" "upfront-done" --step parallel-investigation
+   ```
 
 **Evaluators skip this step entirely** — they never ask the user.
 
@@ -32,8 +42,19 @@ Both sessions investigate independently and simultaneously. They do NOT wait for
 
 1. **Session A** writes findings to `01-Investigation-A.md`
 2. **Session B** writes findings to `01-Investigation-B.md`
-3. Each updates their own signal file with `"status": "investigation-done"`
-4. **Wait for each other**: Watch for file changes, check both Status-A.json and Status-B.json
+3. Each signals completion:
+   ```bash
+   bash "${CLAUDE_SKILL_DIR}/../../scripts/signal-step.sh" "<conv-folder>" "<A-or-B>" "investigation-done"
+   ```
+4. **Wait for each other:**
+   ```bash
+   bash "${CLAUDE_SKILL_DIR}/../../scripts/wait-for-turn.sh" "<conv-folder>" "<A-or-B>" "parallel" --wait-for investigation-done
+   ```
+   Codex sessions: add `--quiet`. Claude sessions: use `run_in_background: true`.
+5. **Session A advances the step:**
+   ```bash
+   bash "${CLAUDE_SKILL_DIR}/../../scripts/signal-step.sh" "<conv-folder>" "A" "investigation-done" --step parallel-review
+   ```
 
 ### Step 3 — Parallel Cross-Review
 
@@ -46,8 +67,19 @@ Both sessions read the other's investigation and write a review. This happens in
    - Specific questions for B
 2. **Session B** reads `01-Investigation-A.md`, writes review to `02-Review-B.md`
    - Same structure
-3. Each updates their own signal file with `"status": "review-done"`
-4. **Wait for each other**: Watch for file changes, check both signal files
+3. Each signals completion:
+   ```bash
+   bash "${CLAUDE_SKILL_DIR}/../../scripts/signal-step.sh" "<conv-folder>" "<A-or-B>" "review-done"
+   ```
+4. **Wait for each other:**
+   ```bash
+   bash "${CLAUDE_SKILL_DIR}/../../scripts/wait-for-turn.sh" "<conv-folder>" "<A-or-B>" "parallel" --wait-for review-done
+   ```
+   Codex sessions: add `--quiet`. Claude sessions: use `run_in_background: true`.
+5. **Session A advances the step:**
+   ```bash
+   bash "${CLAUDE_SKILL_DIR}/../../scripts/signal-step.sh" "<conv-folder>" "A" "review-done" --step sequential-conversation --next-turn A
+   ```
 
 ### Step 4 — Sequential Conversation
 
@@ -57,21 +89,40 @@ From here, sessions alternate messages. **A always goes first.**
    - Addresses B's questions and disagreements
    - Incorporates B's findings that A agrees with
    - States remaining disagreements clearly
-2. Update Coordination.json: `"messageRound": 3`, `"nextTurn": "B"`. Update Status-A.json: `"status": "message-done"`. Then run `wait-for-turn.sh`.
+2. Signal and wait:
+   ```bash
+   bash "${CLAUDE_SKILL_DIR}/../../scripts/signal-step.sh" "<conv-folder>" "A" "message-done" --next-turn B --message-round 3
+   ```
+   Then run `wait-for-turn.sh` in sequential mode.
 3. **Session B** reads `03-Message-A.md`, responds in `04-Message-B.md`
-4. Update Coordination.json: `"messageRound": 4`, `"nextTurn": "A"`. Update Status-B.json: `"status": "message-done"`. Then run `wait-for-turn.sh`.
+4. Signal and wait:
+   ```bash
+   bash "${CLAUDE_SKILL_DIR}/../../scripts/signal-step.sh" "<conv-folder>" "B" "message-done" --next-turn A --message-round 4
+   ```
+   Then run `wait-for-turn.sh` in sequential mode.
 5. Continue alternating until **both sessions agree on all points**
    - Each message must state what is now agreed and what remains unresolved
    - When fully agreed, the last message states: "Full agreement reached on all points."
-   - **Deadlock prevention:** If agreement is not reached after **5 conversation exchanges** (10 messages total), stop the discussion. Session A writes the final document noting any unresolved disagreements and escalates to the user: "We couldn't agree on [X]. Here are both positions: [A's view] vs [B's view]. Which do you prefer?" The user decides.
+   - **Deadlock prevention:** If no agreement after 5 exchanges (10 messages), Session A writes the final document noting disagreements and lets the user decide.
 
 ### Step 5 — Documentation
 
 Session A writes the final document. Session B reviews it.
 
 1. **Session A** writes the complete draft (next numbered file, e.g., `05-Draft-A.md`)
-2. Update Coordination.json: `"step": "documentation"`, `"nextTurn": "B"`. Update Status-A.json: `"status": "draft-done"`. Then run `wait-for-turn.sh`.
-3. **Session B** reads the draft, writes feedback (e.g., `06-Draft-B.md`). Update Coordination.json: `"nextTurn": "A"`. Update Status-B.json.
+2. Signal and wait:
+   ```bash
+   bash "${CLAUDE_SKILL_DIR}/../../scripts/signal-step.sh" "<conv-folder>" "A" "draft-done" --step documentation --next-turn B
+   ```
+   Then run `wait-for-turn.sh` in sequential mode.
+3. **Session B** reads the draft, writes feedback (e.g., `06-Draft-B.md`). Signal:
+   ```bash
+   bash "${CLAUDE_SKILL_DIR}/../../scripts/signal-step.sh" "<conv-folder>" "B" "reviewing-draft" --next-turn A
+   ```
+   Or if approved:
+   ```bash
+   bash "${CLAUDE_SKILL_DIR}/../../scripts/signal-step.sh" "<conv-folder>" "B" "approved" --next-turn A
+   ```
    - Points out anything missing, incorrect, or inconsistent
    - Verifies all agreed-upon points are captured
    - Says "Approved" if the draft is complete and correct
@@ -81,14 +132,21 @@ Session A writes the final document. Session B reviews it.
    - Planners: `Spec.md` in the mission folder
    - Evaluators: `Evaluator/Round-NN.md` in the mission folder
 
-### Step 6 — End Questions (Planners Only)
+### Step 6 — End Questions (Planners Only, Optional)
 
-After the spec draft is approved by both planners:
+If questions arose during investigation and discussion that weren't resolved:
 
-1. **Session A** collects any remaining questions that arose during investigation and discussion
-2. Presents these to the user in A's chat, documents answers in `EndQuestions.md`
-3. If answers require significant changes: update Coordination.json to go back to Step 2 (re-investigation)
-4. If answers are minor clarifications: Session A updates the Spec.md directly
+1. **Session A** collects remaining questions, presents to the user, documents answers in `EndQuestions.md`
+2. If answers require significant changes: go back to Step 2
+3. If minor: Session A updates Spec.md directly
+
+If no unresolved questions (the common case), skip this step.
+
+**Session A MUST signal terminal state when planning/evaluation is complete:**
+```bash
+bash "${CLAUDE_SKILL_DIR}/../../scripts/signal-step.sh" "<conv-folder>" "A" "done" --step done
+```
+This ensures Coordination.json reaches `step: "done"`. Without this, B cannot detect completion.
 
 **Evaluators skip this step** — they write the final evaluation and signal done.
 
@@ -180,12 +238,23 @@ During parallel phases (Steps 1-3), `nextTurn` is not used — both sessions wor
 Use the plugin's `scripts/wait-for-turn.sh` script to block until it's your turn:
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/../../scripts/wait-for-turn.sh" "<conversation-folder-absolute-path>" "<A-or-B>" "<parallel-or-sequential>"
+# Parallel phases — always specify --wait-for with the expected status
+bash "${CLAUDE_SKILL_DIR}/../../scripts/wait-for-turn.sh" "<conv-folder>" "<A-or-B>" "parallel" --wait-for <expected-status>
+
+# Sequential phases
+bash "${CLAUDE_SKILL_DIR}/../../scripts/wait-for-turn.sh" "<conv-folder>" "<A-or-B>" "sequential"
 ```
 
-Run with `run_in_background: true`. The script handles watchman-wait, fallback polling, state checking, and re-verification automatically. When it exits with "READY", read the output and proceed.
+**Claude (Session A, sole sessions):** Run with `run_in_background: true`.
 
-Do NOT implement your own watching logic. Use the script.
+**Codex (Session B):** Run as a blocking call with `--quiet` — do NOT use `run_in_background`:
+```bash
+bash "${CLAUDE_SKILL_DIR}/../../scripts/wait-for-turn.sh" "<conv-folder>" "B" "parallel" --wait-for investigation-done --quiet
+```
+
+Use `scripts/signal-step.sh` for ALL status/coordination updates. Do NOT hand-edit Status or Coordination JSON files directly.
+
+Do NOT implement your own watching logic. Use the scripts.
 
 ---
 
