@@ -112,11 +112,11 @@ Then check `generatorStatus`:
 **Evaluator B:** The State.json updates below (steps 1 and 6) are for Evaluator A / sole Evaluator only. You write to your conversation-level `Status-B.json` instead. Follow `../../protocol/Dual-Session-Protocol.md` for your coordination workflow.
 
 1. Update State.json: `evaluatorStatus: "evaluating"`. Read-modify-write only your fields. (Evaluator A / sole only)
-2. **Check the Mission Type** from Spec.md:
-   - **code**: Build, test, preview, runtime verification are primary
-   - **documentation**: Verify claims against source files and test results. Build/test NOT required.
-   - **domain**: Canonical cases, primary source verification, consistency checks
-   - **mixed**: Apply both paths
+2. **Check the Mission Type** from Spec.md and read the matching evaluation strategy:
+   - **code**: `strategies/Evaluation-Strategy-ApplePlatform.md` (or CLI/Web depending on project type in Config.json)
+   - **documentation**: `strategies/Evaluation-Strategy-Domain.md` — verify claims against source files. Build/test NOT required.
+   - **domain**: `strategies/Evaluation-Strategy-Domain.md` — canonical cases, primary source verification, consistency checks
+   - **mixed**: Read both the code and domain strategies, apply both paths
 3. **Mandatory checks** from `HarnessKit/Evaluator.md` — build, tests, screenshots as specified. Any "always do" failure is an immediate FAIL.
 4. **Independently verify every acceptance criterion** using the verification checklist:
    - Read COMPLETE implementation files (not just diffs or changed lines)
