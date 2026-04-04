@@ -46,7 +46,7 @@ copyable content here
 6. Suggest a short PascalCase mission name based on the goal. Ask user to confirm via AskUserQuestion.
 7. On confirmation: run the scaffolding script:
    ```bash
-   bash "${CLAUDE_SKILL_DIR}/../../scripts/create-mission.sh" "NNN-MissionName" "single"
+   bash "${CLAUDE_SKILL_DIR}/../../scripts/create-mission.sh" "NNN-MissionName"
    ```
 8. If git feature branches are enabled in Config.json: create and switch to a branch following the project's branch naming pattern
 9. Suggest session rename:

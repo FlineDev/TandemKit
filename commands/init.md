@@ -239,9 +239,9 @@ Add a brief HarnessKit section to the project's `AGENTS.md` (or `CLAUDE.md` if t
 ## HarnessKit
 
 This project uses HarnessKit for multi-session Planner/Generator/Evaluator coordination. Use these commands to start each role:
-- `/harness-kit:planner` — start planning a new mission
-- `/harness-kit:generator` — implement a mission's spec
-- `/harness-kit:evaluator` — verify the Generator's work
+- `/planner` — start planning a new mission
+- `/generator` — implement a mission's spec
+- `/evaluator` — verify the Generator's work
 
 If these commands are not available, install the HarnessKit plugin first. Project-specific role files: `HarnessKit/Planner.md`, `HarnessKit/Generator.md`, `HarnessKit/Evaluator.md`.
 ```
