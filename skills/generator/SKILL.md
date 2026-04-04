@@ -8,7 +8,7 @@ description: >
 
 # HarnessKit — Generator
 
-You are the Generator. Your job is to implement the spec faithfully, commit at milestones, and produce work the Evaluator can verify.
+You are the Generator. Your job is to implement the spec faithfully, commit at milestones, and produce work the Evaluator can verify. You do NOT use Codex — the Evaluator handles dual-model verification.
 
 ## UX Rules
 
@@ -22,11 +22,11 @@ You are the Generator. Your job is to implement the spec faithfully, commit at m
 - The Evaluator will check your work with fresh eyes — make it easy for them
 - Commit at milestones so progress is recoverable
 - Be honest in your Generator reports — list what you're uncertain about
-- The spec is immutable. If you think the spec is wrong, implement it anyway and note the concern in your report.
+- The spec is immutable. If you think the spec is wrong, implement it anyway and note the concern in your report. The user can address it during feedback.
 
 ## On Start
 
-The user invokes this skill with `/harness-kit:generator NNN-MissionName`. Suggest renaming the session if not already done:
+The user invokes this skill with `/generator NNN-MissionName`. First rename the session:
 
 ╔═══ RENAME THIS SESSION ══════════════════════════════════════════════╗
 
@@ -56,8 +56,17 @@ The user invokes this skill with `/harness-kit:generator NNN-MissionName`. Sugge
 2. **Update State.json**: Set `generatorStatus: "working"`, `round: N`. Read-modify-write only your fields.
 3. **Implement** against the spec's acceptance criteria. Follow conventions from `HarnessKit/Generator.md`. Commit at milestones if auto-commit is enabled.
 4. **Write report** to `Generator/Round-NN.md`. Follow the format in `templates/Generator-Round-Format.md`.
-5. **Signal the Evaluator**: Update State.json — `generatorStatus: "ready-for-eval"`, `evaluatorStatus: "pending"`, `phase: "evaluation"`. Read-modify-write only your fields.
-6. **Wait for evaluation**: Use `wait-for-state.sh` (see Watching for State Changes below). When `evaluatorStatus` is `"done"`, read `Evaluator/Round-NN.md`.
+5. **Write changed-file manifest** to `Generator/ChangedFiles-NN.txt` — list all files you created or modified in this round, one per line. The Evaluator uses this to know what to verify without reading your prose report first.
+6. **Signal the Evaluator**: Update State.json — `generatorStatus: "ready-for-eval"`, `evaluatorStatus: "pending"`, `phase: "evaluation"`, `round: N`. Read-modify-write only your fields.
+7. **Wait for evaluation**: Use `wait-for-state.sh`:
+   ```bash
+   bash "${CLAUDE_SKILL_DIR}/../../scripts/wait-for-state.sh" "$(pwd)/HarnessKit/NNN-MissionName" evaluatorStatus done --round N
+   ```
+   Run with `run_in_background: true`. When `evaluatorStatus` is `"done"` and round matches, read `Evaluator/Round-NN.md`.
+
+════════════════════════════════════════
+  → DONE — Waiting for Evaluator
+════════════════════════════════════════
 
 ## After Receiving Evaluation
 
@@ -77,29 +86,26 @@ This is the most important communication in the entire mission — the handoff f
 
 Present to the user:
 
-1. **What was done** — 2-3 paragraph summary. Not technical details — what the user will notice. "You now have a login screen with email/password fields. When you enter valid credentials, you're redirected to the dashboard."
+1. **What was done** — 2-3 paragraph summary. Not technical details — what the user will notice.
 
 2. **Stats** — keep it brief:
    - Files created/changed: N
    - AI evaluation rounds: N (M FAIL, K PASS)
    - User feedback rounds: N (if any)
 
-3. **Evaluator Findings Addressed** — only mention significant ones the user would care about:
-   - "The Evaluator found that refresh tokens weren't invalidated on password change — this is now fixed"
-   - Don't list every minor code fix
+3. **Evaluator Findings Addressed** — only significant ones the user would care about
 
-4. **Key decisions made** — choices you made that the user should know about:
-   - "Used a TokenService actor for thread-safe token management"
+4. **Key decisions made** — choices you made that the user should know about
 
-5. **What the user should test** — specific, actionable instructions:
-   - "Open the app and navigate to the login screen"
-   - "Try logging in with wrong credentials 5 times"
+5. **What the user should test** — specific, actionable instructions
 
-6. **Aspects AI cannot fully verify** — be honest about your limitations:
-   - "Visual design: spacing, font sizes, and color consistency with your design system"
-   - "Accessibility: VoiceOver labels are set but we couldn't test the actual VoiceOver experience"
+6. **Aspects AI cannot fully verify** — be honest about your limitations
 
 Notify via claude-notify if available. Update State.json: `phase: "user-review"`, `generatorStatus: "awaiting-user"`.
+
+════════════════════════════════════════
+  ✓ DONE — Your turn
+═══════════════════════════════���════════
 
 ## After User Feedback
 
@@ -122,8 +128,8 @@ When the user says "looks good" / "approved" / "done":
 2. Update Config.json: `currentMission: null`
 3. Generate `Summary.md` — see `templates/Summary-Format.md`
 4. **Present the summary in chat** — if short (under ~30 lines), show in full. If longer, show a concise version with key highlights.
-5. **Ask about committing:** "Should I commit the mission files?" This step is NEVER skipped — even if auto-commit doesn't apply, always ask. If auto-commit IS enabled: "I'll commit the mission files now — OK?"
-6. If user confirms: run `git status` to show what will be committed, then stage both implementation outputs (files created/modified during the mission) and HarnessKit metadata (`HarnessKit/NNN-MissionName/`, `HarnessKit/Planner.md`, `HarnessKit/Generator.md`, `HarnessKit/Evaluator.md`). Commit together. If user declines: note that files are uncommitted.
+5. **Ask about committing:** "Should I commit the mission files?" This step is NEVER skipped — even if auto-commit doesn't apply, always ask.
+6. If user confirms: run `git status` to show what will be committed, then stage both implementation outputs and HarnessKit metadata. Commit together. If user declines: note that files are uncommitted.
 7. If on feature branch: tell user it's ready for merging
 
 ════════════════════════════════════════
@@ -132,29 +138,21 @@ When the user says "looks good" / "approved" / "done":
 
 ## Abort Mission
 
-If the user says "abort": confirm, set State.json `phase: "abandoned"`, Config.json `currentMission: null`. Switch back to main branch if on feature branch. Mission folder stays as archive.
+If the user says "abort": confirm, set State.json `phase: "abandoned"`, Config.json `currentMission: null`.
 
 ## Watching for State Changes
 
 Use `wait-for-state.sh` for ALL State.json watching. Do NOT use raw watchman-wait.
 
-**Waiting for evaluation to complete:**
 ```bash
-bash "${CLAUDE_SKILL_DIR}/../../scripts/wait-for-state.sh" "$(pwd)/HarnessKit/NNN-MissionName" evaluatorStatus done
+bash "${CLAUDE_SKILL_DIR}/../../scripts/wait-for-state.sh" "$(pwd)/HarnessKit/NNN-MissionName" evaluatorStatus done --round N
 ```
 
-**Waiting for evaluator readiness (at mission start):**
-```bash
-bash "${CLAUDE_SKILL_DIR}/../../scripts/wait-for-state.sh" "$(pwd)/HarnessKit/NNN-MissionName" evaluatorStatus watching
-```
+Run with `run_in_background: true`. The script checks immediately, then enters a watch loop. When it prints "READY", re-read State.json. The `--round N` parameter ensures you don't match stale values from a previous round.
 
-Run with `run_in_background: true`. The script checks immediately, then enters a watch loop with watchman-wait (md5 fallback). When it prints "READY", re-read State.json to get the full state.
+## File Reading Limits
 
-**MCP timeout:** If any MCP tool call hangs >60 seconds, interrupt and try alternatives.
-
-## Visual Handoff Banners
-
-Print these banners at phase transitions. They are already shown inline above at the right steps — this is just the reference:
-- After signaling the Evaluator: `→ DONE — Waiting for Evaluator`
-- After Review Briefing: `✓ DONE — Your turn`
-- After mission complete: `✓ Mission Complete`
+- **Max 5 files per parallel Read batch** — if more needed, read in sequential batches
+- **Use Glob/Grep before Read** — identify relevant files first
+- **Large files (>300 lines)** — read only relevant sections using offset/limit
+- **Batch edits** — max 5 parallel Write/Edit operations per batch

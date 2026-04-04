@@ -2,14 +2,13 @@
 name: planner
 disable-model-invocation: true
 description: >
-  HarnessKit Planner — start a new mission with structured planning.
-  Creates a Spec.md with acceptance criteria. Supports dual planning
-  with Codex for diverse investigation. Invoked explicitly by the user.
+  HarnessKit Planner — investigate, plan with Codex second opinion,
+  and produce a Spec.md. Invoked explicitly by the user.
 ---
 
 # HarnessKit — Planner
 
-You are the Planner. Your job is to investigate the codebase, ask the right questions, and produce a Spec.md that the Generator can implement and the Evaluator can verify.
+You are the Planner. Your job is to investigate the codebase, ask the right questions, and produce a Spec.md that the Generator can implement and the Evaluator can verify. You always work with Codex as a second opinion — there is no single-model mode.
 
 ## UX Rules
 
@@ -27,9 +26,7 @@ copyable content here
 ╚══════════════════════════════════════════════════════════════════════╝
 
 5. **Do NOT over-explain HarnessKit.** The user knows what it is.
-6. **Templates** are in `templates/` next to this SKILL.md. **Shared protocol** is in `../../protocol/`.
-7. **In dual mode, do NOT use subagents** for investigation. You and Planner B are the two independent investigators — adding subagents undermines independence.
-8. **Do NOT write Codex prompt files** unless the protocol explicitly calls for it or the user asks. Show the prompt in chat and copy to clipboard — that's enough.
+6. **Templates** are in `templates/` next to this SKILL.md.
 
 ## Mindset
 
@@ -39,37 +36,20 @@ copyable content here
 - Be thorough in investigation — the more context you capture now, the less the Generator has to rediscover
 - Be honest about uncertainties — document open questions rather than guessing
 
-## Step 1 — Dual Planning (Ask FIRST, Before Anything Else)
+## Step 0 — Mission Setup
 
-**If you are Planner B** (the prompt told you so): skip Steps 1-3 entirely. The mission already exists. Go directly to **Step 4 — Investigate and Plan** as Planner B. You never talk to the user — all user communication goes through Planner A. Follow the Dual-Session-Protocol from `../../protocol/Dual-Session-Protocol.md`.
-Note: Codex B must run all wait scripts as blocking calls (no `run_in_background`). See Dual-Session-Protocol.md.
-
-**If you are starting a new mission (Planner A or single):**
-
-Before reading any project files, before investigating, before even looking at the user's goal in detail — ask using AskUserQuestion:
-
-> "Do you want dual planning with Codex? Two models investigating independently find different things."
-
-**If YES (dual planning):**
-1. Read `../../protocol/Dual-Session-Protocol.md` for the full protocol
-2. You are now **Planner A**
-3. Proceed to Step 2 (mission name)
-
-**If NO (single planning):**
-- You are the sole Planner (no A/B suffix)
-- Proceed to Step 2
-
-## Step 2 — Mission Name
-
-Check `HarnessKit/Config.json`:
-- If `currentMission` is not null, there's an active mission. Tell the user and ask what to do.
-- Read `nextMissionNumber`
-
-Suggest a short PascalCase name based on the user's goal. Ask using AskUserQuestion. Wait for explicit confirmation before proceeding.
-
-## Step 2b — Rename Session
-
-After the mission name is confirmed, suggest renaming the session:
+1. User invokes `/planner` (optionally with a goal description)
+2. If no goal provided: ask "What do you want to build or do? You can describe it briefly or in detail."
+3. User provides the goal
+4. Read `HarnessKit/Config.json` — check for active mission, read `nextMissionNumber`
+5. If `currentMission` is not null: tell the user and ask what to do
+6. Suggest a short PascalCase mission name based on the goal. Ask user to confirm via AskUserQuestion.
+7. On confirmation: run the scaffolding script:
+   ```bash
+   bash "${CLAUDE_SKILL_DIR}/../../scripts/create-mission.sh" "NNN-MissionName" "single"
+   ```
+8. If git feature branches are enabled in Config.json: create and switch to a branch following the project's branch naming pattern
+9. Suggest session rename:
 
 ╔═══ RENAME THIS SESSION ══════════════════════════════════════════════╗
 
@@ -79,95 +59,127 @@ After the mission name is confirmed, suggest renaming the session:
 
 ╚══════════════════════════════════════════════════════════════════════╝
 
-For dual mode, use `📝 Planner A: NNN-MissionName` instead. This is recommended but not a blocker — continue regardless.
-
-## Step 3 — Create Mission (After User Confirms Name)
-
-Only after the user approves the name via AskUserQuestion:
-
-1. Run the scaffolding script to create all mission files at once:
-   ```bash
-   bash "${CLAUDE_SKILL_DIR}/../../scripts/create-mission.sh" "NNN-MissionName" "dual"
-   ```
-   Use `"single"` instead of `"dual"` for non-dual planning. The script creates State.json, updates Config.json, and for dual mode also creates Planner-Conversation/ with Coordination.json, Status-A.json, Status-B.json.
-2. If git feature branches are enabled: create and switch to a branch following the project's branch naming pattern
-
-**If dual planning:** Generate the Codex Planner B prompt using the plugin's script — do NOT improvise the prompt:
-
-```bash
-bash "${CLAUDE_SKILL_DIR}/../../scripts/render-secondary-prompt.sh" "planner" "NNN-MissionName" "HarnessKit/NNN-MissionName/Planner-Conversation" "<user's original goal text>"
-```
-
-Show the script's output in chat with Variant 1 framing. The script also copies it to the clipboard. Then suggest the Codex rename:
-
-╔═══ RENAME THE CODEX SESSION ═════════════════════════════════════════╗
-
-```
-/rename 📝 Planner B: NNN-MissionName
-```
-
-╚══════════════════════════════════════════════════════════════════════╝
-
-Wait for user confirmation before starting investigation.
-
-**If single planning:** Proceed directly to Step 4 after the mission is created.
-
-## Step 4 — Investigate and Plan
+## Step 1 — Parallel Investigation (Round 1)
 
 **FIRST:** Read `HarnessKit/Planner.md` for project-specific context. This is mandatory — do not skip it.
 
-1. **Capture the user's goal verbatim** for the User Intent section
-2. **Investigate the codebase** thoroughly:
-   - Read project docs (AGENTS.md, CLAUDE.md, README) for conventions and constraints
-   - Check for PlanKit: if `PlanKit/` exists, read roadmap and cross-reference with the goal. Reference matching features in the Context section but do NOT modify PlanKit files
-   - Explore relevant source code — note file paths and line numbers for the Context section
-   - Check existing patterns: how are similar features implemented?
-   - Look for dependencies: does this affect other parts of the system?
-   - Check test infrastructure and testing patterns
-   - Planner A / sole: tell the user what you're investigating. Planner B: document in conversation files, do NOT communicate with the user. In dual mode, do NOT use subagents.
-3. **Ask upfront questions** only if truly needed — the goal is genuinely ambiguous, there are fundamentally different directions, or the user referenced something you can't find. Most questions are better asked AFTER investigation. (Planner B: skip this — write questions to `UpfrontQuestions-B.md` per the Dual-Session-Protocol instead.)
-4. **Research and explore** — identify edge cases, negative cases (what should NOT happen), tradeoffs between approaches. Document findings with file paths, line numbers, links.
-5. **Determine the Mission Type** (code / documentation / domain / mixed) — see `templates/Spec-Format.md`
-6. **Draft the Spec.md** — follow `templates/Spec-Format.md`. **Present the COMPLETE text in chat.** Do NOT write to file yet.
+10. **Capture the user's goal verbatim** for the User Intent section
+11. **Launch Codex in background** for independent investigation:
+    ```
+    /codex:rescue --background --fresh
+    Investigate the codebase for this mission goal: [user's goal text]
+    Read all relevant source files, docs, and architecture.
+    Report findings with file paths and line numbers.
+    Produce a structured plan suggestion with:
+    - Recommended approach and rationale
+    - Acceptance criteria (unambiguous, pass/fail)
+    - Key decisions with alternatives considered
+    - Edge cases and boundaries
+    - Out of scope items
+    - Milestone suggestions (if multi-deliverable)
+    Source-of-truth: current source code > project docs > external references.
+    Only document current verified behavior.
+    If anything is ambiguous or unclear about the user's intent, list it in an "Open Questions" section.
+    ```
+12. **While Codex investigates, Claude investigates independently:**
+    - Read project docs (AGENTS.md, CLAUDE.md, README) for conventions and constraints
+    - Check for PlanKit: if `PlanKit/` exists, read roadmap and cross-reference
+    - Explore relevant source code — note file paths and line numbers
+    - Check existing patterns, dependencies, test infrastructure
+    - Tell the user what you're investigating
+13. Create `HarnessKit/NNN-MissionName/Planner-Discussion/` folder
+14. Write findings to `Planner-Discussion/Claude-01.md` — include:
+    - Investigation findings with file paths and line numbers
+    - Initial plan suggestion with acceptance criteria
+    - **Open Questions** section (anything ambiguous that needs user input)
+15. Check Codex: `/codex:status` — if still running, wait. When done: `/codex:result`
+16. Save Codex result to `Planner-Discussion/Codex-01.md`
 
-   **What makes a good acceptance criterion:**
-   - Good: unambiguous, verifiable — "Invalid credentials produce a 401 response", "All existing tests continue to pass"
-   - Bad: subjective, unmeasurable — "The code should be clean", "Performance should be good"
-   - Convert subjective criteria to observable outcomes: "clean code" → "functions no longer than 50 lines"; "good performance" → "response time under 200ms". If it can't be verified by the Evaluator, move it to "What the user should test manually" or remove it.
+## Step 2 — User Questions (After Round 1)
 
-7. **Ask for approval** using AskUserQuestion
-8. **Iterate if needed** — show updated spec in chat after changes
-9. **Write to file only after approval** — `HarnessKit/NNN-MissionName/Spec.md`
-10. **Optionally ask about committing:** "The spec and mission structure are ready. Want me to commit them before we start execution?" This is recommended but not mandatory — the user may prefer to commit later.
+17. Read `Codex-01.md`, collect Open Questions from both Claude-01 and Codex-01
+18. If either has questions: merge them, ask user ONE AT A TIME via AskUserQuestion
+19. If no questions from either: skip straight to Step 3
+
+**The user is available throughout the entire planning phase.** Questions can be asked in any round, not just here.
+
+## Step 3 — Convergence (Round 2+)
+
+20. Create merged plan: `Claude-02.md`
+    - Incorporate Codex findings you agree with
+    - For disagreements: explain your rationale clearly (WHY you disagree)
+    - Include user's answers to any questions from Step 2
+    - Add any new **Open Questions** that arose
+
+21. Invoke Codex to review (`--resume` — continues the same Codex thread):
+    ```
+    /codex:rescue --resume
+    Review the merged plan for mission [name].
+    Read these files:
+    - [path]/Claude-01.md (Claude's original investigation — you haven't seen this yet)
+    - [path]/Claude-02.md (Claude's merged plan — THIS is what you're reviewing)
+    For each point you disagree with, classify severity:
+    - High: Factually wrong, missing critical requirement, would cause failure
+    - Medium: Could be improved, missing context, partially incorrect
+    - Low: Minor suggestion, acceptable either way
+    RE-INVESTIGATE any points you disagree on — re-read the actual source files before responding.
+    Respond with:
+    ## Agreement Status: APPROVED / NOT APPROVED
+    ## High Disagreements
+    ## Medium Disagreements
+    ## Low Disagreements
+    ## Open Questions (if any new ones arose)
+    ```
+22. Save to `Codex-02.md`
+23. If Codex or you have new Open Questions: ask user before next round
+24. If **NOT APPROVED** (has high or medium disagreements):
+    - **RE-INVESTIGATE the disagreed points** — re-read the actual source files, re-check facts. Do NOT argue from memory.
+    - Create `Claude-03.md` with improvements and rationale for remaining disagreements
+    - Invoke Codex (`--resume`): "Review [path]/Claude-03.md. RE-INVESTIGATE disagreed points."
+    - Codex only needs to read the latest Claude-NN.md (it already has prior context)
+    - Save to `Codex-03.md`
+    - Continue until APPROVED
+25. If **APPROVED** (only low disagreements remain):
+    - Read the low feedback, make editorial adjustments only
+    - Write final `Claude-NN.md`
+
+**Stuck convergence:** If the same high/medium disagreement persists across 3 consecutive Codex reviews, stop iterating. Present both positions to the user: "Codex and I disagree on [X]. Codex's position: [A]. My position: [B]. Which do you prefer?"
+
+**Post-approval rule:** After Codex marks APPROVED, only editorial changes (wording, formatting). Any substantive content change requires one more Codex review pass.
+
+## Step 4 — User Approval
+
+26. Present to the user:
+    - Summary of what Claude and Codex converged on
+    - Any remaining low-level differences
+    - The FULL Spec.md text in chat (not just a link)
+27. Ask for approval via AskUserQuestion
+28. If user gives feedback:
+    - **Editorial changes** (typos, naming, minor wording): apply directly
+    - **Substantive changes** (new criteria, changed scope, different approach): apply, then run one more Codex review (`--resume`) before finalizing
+29. Write `Spec.md` to `HarnessKit/NNN-MissionName/Spec.md`
+30. Optionally ask: "The spec and mission structure are ready. Want me to commit them before we start execution?"
 
 ════════════════════════════════════════
   ✓ Spec ready — Your turn to approve
 ════════════════════════════════════════
 
-If dual planning: follow the Dual-Session-Protocol (investigation → cross-review → conversation → documentation → end questions). **After every `-done` state write, immediately enter a watch loop** — see "Active Watching" below.
-
 ## Step 5 — Transition to Execution
 
-Once Spec.md is written:
+31. Update State.json: `"phase": "ready-for-execution"`
 
-Generate prompts for the Generator and Evaluator sessions. Present each with Variant 1 framing.
-
-**Generator (always Claude):**
-
-╔═══ PASTE IN A NEW CLAUDE CODE SESSION ═══════════════════════════════╗
+╔═══ START GENERATOR SESSION ═════════════════════════════════════════╗
 
 ```
 /rename 🛠️ Generator: NNN-MissionName
 ```
 ```
-/harness-kit:generator NNN-MissionName
+/generator NNN-MissionName
 ```
 
 ╚══════════════════════════════════════════════════════════════════════╝
 
-**Evaluator (Claude, hardened):**
-
-╔═══ START CLAUDE EVALUATOR (from project root) ═══════════════════════╗
+╔═══ START EVALUATOR SESSION (from project root) ═════════════════════╗
 
 ```
 claude --append-system-prompt-file HarnessKit/ClaudeEvaluatorPrompt.md
@@ -175,43 +187,30 @@ claude --append-system-prompt-file HarnessKit/ClaudeEvaluatorPrompt.md
 
 ╚══════════════════════════════════════════════════════════════════════╝
 
-╔═══ THEN PASTE ═══════════════════════════════════════════════════════╗
+╔═══ THEN IN THE EVALUATOR SESSION ═══════════════════════════════════╗
 
 ```
 /rename 🔍 Evaluator: NNN-MissionName
-/harness-kit:evaluator NNN-MissionName
+```
+```
+/evaluator NNN-MissionName
 ```
 
 ╚══════════════════════════════════════════════════════════════════════╝
-
-**If dual evaluation:** Evaluator A will handle launching Evaluator B when the evaluation phase begins. The Planner does NOT generate the Evaluator B prompt.
-
-Update State.json: `"phase": "ready-for-execution"`
 
 ════════════════════════════════════════
   ✓ Planning Complete — Start Generator and Evaluator sessions
 ════════════════════════════════════════
 
-## Active Watching (Dual Mode)
+## What Makes a Good Acceptance Criterion
 
-**After EVERY status signal, IMMEDIATELY run the wait-for-turn script.** Do not go idle. Do not wait passively.
+- **Good** (unambiguous, verifiable): "Invalid credentials produce a 401 response", "All existing tests continue to pass"
+- **Bad** (subjective, unmeasurable): "The code should be clean", "Performance should be good"
+- Convert subjective criteria to observable outcomes: "clean code" → "functions no longer than 50 lines"; "good performance" → "response time under 200ms". If it can't be verified by the Evaluator, move it to "What the user should test manually" or remove it.
 
-Use `signal-step.sh` for ALL status/coordination updates. Use `wait-for-turn.sh` with `--wait-for` for ALL waits. Do NOT hand-edit Status or Coordination JSON files directly.
+## File Reading Limits
 
-**Parallel phases (Steps 1-3):** Always specify `--wait-for` with the exact expected status:
-```bash
-bash "${CLAUDE_SKILL_DIR}/../../scripts/wait-for-turn.sh" "$(pwd)/HarnessKit/NNN-MissionName/Planner-Conversation" "A" "parallel" --wait-for investigation-done
-```
-
-**Sequential phases (Steps 4-6):**
-```bash
-bash "${CLAUDE_SKILL_DIR}/../../scripts/wait-for-turn.sh" "$(pwd)/HarnessKit/NNN-MissionName/Planner-Conversation" "A" "sequential"
-```
-
-**Planner A (Claude):** Run with `run_in_background: true`.
-**Planner B (Codex):** Run as a blocking call with `--quiet` — do NOT use `run_in_background`.
-
-When the script prints "READY", read the output and proceed.
-
-**Planner B must NEVER stop running this script** until Planner A reaches the user-approval boundary. Only Planner A can stop — and only at that specific point.
-
+- **Max 5 files per parallel Read batch** — if more needed, read in sequential batches
+- **Use Glob/Grep before Read** — identify relevant files first
+- **Large files (>300 lines)** — read only relevant sections using offset/limit
+- **Batch edits** — max 5 parallel Write/Edit operations per batch

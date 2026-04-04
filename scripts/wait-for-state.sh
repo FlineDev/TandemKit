@@ -4,11 +4,12 @@ set -euo pipefail
 # HarnessKit — wait-for-state
 # Blocks until a State.json field matches an expected value (or any change occurs).
 #
-# Usage: wait-for-state.sh <mission-folder> [<field> <value1> [value2 ...]] [--quiet]
+# Usage: wait-for-state.sh <mission-folder> [<field> <value1> [value2 ...]] [--quiet] [--round N]
 #   mission-folder:  absolute path to the HarnessKit/NNN-MissionName/ folder
 #   field:           JSON field to check (e.g., evaluatorStatus, generatorStatus)
 #   value1..N:       acceptable values — script exits when field matches any of them
 #   --quiet:         suppress all output except final READY line (for Codex)
+#   --round N:       also require State.json "round" field to equal N exactly
 #
 # If no field/values given: blocks until State.json content changes (any field).
 #
@@ -18,15 +19,16 @@ set -euo pipefail
 MISSION_DIR="$1"
 shift
 
-# Check for --quiet flag (can appear anywhere in remaining args)
+# Check for --quiet and --round flags (can appear anywhere in remaining args)
 QUIET=false
+REQUIRED_ROUND=""
 _ARGS=()
-for _a in "$@"; do
-   if [[ "$_a" == "--quiet" ]]; then
-      QUIET=true
-   else
-      _ARGS+=("$_a")
-   fi
+while [[ $# -gt 0 ]]; do
+   case "$1" in
+      --quiet) QUIET=true; shift ;;
+      --round) REQUIRED_ROUND="$2"; shift 2 ;;
+      *) _ARGS+=("$1"); shift ;;
+   esac
 done
 set -- "${_ARGS[@]+"${_ARGS[@]}"}"
 
@@ -72,6 +74,14 @@ with open('$STATE_FILE') as f:
 " 2>/dev/null || echo "unknown"
 }
 
+read_round() {
+   python3 -c "
+import json
+with open('$STATE_FILE') as f:
+   print(json.load(f).get('round', 0))
+" 2>/dev/null || echo "0"
+}
+
 file_hash() {
    md5 -q "$STATE_FILE" 2>/dev/null || md5sum "$STATE_FILE" 2>/dev/null | cut -d' ' -f1 || echo "none"
 }
@@ -81,6 +91,15 @@ check_condition() {
       # No field specified — watching for any change
       # This mode always passes through to the watch loop on first call
       return 1
+   fi
+
+   # Check round constraint first (if specified)
+   if [[ -n "$REQUIRED_ROUND" ]]; then
+      local actual_round
+      actual_round=$(read_round)
+      if [[ "$actual_round" != "$REQUIRED_ROUND" ]]; then
+         return 1
+      fi
    fi
 
    local current

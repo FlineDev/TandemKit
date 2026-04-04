@@ -2,23 +2,20 @@
 set -euo pipefail
 
 # HarnessKit — create-mission
-# Scaffolds a new mission folder with all required coordination files.
+# Scaffolds a new mission folder with State.json and updates Config.json.
 # Must be run from the project root (where HarnessKit/ lives).
 #
-# Usage: create-mission.sh <mission-name> <mode>
-#   mission-name:  e.g., 002-RemainingPrimitiveSkills
-#   mode:          single or dual
+# Usage: create-mission.sh <mission-name>
+#   mission-name:  e.g., 003-DebugActivityTool
 #
 # Exit 0 = success. Exit 1 = error.
 
-if [[ $# -ne 2 ]]; then
-   echo "Usage: create-mission.sh <mission-name> <mode>" >&2
-   echo "  mode: single or dual" >&2
+if [[ $# -ne 1 ]]; then
+   echo "Usage: create-mission.sh <mission-name>" >&2
    exit 1
 fi
 
 MISSION_NAME="$1"
-MODE="$2"
 
 # --- Validation ---
 
@@ -32,14 +29,9 @@ if [[ ! "$MISSION_NAME" =~ ^[a-zA-Z0-9-]+$ ]]; then
    exit 1
 fi
 
-if [[ "$MODE" != "single" && "$MODE" != "dual" ]]; then
-   echo "ERROR: Mode must be 'single' or 'dual', got: $MODE" >&2
-   exit 1
-fi
-
 CONFIG="./HarnessKit/Config.json"
 if [[ ! -f "$CONFIG" ]]; then
-   echo "ERROR: HarnessKit/Config.json not found. Run from the project root or run /harness-kit:init first." >&2
+   echo "ERROR: HarnessKit/Config.json not found. Run from the project root or run init first." >&2
    exit 1
 fi
 
@@ -84,43 +76,6 @@ cat > "$MISSION_DIR/State.json" << EOF
 }
 EOF
 
-CREATED_FILES=("HarnessKit/$MISSION_NAME/State.json")
-
-if [[ "$MODE" == "dual" ]]; then
-   mkdir -p "$MISSION_DIR/Planner-Conversation"
-
-   cat > "$MISSION_DIR/Planner-Conversation/Coordination.json" << EOF
-{
-  "step": "upfront-questions",
-  "nextTurn": "A",
-  "messageRound": 0,
-  "updated": "$NOW"
-}
-EOF
-
-   cat > "$MISSION_DIR/Planner-Conversation/Status-A.json" << EOF
-{
-  "status": "thinking",
-  "tool": "claude-code",
-  "updated": "$NOW"
-}
-EOF
-
-   cat > "$MISSION_DIR/Planner-Conversation/Status-B.json" << EOF
-{
-  "status": "thinking",
-  "tool": "codex",
-  "updated": "$NOW"
-}
-EOF
-
-   CREATED_FILES+=(
-      "HarnessKit/$MISSION_NAME/Planner-Conversation/Coordination.json"
-      "HarnessKit/$MISSION_NAME/Planner-Conversation/Status-A.json"
-      "HarnessKit/$MISSION_NAME/Planner-Conversation/Status-B.json"
-   )
-fi
-
 # --- Update Config.json atomically ---
 
 NEW_NEXT=$((NEXT_NUM + 1))
@@ -142,10 +97,8 @@ mv "$TEMP_CONFIG" "$CONFIG"
 # --- Output ---
 
 echo ""
-echo "✓ Created mission: $MISSION_NAME ($MODE)"
-for f in "${CREATED_FILES[@]}"; do
-   echo "  $f"
-done
+echo "✓ Created mission: $MISSION_NAME"
+echo "  HarnessKit/$MISSION_NAME/State.json"
 echo "  Config.json: currentMission=$MISSION_NAME, nextMissionNumber=$NEW_NEXT"
 echo ""
-echo "MISSION_CREATED: $MISSION_NAME mode=$MODE"
+echo "MISSION_CREATED: $MISSION_NAME"
