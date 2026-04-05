@@ -52,7 +52,7 @@ Before asking questions, investigate thoroughly. Tell the user: "Let me investig
 3. **Check available tools:**
    - Read `~/.claude/settings.json` for global permissions and MCP tool allowances
    - Read project `.claude/settings.json` and `.mcp.json` for project-level MCP servers
-   - Check what's already available: Xcode MCP? Playwright? Simulator tools?
+   - Check what's already available: Xcode MCP? browser-use CLI (`which browser-use`)? Simulator tools?
 
 4. **Read commit conventions and branch patterns:**
    - Check AGENTS.md/CLAUDE.md for commit message rules, push policies, branch conventions
@@ -112,7 +112,39 @@ brew install xcodebuildmcp
 xcodebuildmcp init
 ```
 
-**For web/CLI/domain projects:** Read the appropriate Evaluation-Strategy reference.
+**For web projects:**
+
+Read `references/Evaluation-Strategy-Web.md` for full details. **Recommend browser-use CLI as the primary browser automation tool.** Explain the tradeoffs:
+
+> "For browser-based verification, I recommend **browser-use CLI** — it uses 10–50× fewer tokens than Playwright MCP for the same operations, which means faster and cheaper evaluations. It runs as a simple CLI command (no MCP server needed) and has built-in session management for parallel testing.
+>
+> If you already have Playwright MCP configured and prefer to keep it, that works too — I'll set up the evaluation strategy for Playwright instead."
+
+**browser-use setup (if user agrees — recommended):**
+
+1. Check if browser-use is installed: `which browser-use` (also check aliases: `bu`, `browser`, `browseruse`)
+2. If not installed:
+   ```bash
+   curl -fsSL https://browser-use.com/cli/install.sh | bash
+   ```
+3. Verify: `browser-use doctor`
+4. **Check permissions** — read `~/.claude/settings.json` and project `.claude/settings.json`. Look for a permission `allow` entry that covers `Bash(browser-use *)` — either explicitly or via a broader rule like `Bash(*)` or `Bash`. If no matching permission exists, recommend adding `"Bash(browser-use *)"` to the allow list so browser-use commands run without prompting during evaluation.
+
+**Playwright setup (if user explicitly prefers):**
+
+Read `references/Evaluation-Strategy-Web-Playwright.md`. Set up the MCP server in `.mcp.json`:
+```json
+{
+   "mcpServers": {
+      "playwright": {
+         "command": "npx",
+         "args": ["-y", "@anthropic-ai/mcp-playwright"]
+      }
+   }
+}
+```
+
+**For CLI/domain projects:** Read the appropriate Evaluation-Strategy reference.
 
 ### Question 4: Git Commit Policy
 
