@@ -129,13 +129,24 @@ Present what you found in the project's commit conventions and branch patterns, 
 - "Should auto-commits happen in the umbrella repo, in submodules, or submodules only?"
 - "Should auto-commits ever happen on the main branch, or only on feature branches?"
 
-### Question 5: Codex Verification
+### Question 5: Codex Plugin Verification
 
-HarnessKit ALWAYS uses Codex alongside Claude — this is not optional. Do NOT ask whether the user wants Codex. Instead, verify it's available:
+HarnessKit ALWAYS uses Codex alongside Claude — this is not optional. Do NOT ask whether the user wants Codex. Instead, verify the `codex-plugin-cc` plugin is installed:
 
-1. Check if `codex-plugin-cc` is installed: try `/codex:setup` or check if the codex skill exists
-2. If not installed: tell the user "HarnessKit requires the codex-plugin-cc plugin. Install it first, then re-run `/harness-kit-init`." and STOP.
-3. If installed: verify authentication works
+1. Check if the plugin is available: look for `/codex:setup` command or check `~/.claude/settings.json` for `codex` in enabled plugins
+2. If NOT installed, tell the user and provide the install instructions:
+
+   "HarnessKit requires the `codex-plugin-cc` plugin (Claude + Codex always work in tandem). Install it first:"
+
+   ```
+   /install-plugin openai/codex-plugin-cc
+   ```
+
+   "After installing, run `/codex:setup` to verify Codex authentication, then re-run `/harness-kit-init`."
+
+   Then STOP. Do not continue init without the plugin.
+
+3. If installed: run `/codex:setup` to verify authentication works. If auth fails, tell the user to fix it before continuing.
 
 ### Question 6: .gitignore Preference
 
@@ -260,12 +271,11 @@ Add a brief HarnessKit section to the project's `AGENTS.md` (or `CLAUDE.md` if t
 ```markdown
 ## HarnessKit
 
-This project uses HarnessKit for multi-session Planner/Generator/Evaluator coordination. Use these commands to start each role:
-- `/planner` — start planning a new mission
-- `/generator` — implement a mission's spec
-- `/evaluator` — verify the Generator's work
+This project uses HarnessKit — Claude and Codex always work in tandem for planning and evaluation.
 
-If these commands are not available, install the HarnessKit plugin first. Project-specific role files: `HarnessKit/Planner.md`, `HarnessKit/Generator.md`, `HarnessKit/Evaluator.md`.
+**To start a new mission:** Run `/planner` and describe your goal. The Planner guides you through everything — including how to start the Generator and Evaluator sessions once the plan is ready.
+
+Project-specific role context: `HarnessKit/Planner.md`, `HarnessKit/Generator.md`, `HarnessKit/Evaluator.md`.
 ```
 
 Keep it brief — one short paragraph. Ask the user before editing AGENTS.md.
