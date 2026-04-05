@@ -139,10 +139,13 @@ HarnessKit ALWAYS uses Codex alongside Claude — this is not optional. Do NOT a
    "HarnessKit requires the `codex-plugin-cc` plugin (Claude + Codex always work in tandem). Install it first:"
 
    ```
-   /install-plugin openai/codex-plugin-cc
+   /plugin marketplace add openai/codex-plugin-cc
+   /plugin install codex@openai-codex
+   /reload-plugins
+   /codex:setup
    ```
 
-   "After installing, run `/codex:setup` to verify Codex authentication, then re-run `/harness-kit-init`."
+   "After installing and verifying with `/codex:setup`, re-run `/harness-kit-init`."
 
    Then STOP. Do not continue init without the plugin.
 
