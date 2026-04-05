@@ -137,7 +137,7 @@ HarnessKit ALWAYS uses Codex alongside Claude — this is not optional. Do NOT a
 2. If not installed: tell the user "HarnessKit requires the codex-plugin-cc plugin. Install it first, then re-run `/harness-kit-init`." and STOP.
 3. If installed: verify authentication works
 
-### Question 5: .gitignore Preference
+### Question 6: .gitignore Preference
 
 > "Do you want HarnessKit coordination files gitignored during active missions?"
 
@@ -176,6 +176,9 @@ Copy from the plugin's `system-prompts/claude-evaluator.md` template. **If the f
 This file is NOT modified by the self-learning system — keep it stable.
 
 ### Config.json
+
+Do NOT add a `codex` section — Codex is always required and not configurable.
+Do NOT add `learnings` sections to any role file — the self-learning system has been removed.
 
 ```json
 {
@@ -219,17 +222,36 @@ Run the build command once to verify it works. Fix if needed.
 
 Only if the user said yes in Question 6.
 
-## Step 8 — Verify Codex Setup
+## Step 8 — Verify Codex Skill Access
 
-Codex is always required. Verify the `codex-plugin-cc` plugin is working by checking `/codex:setup`. If project-level Codex skill symlinks are needed as a fallback:
-```bash
-mkdir -p .agents/skills
-ln -sf "<plugin-path>/skills/planner" .agents/skills/planner
-ln -sf "<plugin-path>/skills/generator" .agents/skills/generator
-ln -sf "<plugin-path>/skills/evaluator" .agents/skills/evaluator
-```
+Codex needs access to the HarnessKit skills. Check in this order:
 
-Add `.agents/skills/` to `.gitignore` (machine-specific symlinks).
+1. **Check user-level Codex symlinks first:** Do `~/.agents/skills/planner`, `~/.agents/skills/generator`, `~/.agents/skills/evaluator` exist and point to valid HarnessKit skill folders?
+   - If YES → skip project-level symlinks. Tell user: "Codex skills already installed at user level."
+   - If NO → continue to step 2.
+
+2. **Find the HarnessKit repo path** from the Claude skill symlink:
+   ```bash
+   HARNESS_PATH=$(readlink -f ~/.claude/skills/planner | sed 's|/skills/planner$||')
+   ```
+   Then create **user-level** Codex symlinks (not project-level):
+   ```bash
+   mkdir -p ~/.agents/skills
+   ln -sf "$HARNESS_PATH/skills/planner" ~/.agents/skills/planner
+   ln -sf "$HARNESS_PATH/skills/generator" ~/.agents/skills/generator
+   ln -sf "$HARNESS_PATH/skills/evaluator" ~/.agents/skills/evaluator
+   ```
+
+3. **If neither Claude nor Codex user-level symlinks exist** (rare — plugin-only install): create project-level symlinks as fallback:
+   ```bash
+   mkdir -p .agents/skills
+   ln -sf "<resolved-plugin-path>/skills/planner" .agents/skills/planner
+   ln -sf "<resolved-plugin-path>/skills/generator" .agents/skills/generator
+   ln -sf "<resolved-plugin-path>/skills/evaluator" .agents/skills/evaluator
+   ```
+   Add `.agents/skills/` to `.gitignore`.
+
+**CRITICAL:** Always resolve to the actual HarnessKit repo path. NEVER use the plugin cache path (`~/.claude/plugins/cache/...`) — it becomes stale after updates.
 
 ## Step 9 — Update AGENTS.md (Safety Net)
 
@@ -248,9 +270,19 @@ If these commands are not available, install the HarnessKit plugin first. Projec
 
 Keep it brief — one short paragraph. Ask the user before editing AGENTS.md.
 
-## Step 10 — Summary
+## Step 10 — Summary + Commit
 
-Present a brief summary table of what was set up, then end with:
+Present a brief summary table of what was set up.
 
-> **Next step:** To start your first mission, just say:
-> `Let's use HarnessKit to [your goal]`
+Then ask: "Should I commit the HarnessKit initialization?" This is the first milestone — the project setup. If the user agrees, commit all HarnessKit files:
+```bash
+git add HarnessKit/ .gitignore
+# Also add AGENTS.md if it was modified
+git commit -m "Initialize HarnessKit coordination framework"
+```
+
+Then end with:
+
+> **Next step:** To start your first mission:
+>
+> `/planner`
