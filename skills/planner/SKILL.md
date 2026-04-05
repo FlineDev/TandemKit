@@ -45,7 +45,7 @@ copyable content here
 
    Then STOP and wait for the user's response. Do NOT suggest options, do NOT read AGENTS.md to guess what they might want, do NOT present choices. Just ask and wait.
 3. User provides the goal
-4. Read `HarnessKit/Config.json` — if the file does NOT exist, say: "HarnessKit is not initialized in this project. Run `/init` first to set it up." Then STOP.
+4. Read `HarnessKit/Config.json` — if the file does NOT exist, say: "HarnessKit is not initialized in this project. Run `/harness-kit-init` first to set it up." Then STOP.
 5. If `currentMission` is not null: tell the user and ask what to do
 6. Suggest a short PascalCase mission name based on the goal. Ask user to confirm via AskUserQuestion.
 7. On confirmation: run the scaffolding script:
