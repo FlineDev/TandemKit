@@ -64,8 +64,10 @@ Goal received → Read Planner.md → Suggest name + Launch Codex (parallel) →
 
 ### Codex Prompt (Step 0.7b)
 
+Launch via the Agent tool with `run_in_background: true`. Do NOT also use `--background` in the Codex CLI flags — that creates double-backgrounding where the Agent "completes" immediately but Codex is still running, and you never get the result notification.
+
 ```
-/codex:rescue --background --fresh
+/codex:rescue --fresh
 You are the Codex companion for the Planner. Your investigation will be
 compared with Claude's independent findings to produce a converged plan.
 
@@ -132,20 +134,21 @@ Codex is already running in background from Step 0.7b. Now investigate independe
 ## Step 2 — User Questions (After Round 1)
 
 16. Read `Codex-01.md`, collect Open Questions from both Claude-01 and Codex-01
-17. If either has questions: merge them, ask user ONE AT A TIME via AskUserQuestion
-18. If no questions from either: skip straight to Step 3
+17. **Before asking any question, check if the answer exists in the project's data** (transactions, emails, documents, reports, INDEX.json files). If so, research it yourself and present your findings for the user to confirm — do NOT ask the user to recall what the data already contains. The user expects the system to be autonomous with existing data.
+18. If questions remain after research: merge them, ask user ONE AT A TIME via AskUserQuestion
+19. If no questions from either: skip straight to Step 3
 
 **The user is available throughout the entire planning phase.** Questions can be asked in any round, not just here.
 
 ## Step 3 — Convergence (Round 2+)
 
-19. Create merged plan: `Claude-02.md`
+20. Create merged plan: `Claude-02.md`
     - Incorporate Codex findings you agree with
     - For disagreements: explain your rationale clearly (WHY you disagree)
     - Include user's answers to any questions from Step 2
     - Add any new **Open Questions** that arose
 
-20. Invoke Codex to review (`--resume` — continues the same Codex thread):
+21. Invoke Codex to review (`--resume` — continues the same Codex thread):
     ```
     /codex:rescue --resume
     Review the merged plan for mission [name].
@@ -164,16 +167,16 @@ Codex is already running in background from Step 0.7b. Now investigate independe
     ## Low Disagreements
     ## Open Questions (if any new ones arose)
     ```
-21. Save to `Codex-02.md`
-22. If Codex or you have new Open Questions: ask user before next round
-23. If **NOT APPROVED** (has high or medium disagreements):
+22. Save to `Codex-02.md`
+23. If Codex or you have new Open Questions: ask user before next round
+24. If **NOT APPROVED** (has high or medium disagreements):
     - **RE-INVESTIGATE the disagreed points** — re-read the actual source files, re-check facts. Do NOT argue from memory.
     - Create `Claude-03.md` with improvements and rationale for remaining disagreements
     - Invoke Codex (`--resume`): "Review [path]/Claude-03.md. RE-INVESTIGATE disagreed points."
     - Codex only needs to read the latest Claude-NN.md (it already has prior context)
     - Save to `Codex-03.md`
     - Continue until APPROVED
-24. If **APPROVED** (only low disagreements remain):
+25. If **APPROVED** (only low disagreements remain):
     - Read the low feedback, make editorial adjustments only
     - Write final `Claude-NN.md`
 
@@ -185,16 +188,16 @@ Codex is already running in background from Step 0.7b. Now investigate independe
 
 ## Step 4 — User Approval
 
-25. Present to the user:
+26. Present to the user:
     - Summary of what Claude and Codex converged on
     - Any remaining low-level differences
     - The FULL Spec.md text in chat (not just a link)
-26. Ask for approval via AskUserQuestion
-27. If user gives feedback:
+27. Ask for approval via AskUserQuestion
+28. If user gives feedback:
     - **Editorial changes** (typos, naming, minor wording): apply directly
-    - **Substantive changes** (new criteria, changed scope, different approach): apply, then run one more Codex review (`--resume`) before finalizing
-28. Write `Spec.md` to `HarnessKit/NNN-MissionName/Spec.md`
-29. Optionally ask: "The spec and mission structure are ready. Want me to commit them before we start execution?"
+    - **Substantive changes** (new criteria, changed scope, different approach, new information): **CRITICAL — you MUST run one more Codex review (`--resume`) before finalizing.** Do NOT write Spec.md or set `ready-for-execution` until Codex approves the changes. Skipping this is a protocol violation.
+29. Write `Spec.md` to `HarnessKit/NNN-MissionName/Spec.md` (only after Codex has approved the final version)
+30. Optionally ask: "The spec and mission structure are ready. Want me to commit them before we start execution?"
 
 ════════════════════════════════════════
   ✓ Spec ready — Your turn to approve
@@ -202,7 +205,7 @@ Codex is already running in background from Step 0.7b. Now investigate independe
 
 ## Step 5 — Transition to Execution
 
-30. Update State.json: `"phase": "ready-for-execution"`
+31. Update State.json: `"phase": "ready-for-execution"`
 
 ╔═══ START GENERATOR SESSION ═════════════════════════════════════════╗
 

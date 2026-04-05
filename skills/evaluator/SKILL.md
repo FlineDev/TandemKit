@@ -73,9 +73,9 @@ The user invokes this skill with `/evaluator NNN-MissionName`. First rename the 
    - **domain**: `strategies/Evaluation-Strategy-Domain.md`
    - **mixed**: Read both code and domain strategies
 9. Update State.json: `evaluatorStatus: "evaluating"`
-10. **Launch Codex in background** for independent evaluation:
-    - First eval cycle of the mission: `/codex:rescue --background --fresh [eval prompt]`
-    - Subsequent eval cycles: `/codex:rescue --background --resume [eval prompt]`
+10. **Launch Codex in background** for independent evaluation. Use the Agent tool with `run_in_background: true`. Do NOT also use `--background` in the Codex CLI flags — that creates double-backgrounding where the Agent "completes" but Codex is still running.
+    - First eval cycle of the mission: `/codex:rescue --fresh [eval prompt]`
+    - Subsequent eval cycles: `/codex:rescue --resume [eval prompt]`
 
     **If Codex is unavailable** (`/codex:rescue` fails): STOP. Tell the user: "Codex is unavailable. Please run `/codex:setup` to fix, then say 'continue'." Do NOT proceed with Claude-only evaluation.
 
