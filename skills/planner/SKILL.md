@@ -39,7 +39,11 @@ copyable content here
 ## Step 0 — Mission Setup
 
 1. User invokes `/planner` (optionally with a goal description)
-2. If no goal provided: ask "What do you want to build or do? You can describe it briefly or in detail."
+2. If no goal provided: say this in plain text (do NOT use AskUserQuestion — just write it in chat):
+
+   "What do you want to build or do? Describe your idea with as much detail as you have — briefly or extensively, whatever you prefer. I'll investigate and come back with questions if anything is unclear."
+
+   Then STOP and wait for the user's response. Do NOT suggest options, do NOT read AGENTS.md to guess what they might want, do NOT present choices. Just ask and wait.
 3. User provides the goal
 4. Read `HarnessKit/Config.json` — check for active mission, read `nextMissionNumber`
 5. If `currentMission` is not null: tell the user and ask what to do
