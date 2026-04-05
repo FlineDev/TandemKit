@@ -129,13 +129,15 @@ Present what you found in the project's commit conventions and branch patterns, 
 - "Should auto-commits happen in the umbrella repo, in submodules, or submodules only?"
 - "Should auto-commits ever happen on the main branch, or only on feature branches?"
 
-### Question 5: Codex Compatibility
+### Question 5: Codex Verification
 
-> "Do you want to use Codex for evaluation or planning?"
+HarnessKit ALWAYS uses Codex alongside Claude — this is not optional. Do NOT ask whether the user wants Codex. Instead, verify it's available:
 
-If yes, note for symlink creation. Default to CLI mode for Codex (same as Claude) if bash is allowed in Codex config.
+1. Check if `codex-plugin-cc` is installed: try `/codex:setup` or check if the codex skill exists
+2. If not installed: tell the user "HarnessKit requires the codex-plugin-cc plugin. Install it first, then re-run `/harness-kit-init`." and STOP.
+3. If installed: verify authentication works
 
-### Question 6: .gitignore Preference
+### Question 5: .gitignore Preference
 
 > "Do you want HarnessKit coordination files gitignored during active missions?"
 
@@ -217,11 +219,9 @@ Run the build command once to verify it works. Fix if needed.
 
 Only if the user said yes in Question 6.
 
-## Step 8 — Create Codex Symlink (If Requested)
+## Step 8 — Verify Codex Setup
 
-Default to CLI mode for Codex (same as Claude) if bash is allowed.
-
-Create Codex symlinks for all three role skills:
+Codex is always required. Verify the `codex-plugin-cc` plugin is working by checking `/codex:setup`. If project-level Codex skill symlinks are needed as a fallback:
 ```bash
 mkdir -p .agents/skills
 ln -sf "<plugin-path>/skills/planner" .agents/skills/planner
