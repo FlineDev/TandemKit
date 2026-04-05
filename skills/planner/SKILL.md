@@ -27,6 +27,16 @@ copyable content here
 
 5. **Do NOT over-explain HarnessKit.** The user knows what it is.
 6. **Templates** are in `templates/` next to this SKILL.md.
+7. **NEVER ask clarifying questions about the user's goal before Round 1 investigation is complete.** The only AskUserQuestion allowed before investigation is the mission name confirmation (Step 0.7a). Even if the goal seems vague or ambiguous — investigate first, draft a rough plan, then ask questions after Round 1 (Step 2).
+
+## Critical Flow (do NOT deviate)
+
+Goal received → Read Planner.md → Suggest name + Launch Codex (parallel) → Create mission → Investigate independently → Write Claude-01 → Get Codex-01 → Questions (Step 2) → Converge (Step 3)
+
+**Three non-negotiable rules:**
+1. **No clarifying questions before Step 2** — mission name confirmation (Step 0.7a) is the only exception
+2. **Read Planner.md before any investigation or name suggestion** — Config.json check (Step 0.1) is the only prerequisite
+3. **Launch Codex immediately** — in the same response as the name suggestion
 
 ## Mindset
 
@@ -47,13 +57,49 @@ copyable content here
    Then STOP and wait for the user's response. Do NOT suggest options, do NOT read AGENTS.md to guess what they might want, do NOT present choices. Just ask and wait.
 4. User provides the goal
 5. Read `HarnessKit/Config.json` — if `currentMission` is not null: tell the user and ask what to do
-6. Suggest a short PascalCase mission name based on the goal. Ask user to confirm via AskUserQuestion.
-7. On confirmation: run the scaffolding script:
+6. **Read `HarnessKit/Planner.md`** for project-specific context. This is mandatory — it informs your mission name suggestion and the Codex prompt. Do NOT skip this.
+7. **In a single response, do BOTH of these simultaneously:**
+   - **(a)** Suggest a short PascalCase mission name based on the goal. Ask user to confirm via AskUserQuestion.
+   - **(b)** Launch Codex in background for independent investigation. Use the Codex prompt below. Do NOT wait for name confirmation — start Codex immediately.
+
+### Codex Prompt (Step 0.7b)
+
+```
+/codex:rescue --background --fresh
+You are the Codex companion for the Planner. Your investigation will be
+compared with Claude's independent findings to produce a converged plan.
+
+FIRST: Read HarnessKit/Planner.md — it contains project-specific context,
+key reference documents, and conventions for this project type.
+
+Investigate the codebase for this mission goal: [user's goal text]
+Read all relevant source files, docs, and architecture.
+Report findings with file paths and line numbers.
+
+Structure your plan following the Spec.md format:
+1. Mission Type (code | documentation | domain | mixed)
+2. User Intent (the user's goal in their own words)
+3. Goal (one-paragraph distilled summary)
+4. Context & Investigation Findings (file paths, line numbers, tradeoffs)
+5. Acceptance Criteria (numbered, unambiguous pass/fail statements)
+6. Edge Cases & Boundaries
+7. Key Decisions (with alternatives considered and rationale)
+8. Out of Scope (what must NOT be done)
+9. Possible Directions & Ideas (optional — soft suggestions, milestone ideas)
+
+Source-of-truth: current source code > project docs > external references.
+Only document current verified behavior.
+If anything is ambiguous or unclear about the user's intent, list it in
+an "Open Questions" section.
+```
+
+**If Codex is unavailable** (CLI not installed, auth expired, `/codex:rescue` fails): STOP. Tell the user: "Codex is unavailable. Please run `/codex:setup` to fix, then say 'continue'." Do NOT proceed with Claude-only planning — HarnessKit requires both models.
+
+8. On name confirmation: run the scaffolding script and create branch (if configured):
    ```bash
    bash "${CLAUDE_SKILL_DIR}/../../scripts/create-mission.sh" "NNN-MissionName"
    ```
-8. If git feature branches are enabled in Config.json: create and switch to a branch following the project's branch naming pattern
-9. Suggest session rename:
+9. **Proceed IMMEDIATELY to Step 1** — do not wait for session rename. Suggest the rename in the same message as starting investigation:
 
 ╔═══ RENAME THIS SESSION ══════════════════════════════════════════════╗
 
@@ -63,59 +109,43 @@ copyable content here
 
 ╚══════════════════════════════════════════════════════════════════════╝
 
-## Step 1 — Parallel Investigation (Round 1)
+## Step 1 — Claude's Independent Investigation (Round 1)
 
-**FIRST:** Read `HarnessKit/Planner.md` for project-specific context. This is mandatory — do not skip it.
+Codex is already running in background from Step 0.7b. Now investigate independently — do NOT ask the user any clarifying questions during this step.
 
 10. **Capture the user's goal verbatim** for the User Intent section
-11. **Launch Codex in background** for independent investigation:
-    ```
-    /codex:rescue --background --fresh
-    Investigate the codebase for this mission goal: [user's goal text]
-    Read all relevant source files, docs, and architecture.
-    Report findings with file paths and line numbers.
-    Produce a structured plan suggestion with:
-    - Recommended approach and rationale
-    - Acceptance criteria (unambiguous, pass/fail)
-    - Key decisions with alternatives considered
-    - Edge cases and boundaries
-    - Out of scope items
-    - Milestone suggestions (if multi-deliverable)
-    Source-of-truth: current source code > project docs > external references.
-    Only document current verified behavior.
-    If anything is ambiguous or unclear about the user's intent, list it in an "Open Questions" section.
-    ```
-12. **While Codex investigates, Claude investigates independently:**
+11. **Investigate the codebase independently:**
+    - Read reference documents listed in `HarnessKit/Planner.md` that are relevant to this mission
     - Read project docs (AGENTS.md, CLAUDE.md, README) for conventions and constraints
     - Check for PlanKit: if `PlanKit/` exists, read roadmap and cross-reference
     - Explore relevant source code — note file paths and line numbers
     - Check existing patterns, dependencies, test infrastructure
     - Tell the user what you're investigating
-13. Create `HarnessKit/NNN-MissionName/Planner-Discussion/` folder
-14. Write findings to `Planner-Discussion/Claude-01.md` — include:
+12. Create `HarnessKit/NNN-MissionName/Planner-Discussion/` folder
+13. Write findings to `Planner-Discussion/Claude-01.md` — include:
     - Investigation findings with file paths and line numbers
     - Initial plan suggestion with acceptance criteria
     - **Open Questions** section (anything ambiguous that needs user input)
-15. Check Codex: `/codex:status` — if still running, wait. When done: `/codex:result`
-16. Save Codex result to `Planner-Discussion/Codex-01.md`
+14. Check Codex: `/codex:status` — if still running, wait. When done: `/codex:result`
+15. Save Codex result to `Planner-Discussion/Codex-01.md`
 
 ## Step 2 — User Questions (After Round 1)
 
-17. Read `Codex-01.md`, collect Open Questions from both Claude-01 and Codex-01
-18. If either has questions: merge them, ask user ONE AT A TIME via AskUserQuestion
-19. If no questions from either: skip straight to Step 3
+16. Read `Codex-01.md`, collect Open Questions from both Claude-01 and Codex-01
+17. If either has questions: merge them, ask user ONE AT A TIME via AskUserQuestion
+18. If no questions from either: skip straight to Step 3
 
 **The user is available throughout the entire planning phase.** Questions can be asked in any round, not just here.
 
 ## Step 3 — Convergence (Round 2+)
 
-20. Create merged plan: `Claude-02.md`
+19. Create merged plan: `Claude-02.md`
     - Incorporate Codex findings you agree with
     - For disagreements: explain your rationale clearly (WHY you disagree)
     - Include user's answers to any questions from Step 2
     - Add any new **Open Questions** that arose
 
-21. Invoke Codex to review (`--resume` — continues the same Codex thread):
+20. Invoke Codex to review (`--resume` — continues the same Codex thread):
     ```
     /codex:rescue --resume
     Review the merged plan for mission [name].
@@ -134,16 +164,16 @@ copyable content here
     ## Low Disagreements
     ## Open Questions (if any new ones arose)
     ```
-22. Save to `Codex-02.md`
-23. If Codex or you have new Open Questions: ask user before next round
-24. If **NOT APPROVED** (has high or medium disagreements):
+21. Save to `Codex-02.md`
+22. If Codex or you have new Open Questions: ask user before next round
+23. If **NOT APPROVED** (has high or medium disagreements):
     - **RE-INVESTIGATE the disagreed points** — re-read the actual source files, re-check facts. Do NOT argue from memory.
     - Create `Claude-03.md` with improvements and rationale for remaining disagreements
     - Invoke Codex (`--resume`): "Review [path]/Claude-03.md. RE-INVESTIGATE disagreed points."
     - Codex only needs to read the latest Claude-NN.md (it already has prior context)
     - Save to `Codex-03.md`
     - Continue until APPROVED
-25. If **APPROVED** (only low disagreements remain):
+24. If **APPROVED** (only low disagreements remain):
     - Read the low feedback, make editorial adjustments only
     - Write final `Claude-NN.md`
 
@@ -151,18 +181,20 @@ copyable content here
 
 **Post-approval rule:** After Codex marks APPROVED, only editorial changes (wording, formatting). Any substantive content change requires one more Codex review pass.
 
+**`--resume` fallback:** If `--resume` fails (thread can't be continued), use `--fresh` instead and include the full original Codex prompt preamble (role context, HarnessKit/Planner.md, Spec format) plus: "Read these files for prior context: [list all prior Claude-NN.md and Codex-NN.md files]. Then review [path]/Claude-NN.md." This costs more tokens but produces the same result.
+
 ## Step 4 — User Approval
 
-26. Present to the user:
+25. Present to the user:
     - Summary of what Claude and Codex converged on
     - Any remaining low-level differences
     - The FULL Spec.md text in chat (not just a link)
-27. Ask for approval via AskUserQuestion
-28. If user gives feedback:
+26. Ask for approval via AskUserQuestion
+27. If user gives feedback:
     - **Editorial changes** (typos, naming, minor wording): apply directly
     - **Substantive changes** (new criteria, changed scope, different approach): apply, then run one more Codex review (`--resume`) before finalizing
-29. Write `Spec.md` to `HarnessKit/NNN-MissionName/Spec.md`
-30. Optionally ask: "The spec and mission structure are ready. Want me to commit them before we start execution?"
+28. Write `Spec.md` to `HarnessKit/NNN-MissionName/Spec.md`
+29. Optionally ask: "The spec and mission structure are ready. Want me to commit them before we start execution?"
 
 ════════════════════════════════════════
   ✓ Spec ready — Your turn to approve
@@ -170,7 +202,7 @@ copyable content here
 
 ## Step 5 — Transition to Execution
 
-31. Update State.json: `"phase": "ready-for-execution"`
+30. Update State.json: `"phase": "ready-for-execution"`
 
 ╔═══ START GENERATOR SESSION ═════════════════════════════════════════╗
 

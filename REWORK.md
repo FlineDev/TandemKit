@@ -210,72 +210,71 @@ The evaluator reads this manifest BEFORE starting evaluation. Both Claude and Co
 2. If no goal provided: Claude asks "What do you want to build or do? You can describe it briefly or in detail."
 3. User provides the goal
 4. Claude reads `HarnessKit/Config.json` — check for active mission, read `nextMissionNumber`
-5. Claude suggests a PascalCase mission name. Asks user to confirm.
-6. On confirmation: run `create-mission.sh` to create mission folder, State.json, update Config.json
-7. If git feature branches are enabled: create and switch to branch
-8. Suggest session rename:
+5. Claude reads `HarnessKit/Planner.md` for project-specific context (mandatory — informs name suggestion and Codex prompt)
+6. **In a single response:** Claude suggests a PascalCase mission name (AskUserQuestion) AND launches Codex in background with investigation prompt. Codex prompt includes: role context ("You are the Codex companion for the Planner"), instruction to read `HarnessKit/Planner.md`, Spec.md format guidance, and the user's goal.
+7. On name confirmation: run `create-mission.sh`, create branch if configured
+8. Proceed immediately to Step 1 (suggest session rename alongside investigation start)
 
-╔═══ RENAME THIS SESSION ══════════════════════════════════════════════╗
-```
-/rename 📝 Planner: NNN-MissionName
-```
-╚══════════════════════════════════════════════════════════════════════╝
+**Critical flow:** Goal → Read Planner.md → Name + Launch Codex (parallel) → Create mission → Investigate → Questions after Round 1 only.
 
-### Step 1 — Parallel Investigation (Round 1)
+### Step 1 — Claude's Independent Investigation (Round 1)
 
-9. Claude reads `HarnessKit/Planner.md` for project context
-10. Claude launches Codex in background (`/codex:rescue --background --fresh`) with investigation prompt
-11. Claude does its own deep investigation (reads codebase, docs, source files)
-12. Both focus on: understanding the user's intention, what's affected, what might need to change, and collecting any points of unclarity
-13. Claude writes `Planner-Discussion/Claude-01.md` — includes:
+Codex is already running from Step 0.6. Claude investigates independently — no clarifying questions during this step.
+
+9. Claude reads reference documents listed in `HarnessKit/Planner.md` that are relevant to this mission
+10. Claude does its own deep investigation (reads codebase, docs, source files)
+11. Both focus on: understanding the user's intention, what's affected, what might need to change, and collecting any points of unclarity
+12. Claude writes `Planner-Discussion/Claude-01.md` — includes:
     - Investigation findings with file paths
-    - Initial plan suggestion
+    - Initial plan suggestion (following Spec.md format)
     - **Open Questions** section (anything ambiguous or unclear that needs user input)
-14. Claude fetches Codex result → saves to `Planner-Discussion/Codex-01.md`
+13. Claude fetches Codex result → saves to `Planner-Discussion/Codex-01.md`
 
 ### Step 2 — User Questions (After Round 1)
 
-15. Claude reads Codex-01.md, collects questions from both
-16. If either Claude or Codex has questions: merge them, ask user ONE AT A TIME
-17. User answers
-18. If no questions: skip straight to convergence
+14. Claude reads Codex-01.md, collects questions from both
+15. If either Claude or Codex has questions: merge them, ask user ONE AT A TIME
+16. User answers
+17. If no questions: skip straight to convergence
 
 ### Step 3 — Convergence (Round 2+)
 
-19. Claude creates merged plan: `Claude-02.md`
+18. Claude creates merged plan: `Claude-02.md`
     - Incorporates Codex findings it agrees with
     - For disagreements: explains rationale, has re-investigated the source
     - Includes user's answers to questions
     - **Open Questions** section (new questions that arose, if any)
 
-20. Claude invokes Codex (`--resume`) to review Claude-02.md
+19. Claude invokes Codex (`--resume`) to review Claude-02.md
     - Codex reads Claude-01.md (first time seeing Claude's work) + Claude-02.md
     - Codex re-investigates any points it disagrees on
     - Codex provides agreement feedback with severity levels
     - Codex may also have its own **Open Questions**
     - Result saved to `Codex-02.md`
 
-21. If Codex has new questions OR Claude has new questions: Claude asks user before next round
-22. If NOT APPROVED: Claude re-investigates disagreed points, creates `Claude-03.md`, Codex reviews → `Codex-03.md`, etc.
+20. If Codex has new questions OR Claude has new questions: Claude asks user before next round
+21. If NOT APPROVED: Claude re-investigates disagreed points, creates `Claude-03.md`, Codex reviews → `Codex-03.md`, etc.
     - From Round 3 onward, Codex only needs to read the latest Claude-NN.md (it has all prior context in its thread)
-23. If APPROVED: Claude makes editorial adjustments → final `Claude-NN.md`
+22. If APPROVED: Claude makes editorial adjustments → final `Claude-NN.md`
+
+**`--resume` fallback:** If `--resume` fails, use `--fresh` and include the full original Codex prompt preamble (role context, HarnessKit/Planner.md, Spec format) plus all prior discussion files as context in the prompt.
 
 ### Step 4 — User Approval
 
-24. Claude presents to the user:
+23. Claude presents to the user:
     - Summary of what Claude and Codex converged on
-    - Link to the final plan draft
+    - The FULL Spec.md text in chat (not just a link or summary)
     - Any remaining low-level differences noted
-25. User reviews, provides feedback
-26. Claude incorporates feedback:
+24. User reviews, provides feedback
+25. Claude incorporates feedback:
     - **Editorial changes**: apply directly, write `Spec.md`
     - **Substantive changes**: apply, then one more Codex review (`--resume`) before finalizing
-27. Write `Spec.md`
-28. Optionally ask about committing the spec + mission structure
+26. Write `Spec.md`
+27. Optionally ask about committing the spec + mission structure
 
 ### Step 5 — Transition to Execution
 
-29. Claude presents execution session prompts:
+28. Claude presents execution session prompts:
 
 ╔═══ START GENERATOR SESSION ═════════════════════════════════════════╗
 ```
@@ -383,6 +382,9 @@ HarnessKit/NNN-MissionName/
    - Subsequent cycles: `/codex:rescue --background --resume [eval prompt]`
 
 The evaluation prompt includes:
+- Role context ("You are the Codex companion for the Evaluator")
+- Instruction to read `HarnessKit/Evaluator.md` for project-specific context and mandatory checks
+- Instruction to read the relevant evaluation strategy (matching mission type from Spec.md AND projectType from Config.json)
 - The spec (acceptance criteria)
 - The changed files list (from manifest)
 - Instruction to verify each criterion with evidence

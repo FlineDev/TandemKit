@@ -77,8 +77,20 @@ The user invokes this skill with `/evaluator NNN-MissionName`. First rename the 
     - First eval cycle of the mission: `/codex:rescue --background --fresh [eval prompt]`
     - Subsequent eval cycles: `/codex:rescue --background --resume [eval prompt]`
 
+    **If Codex is unavailable** (`/codex:rescue` fails): STOP. Tell the user: "Codex is unavailable. Please run `/codex:setup` to fix, then say 'continue'." Do NOT proceed with Claude-only evaluation.
+
     The evaluation prompt:
     ```
+    You are the Codex companion for the Evaluator. Your evaluation will be
+    compared with Claude's independent findings to produce a converged verdict.
+
+    FIRST: Read HarnessKit/Evaluator.md — it contains project-specific
+    evaluation context, mandatory checks, and "always do" / "never do" rules.
+    Also read the relevant evaluation strategy from the evaluator skill's
+    strategies/ folder. Choose based on mission type from Spec.md AND
+    projectType from HarnessKit/Config.json (e.g., code + Apple platform
+    → Evaluation-Strategy-ApplePlatform.md; domain/docs → Domain strategy).
+
     Evaluate mission [name] against the spec, round [N].
     Read these files:
     - HarnessKit/[mission]/Spec.md (acceptance criteria)
@@ -147,6 +159,8 @@ The user invokes this skill with `/evaluator NNN-MissionName`. First rename the 
 **Post-approval rule:** After APPROVED, only editorial changes. Substantive changes require one more Codex review.
 
 **Stuck convergence:** If same high/medium disagreement persists 3x, present both positions to the user.
+
+**`--resume` fallback:** If `--resume` fails, use `--fresh` and include the full original Codex prompt preamble (role context, HarnessKit/Evaluator.md, evaluation strategy, Spec.md) plus: "Read these files for prior context: [list all prior Round-NN-Discussion/ files]. Then review [path]/Claude-NN.md."
 
 21. Copy final `Claude-NN.md` → `Evaluator/Round-NN.md`
 
