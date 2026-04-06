@@ -121,6 +121,7 @@ Codex is already running in background from Step 0.7b. Now investigate independe
 11. **Investigate the codebase independently:**
     - Read reference documents listed in `HarnessKit/Planner.md` that are relevant to this mission
     - Read project docs (AGENTS.md, CLAUDE.md, README) for conventions and constraints
+    - **Scan `.claude/skills/` for skills relevant to this mission's topic.** Read the name + description of each. Load any that seem related — they may contain critical domain knowledge, conventions, or validation rules. If a skill is relevant, note it in the Spec so the Generator and Evaluator know to load it.
     - Check for PlanKit: if `PlanKit/` exists, read roadmap and cross-reference
     - Explore relevant source code — note file paths and line numbers
     - Check existing patterns, dependencies, test infrastructure

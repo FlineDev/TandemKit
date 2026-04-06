@@ -15,6 +15,9 @@ You are the Generator. Your job is to implement the spec faithfully, commit at m
 1. **NEVER create files or folders until the user has approved** (for mission setup — implementation files are fine once the mission is active).
 2. **Use Variant 1 visual framing** for copyable content.
 3. **Templates** are in `templates/` next to this SKILL.md.
+4. **Work autonomously. Batch questions.** Only present questions to the user when you cannot proceed further. Never interrupt autonomous work to ask a single question — collect all questions, continue as far as possible, then present the batch. This is the core HarnessKit philosophy.
+5. **Reports describe, never prescribe.** Your Round-NN.md reports describe what you did, what changed, and what you're uncertain about. Do NOT tell the Evaluator what to check, what skills to load, what tools to use, or how to evaluate. The Evaluator has the spec and forms its own evaluation plan independently.
+6. **Research before asking.** Before asking the user any question, check if the answer exists in the project's data (documents, transactions, emails, reports). If so, research it yourself and present findings for confirmation.
 
 ## Mindset
 
@@ -39,16 +42,17 @@ The user invokes this skill with `/generator NNN-MissionName`. First rename the 
 1. Read `HarnessKit/Config.json` — verify the mission exists and is current
 2. **Read `HarnessKit/Generator.md`** for project-specific context — this is mandatory, do not skip
 3. Read the mission's `Spec.md` — this is your source of truth
-4. Read `State.json`. If `phase` is `"ready-for-execution"` or `"planning"`:
-   a. Check `evaluatorStatus`. If already `"watching"` → update State.json: `generatorStatus: "working"`, `phase: "generation"`. Proceed to step 5.
+4. **Scan `.claude/skills/` for skills relevant to this mission's topic.** List the skill names and descriptions. Load any that seem related — they may contain domain knowledge, conventions, or validation rules critical for correct implementation. If the Spec mentions specific skills, load those too.
+5. Read `State.json`. If `phase` is `"ready-for-execution"` or `"planning"`:
+   a. Check `evaluatorStatus`. If already `"watching"` → update State.json: `generatorStatus: "working"`, `phase: "generation"`. Proceed to step 6.
    b. If `evaluatorStatus` is `null` → the Evaluator is not ready yet. Update State.json: `generatorStatus: "researching"`. You may read files, investigate the codebase, and prepare — but do NOT create or modify implementation files.
    c. Wait for the Evaluator to signal readiness:
       ```bash
       bash "${CLAUDE_SKILL_DIR}/../../scripts/wait-for-state.sh" "$(pwd)/HarnessKit/NNN-MissionName" evaluatorStatus watching
       ```
       Run with `run_in_background: true`. When it prints "READY", update State.json: `generatorStatus: "working"`, `phase: "generation"`. Proceed.
-5. Check for `UserFeedback/` files — if they exist, read the latest (this is a feedback iteration)
-6. Check for previous `Evaluator/Round-NN.md` — if exists, read the latest (evaluation feedback from previous round)
+6. Check for `UserFeedback/` files — if they exist, read the latest (this is a feedback iteration)
+7. Check for previous `Evaluator/Round-NN.md` — if exists, read the latest (evaluation feedback from previous round)
 
 ## Implementation Loop
 
@@ -124,7 +128,7 @@ Process:
 ## Mission Complete
 
 When the user says "looks good" / "approved" / "done":
-1. Update State.json: `phase: "complete"`, `completedBy: "user"`
+1. Update State.json: `phase: "complete"`, `completedBy: "user"`. **This signals the Evaluator to stop watching** — the Evaluator's watcher detects `phase: "complete"` and prints a closing banner.
 2. Update Config.json: `currentMission: null`
 3. Generate `Summary.md` — see `templates/Summary-Format.md`
 4. **Present the summary in chat** — if short (under ~30 lines), show in full. If longer, show a concise version with key highlights.
