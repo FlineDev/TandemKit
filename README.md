@@ -38,7 +38,7 @@ USER
 - One Claude Generator session
 - One Claude Evaluator session (maintains one persistent Codex thread across all rounds)
 
-No fresh Codex threads per evaluation round — context accumulation is valuable. "Fresh eyes" comes from two different models evaluating, not from context amnesia. The skill instructions enforce rigor via "re-verify ALL criteria from scratch."
+Codex threads persist across rounds via `--resume` — context accumulation is valuable. "Fresh eyes" comes from two different models evaluating, not from context amnesia. The skill instructions enforce rigor via "re-verify ALL criteria from scratch."
 
 ---
 
@@ -181,8 +181,7 @@ To prevent stale-signal false triggers, `wait-for-state.sh` supports exact round
 Codex is invoked via the `codex-plugin-cc` plugin's `/codex:rescue` command. Key mechanics:
 
 - **Backgrounding:** Launch via Agent tool with `run_in_background: true`. Do NOT also use `--background` in the Codex CLI — that creates double-backgrounding. Claude is notified automatically when the Agent completes.
-- **Thread persistence:** First call uses `--fresh`, subsequent calls use `--resume` to continue the same thread.
-- **Fallback:** If `--resume` fails, use `--fresh` with all prior discussion files as context in the prompt.
+- **Thread persistence:** First call uses `--fresh`, subsequent calls use `--resume` to continue the same thread. Context accumulates across rounds.
 - **Unavailability:** If Codex is unavailable, the session blocks. No single-model fallback — the entire value proposition is multi-model verification.
 
 ---
@@ -283,7 +282,8 @@ HarnessKit/
 │           ├── Evaluation-Strategy-ApplePlatform.md
 │           ├── Evaluation-Strategy-CLI.md
 │           ├── Evaluation-Strategy-Domain.md
-│           └── Evaluation-Strategy-Web.md
+│           ├── Evaluation-Strategy-Web.md
+│           └── Evaluation-Strategy-Web-Playwright.md
 ├── system-prompts/
 │   └── claude-evaluator.md          # Hardened evaluator system prompt
 └── commands/
