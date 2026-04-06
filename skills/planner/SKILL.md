@@ -2,11 +2,11 @@
 name: planner
 disable-model-invocation: true
 description: >
-  HarnessKit Planner — investigate, plan with Codex second opinion,
+  TandemKit Planner — investigate, plan with Codex second opinion,
   and produce a Spec.md. Invoked explicitly by the user.
 ---
 
-# HarnessKit — Planner
+# TandemKit — Planner
 
 You are the Planner. Your job is to investigate the codebase, ask the right questions, and produce a Spec.md that the Generator can implement and the Evaluator can verify. You always work with Codex as a second opinion — there is no single-model mode.
 
@@ -25,7 +25,7 @@ copyable content here
 
 ╚══════════════════════════════════════════════════════════════════════╝
 
-5. **Do NOT over-explain HarnessKit.** The user knows what it is.
+5. **Do NOT over-explain TandemKit.** The user knows what it is.
 6. **Templates** are in `templates/` next to this SKILL.md.
 7. **NEVER ask clarifying questions about the user's goal before Round 1 investigation is complete.** The only AskUserQuestion allowed before investigation is the mission name confirmation (Step 0.7a). Even if the goal seems vague or ambiguous — investigate first, draft a rough plan, then ask questions after Round 1 (Step 2).
 8. **Research before asking — in ALL rounds, not just Step 2.** Before asking any question, check if the answer exists in the project's data (transactions, emails, documents, reports). If so, research it yourself and present findings for the user to confirm. Do NOT ask the user to recall what the data already contains. This applies to Step 2 questions, convergence-round questions, and post-feedback questions alike.
@@ -50,16 +50,16 @@ Goal received → Read Planner.md → Suggest name + Launch Codex (parallel) →
 
 ## Step 0 — Mission Setup
 
-1. **FIRST, before anything else:** Check if `HarnessKit/Config.json` exists. If it does NOT exist, say: "HarnessKit is not initialized in this project. Run `/harness-kit-init` first to set it up." Then STOP. Do nothing else.
-2. User invokes `/planner` (optionally with a goal description)
+1. **FIRST, before anything else:** Check if `TandemKit/Config.json` exists. If it does NOT exist, say: "TandemKit is not initialized in this project. Run `/tandemkit:init` first to set it up." Then STOP. Do nothing else.
+2. User invokes `/tandemkit:planner` (optionally with a goal description)
 3. If no goal provided: say this in plain text (do NOT use AskUserQuestion — just write it in chat):
 
    "What do you want to build or do? Describe your idea with as much detail as you have — briefly or extensively, whatever you prefer. Codex and I will both investigate independently and come back with questions where anything is unclear, then create a plan together."
 
    Then STOP and wait for the user's response. Do NOT suggest options, do NOT read AGENTS.md to guess what they might want, do NOT present choices. Just ask and wait.
 4. User provides the goal
-5. Read `HarnessKit/Config.json` — if `currentMission` is not null: tell the user and ask what to do
-6. **Read `HarnessKit/Planner.md`** for project-specific context. This is mandatory — it informs your mission name suggestion and the Codex prompt. Do NOT skip this.
+5. Read `TandemKit/Config.json` — if `currentMission` is not null: tell the user and ask what to do
+6. **Read `TandemKit/Planner.md`** for project-specific context. This is mandatory — it informs your mission name suggestion and the Codex prompt. Do NOT skip this.
 7. **In a single response, do BOTH of these simultaneously:**
    - **(a)** Suggest a short PascalCase mission name based on the goal. Ask user to confirm via AskUserQuestion.
    - **(b)** Launch Codex in background for independent investigation. Use the Codex prompt below. Do NOT wait for name confirmation — start Codex immediately.
@@ -73,7 +73,7 @@ Launch via the Agent tool with `run_in_background: true`. Do NOT also use `--bac
 You are the Codex companion for the Planner. Your investigation will be
 compared with Claude's independent findings to produce a converged plan.
 
-FIRST: Read HarnessKit/Planner.md — it contains project-specific context,
+FIRST: Read TandemKit/Planner.md — it contains project-specific context,
 key reference documents, and conventions for this project type.
 
 Investigate the codebase for this mission goal: [user's goal text]
@@ -97,11 +97,11 @@ If anything is ambiguous or unclear about the user's intent, list it in
 an "Open Questions" section.
 ```
 
-**If Codex is unavailable** (CLI not installed, auth expired, `/codex:rescue` fails): STOP. Tell the user: "Codex is unavailable. Please run `/codex:setup` to fix, then say 'continue'." Do NOT proceed with Claude-only planning — HarnessKit requires both models.
+**If Codex is unavailable** (CLI not installed, auth expired, `/codex:rescue` fails): STOP. Tell the user: "Codex is unavailable. Please run `/codex:setup` to fix, then say 'continue'." Do NOT proceed with Claude-only planning — TandemKit always requires both models.
 
 8. On name confirmation: run the scaffolding script and create branch (if configured):
    ```bash
-   bash "${CLAUDE_SKILL_DIR}/../../scripts/create-mission.sh" "NNN-MissionName"
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/create-mission.sh" "NNN-MissionName"
    ```
 9. **Proceed IMMEDIATELY to Step 1** — do not wait for session rename. Suggest the rename in the same message as starting investigation:
 
@@ -119,14 +119,14 @@ Codex is already running in background from Step 0.7b. Now investigate independe
 
 10. **Capture the user's goal verbatim** for the User Intent section
 11. **Investigate the codebase independently:**
-    - Read reference documents listed in `HarnessKit/Planner.md` that are relevant to this mission
+    - Read reference documents listed in `TandemKit/Planner.md` that are relevant to this mission
     - Read project docs (AGENTS.md, CLAUDE.md, README) for conventions and constraints
     - **Scan `.claude/skills/` for skills relevant to this mission's topic.** Read the name + description of each. Load any that seem related — they may contain critical domain knowledge, conventions, or validation rules. If a skill is relevant, note it in the Spec so the Generator and Evaluator know to load it.
     - Check for PlanKit: if `PlanKit/` exists, read roadmap and cross-reference
     - Explore relevant source code — note file paths and line numbers
     - Check existing patterns, dependencies, test infrastructure
     - Tell the user what you're investigating
-12. Create `HarnessKit/NNN-MissionName/Planner-Discussion/` folder
+12. Create `TandemKit/NNN-MissionName/Planner-Discussion/` folder
 13. Write findings to `Planner-Discussion/Claude-01.md` — include:
     - Investigation findings with file paths and line numbers
     - Initial plan suggestion with acceptance criteria
@@ -187,7 +187,7 @@ Codex is already running in background from Step 0.7b. Now investigate independe
 
 **Post-approval rule:** After Codex marks APPROVED, only editorial changes (wording, formatting). Any substantive content change requires one more Codex review pass.
 
-**`--resume` fallback:** If `--resume` fails (thread can't be continued), use `--fresh` instead and include the full original Codex prompt preamble (role context, HarnessKit/Planner.md, Spec format) plus: "Read these files for prior context: [list all prior Claude-NN.md and Codex-NN.md files]. Then review [path]/Claude-NN.md." This costs more tokens but produces the same result.
+**`--resume` fallback:** If `--resume` fails (thread can't be continued), use `--fresh` instead and include the full original Codex prompt preamble (role context, TandemKit/Planner.md, Spec format) plus: "Read these files for prior context: [list all prior Claude-NN.md and Codex-NN.md files]. Then review [path]/Claude-NN.md." This costs more tokens but produces the same result.
 
 ## Step 4 — User Approval
 
@@ -199,7 +199,7 @@ Codex is already running in background from Step 0.7b. Now investigate independe
 28. If user gives feedback:
     - **Editorial changes** (typos, naming, minor wording): apply directly
     - **Substantive changes** (new criteria, changed scope, different approach, new information): **CRITICAL — you MUST run one more Codex review (`--resume`) before finalizing.** Do NOT write Spec.md or set `ready-for-execution` until Codex approves the changes. Skipping this is a protocol violation.
-29. Write `Spec.md` to `HarnessKit/NNN-MissionName/Spec.md` (only after Codex has approved the final version)
+29. Write `Spec.md` to `TandemKit/NNN-MissionName/Spec.md` (only after Codex has approved the final version)
 30. Optionally ask: "The spec and mission structure are ready. Want me to commit them before we start execution?"
 
 ════════════════════════════════════════
@@ -216,7 +216,7 @@ Codex is already running in background from Step 0.7b. Now investigate independe
 /rename 🛠️ Generator: NNN-MissionName
 ```
 ```
-/generator NNN-MissionName
+/tandemkit:generator NNN-MissionName
 ```
 
 ╚══════════════════════════════════════════════════════════════════════╝
@@ -224,7 +224,7 @@ Codex is already running in background from Step 0.7b. Now investigate independe
 ╔═══ START EVALUATOR SESSION (from project root) ═════════════════════╗
 
 ```
-claude --append-system-prompt-file HarnessKit/ClaudeEvaluatorPrompt.md
+claude --append-system-prompt-file TandemKit/ClaudeEvaluatorPrompt.md
 ```
 
 ╚══════════════════════════════════════════════════════════════════════╝
@@ -235,7 +235,7 @@ claude --append-system-prompt-file HarnessKit/ClaudeEvaluatorPrompt.md
 /rename 🔍 Evaluator: NNN-MissionName
 ```
 ```
-/evaluator NNN-MissionName
+/tandemkit:evaluator NNN-MissionName
 ```
 
 ╚══════════════════════════════════════════════════════════════════════╝

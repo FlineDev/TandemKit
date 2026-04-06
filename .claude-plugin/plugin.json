@@ -1,13 +1,13 @@
 {
-  "name": "harness-kit",
-  "version": "0.1.0",
-  "description": "Planner/Generator/Evaluator orchestration harness with file-based multi-session coordination",
+  "name": "tandemkit",
+  "version": "1.0.0",
+  "description": "Claude plans and builds, Codex reviews — autonomous multi-session orchestration that converges on quality",
   "author": {
     "name": "Cihat Gündüz",
     "url": "https://fline.dev"
   },
-  "homepage": "https://github.com/FlineDev/HarnessKit",
-  "repository": "https://github.com/FlineDev/HarnessKit",
+  "homepage": "https://github.com/FlineDev/TandemKit",
+  "repository": "https://github.com/FlineDev/TandemKit",
   "license": "MIT",
-  "keywords": ["harness", "evaluator", "planner", "generator", "orchestration", "multi-session", "quality-gate", "mission"]
+  "keywords": ["tandem", "evaluator", "planner", "generator", "orchestration", "codex", "multi-session", "convergence"]
 }

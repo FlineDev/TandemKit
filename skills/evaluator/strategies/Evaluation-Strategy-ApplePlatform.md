@@ -134,7 +134,7 @@ Not every mission is a code mission. For documentation/content missions (e.g., w
 
 ## Role File Template
 
-During init, create `HarnessKit/Evaluator.md` with:
+During init, create `TandemKit/Evaluator.md` with:
 
 ```markdown
 # Evaluator — Project-Specific Context

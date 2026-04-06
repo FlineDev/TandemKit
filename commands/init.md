@@ -1,18 +1,18 @@
 ---
-description: Initialize HarnessKit in this project. Sets up the coordination folder, configures roles, installs tools, and creates Codex symlinks.
+description: Initialize TandemKit in this project. Sets up the coordination folder, configures roles, installs tools, and verifies Codex access.
 ---
 
-# HarnessKit — Project Initialization
+# TandemKit — Project Initialization
 
-> **Note:** This command is for plugin-based distribution only. For local development, use direct symlinks to the HarnessKit repo instead — see README.md for setup instructions.
+> **Note:** This command is for plugin-based distribution only. For local development, use direct symlinks to the TandemKit repo instead — see README.md for setup instructions.
 
-This command sets up HarnessKit in the current project. Run it once per project.
+This command sets up TandemKit in the current project. Run it once per project.
 
 ## Important UX Rules
 
 Follow these rules throughout the entire init flow:
 
-1. **Do NOT explain what HarnessKit is.** The user already knows — they just ran the init command.
+1. **Do NOT explain what TandemKit is.** The user already knows — they just ran the init command.
 2. **Ask questions ONE AT A TIME.** Before each question, write 2-3 sentences of context in chat explaining WHY this matters and what you recommend. Then ask using AskUserQuestion. Never batch multiple questions.
 3. **Do NOT install or configure anything without explicit user approval.** Ask first, show what you want to do, get a "yes", then do it.
 4. **Before modifying any existing file** (.gitignore, settings.json, config.toml), explain what you want to change and get user approval.
@@ -24,8 +24,8 @@ Follow these rules throughout the entire init flow:
 
 ## Pre-Flight Check
 
-1. Verify `HarnessKit/` does not already exist in the project root. If it does, tell the user: "HarnessKit is already initialized in this project. Config is at HarnessKit/Config.json."
-2. Check that this is a git repository. If not, warn: "This project is not a git repository. HarnessKit works best with git for feature branches and milestone commits. Continue anyway?"
+1. Verify `TandemKit/` does not already exist in the project root. If it does, tell the user: "TandemKit is already initialized in this project. Config is at TandemKit/Config.json."
+2. Check that this is a git repository. If not, warn: "This project is not a git repository. TandemKit works best with git for feature branches and milestone commits. Continue anyway?"
 
 ## Step 1 — Install watchman
 
@@ -56,7 +56,7 @@ Before asking questions, investigate thoroughly. Tell the user: "Let me investig
 
 4. **Read commit conventions and branch patterns:**
    - Check AGENTS.md/CLAUDE.md for commit message rules, push policies, branch conventions
-   - Run `git branch -a` to see existing branch naming patterns — use these for HarnessKit feature branches. Do NOT invent a new convention or add prefixes.
+   - Run `git branch -a` to see existing branch naming patterns — use these for TandemKit feature branches. Do NOT invent a new convention or add prefixes.
    - Check for git hooks
 
 5. **Read the user's permission deny list** in settings.json.
@@ -86,7 +86,7 @@ Present your detection results, then ask.
 
 ### Question 2: Evaluation Scope
 
-Explain that HarnessKit's evaluator can verify different aspects, then ask:
+Explain that TandemKit's evaluator can verify different aspects, then ask:
 
 > "What should the Evaluator verify?"
 
@@ -150,12 +150,12 @@ Read `references/Evaluation-Strategy-Web-Playwright.md`. Set up the MCP server i
 
 Present what you found in the project's commit conventions and branch patterns, then ask:
 
-> "For HarnessKit missions:"
+> "For TandemKit missions:"
 
 1. Should the Generator make commits automatically at milestones? (default: yes)
 2. Should each mission use a feature branch? (default: yes)
 
-**Branch naming:** Show the pattern you detected from existing branches (e.g., "Your branches follow `jeehut/feature-description`"). HarnessKit will use the same pattern. Do NOT invent a new convention or add prefixes like "hk-".
+**Branch naming:** Show the pattern you detected from existing branches (e.g., "Your branches follow `jeehut/feature-description`"). TandemKit will use the same pattern. Do NOT invent a new convention or add prefixes like "hk-".
 
 **If submodules exist:** Ask specifically about commit scope:
 - "Should auto-commits happen in the umbrella repo, in submodules, or submodules only?"
@@ -163,12 +163,12 @@ Present what you found in the project's commit conventions and branch patterns, 
 
 ### Question 5: Codex Plugin Verification
 
-HarnessKit ALWAYS uses Codex alongside Claude — this is not optional. Do NOT ask whether the user wants Codex. Instead, verify the `codex-plugin-cc` plugin is installed:
+TandemKit ALWAYS uses Codex alongside Claude — this is not optional. Do NOT ask whether the user wants Codex. Instead, verify the `codex-plugin-cc` plugin is installed:
 
 1. Check if the plugin is available: look for `/codex:setup` command or check `~/.claude/settings.json` for `codex` in enabled plugins
 2. If NOT installed, tell the user and provide the install instructions:
 
-   "HarnessKit requires the `codex-plugin-cc` plugin (Claude + Codex always work in tandem). Install it first:"
+   "TandemKit requires the `codex-plugin-cc` plugin (Claude + Codex always work in tandem). Install it first:"
 
    ```
    /plugin marketplace add openai/codex-plugin-cc
@@ -177,7 +177,7 @@ HarnessKit ALWAYS uses Codex alongside Claude — this is not optional. Do NOT a
    /codex:setup
    ```
 
-   "After installing and verifying with `/codex:setup`, re-run `/harness-kit-init`."
+   "After installing and verifying with `/codex:setup`, re-run `/tandemkit:init`."
 
    Then STOP. Do not continue init without the plugin.
 
@@ -185,7 +185,7 @@ HarnessKit ALWAYS uses Codex alongside Claude — this is not optional. Do NOT a
 
 ### Question 6: .gitignore Preference
 
-> "Do you want HarnessKit coordination files gitignored during active missions?"
+> "Do you want TandemKit coordination files gitignored during active missions?"
 
 ## Step 4 — Check Permissions for Autonomous Operation
 
@@ -211,7 +211,7 @@ If Codex is enabled, check `~/.codex/config.toml`. Only mention issues if restri
 
 Wait for confirmation. This catches misunderstandings before they're baked into config files.
 
-## Step 6 — Create the HarnessKit Directory
+## Step 6 — Create the TandemKit Directory
 
 Create the folder structure with Config.json, Planner.md, Generator.md, Evaluator.md, and ClaudeEvaluatorPrompt.md.
 
@@ -270,22 +270,22 @@ Only if the user said yes in Question 6.
 
 ## Step 8 — Verify Codex Skill Access
 
-Codex needs access to the HarnessKit skills. Check in this order:
+Codex needs access to the TandemKit skills. Check in this order:
 
-1. **Check user-level Codex symlinks first:** Do `~/.agents/skills/planner`, `~/.agents/skills/generator`, `~/.agents/skills/evaluator` exist and point to valid HarnessKit skill folders?
+1. **Check user-level Codex symlinks first:** Do `~/.agents/skills/planner`, `~/.agents/skills/generator`, `~/.agents/skills/evaluator` exist and point to valid TandemKit skill folders?
    - If YES → skip project-level symlinks. Tell user: "Codex skills already installed at user level."
    - If NO → continue to step 2.
 
-2. **Find the HarnessKit repo path** from the Claude skill symlink:
+2. **Find the TandemKit repo path** from the Claude skill symlink:
    ```bash
-   HARNESS_PATH=$(readlink -f ~/.claude/skills/planner | sed 's|/skills/planner$||')
+   TANDEM_PATH=$(readlink -f ~/.claude/skills/planner | sed 's|/skills/planner$||')
    ```
    Then create **user-level** Codex symlinks (not project-level):
    ```bash
    mkdir -p ~/.agents/skills
-   ln -sf "$HARNESS_PATH/skills/planner" ~/.agents/skills/planner
-   ln -sf "$HARNESS_PATH/skills/generator" ~/.agents/skills/generator
-   ln -sf "$HARNESS_PATH/skills/evaluator" ~/.agents/skills/evaluator
+   ln -sf "$TANDEM_PATH/skills/planner" ~/.agents/skills/planner
+   ln -sf "$TANDEM_PATH/skills/generator" ~/.agents/skills/generator
+   ln -sf "$TANDEM_PATH/skills/evaluator" ~/.agents/skills/evaluator
    ```
 
 3. **If neither Claude nor Codex user-level symlinks exist** (rare — plugin-only install): create project-level symlinks as fallback:
@@ -297,20 +297,20 @@ Codex needs access to the HarnessKit skills. Check in this order:
    ```
    Add `.agents/skills/` to `.gitignore`.
 
-**CRITICAL:** Always resolve to the actual HarnessKit repo path. NEVER use the plugin cache path (`~/.claude/plugins/cache/...`) — it becomes stale after updates.
+**CRITICAL:** Always resolve to the actual TandemKit repo path. NEVER use the plugin cache path (`~/.claude/plugins/cache/...`) — it becomes stale after updates.
 
 ## Step 9 — Update AGENTS.md (Safety Net)
 
-Add a brief HarnessKit section to the project's `AGENTS.md` (or `CLAUDE.md` if that's what the project uses). This serves as a safety net — even if the plugin isn't loaded, Claude will know HarnessKit exists and what to do:
+Add a brief TandemKit section to the project's `AGENTS.md` (or `CLAUDE.md` if that's what the project uses). This serves as a safety net — even if the plugin isn't loaded, Claude will know TandemKit exists and what to do:
 
 ```markdown
-## HarnessKit
+## TandemKit
 
-This project uses HarnessKit — Claude and Codex always work in tandem for planning and evaluation.
+This project uses TandemKit — Claude and Codex always work in tandem for planning and evaluation.
 
-**To start a new mission:** Run `/planner` and describe your goal. The Planner guides you through everything — including how to start the Generator and Evaluator sessions once the plan is ready.
+**To start a new mission:** Run `/tandemkit:planner` and describe your goal. The Planner guides you through everything — including how to start the Generator and Evaluator sessions once the plan is ready.
 
-Project-specific role context: `HarnessKit/Planner.md`, `HarnessKit/Generator.md`, `HarnessKit/Evaluator.md`.
+Project-specific role context: `TandemKit/Planner.md`, `TandemKit/Generator.md`, `TandemKit/Evaluator.md`.
 ```
 
 Keep it brief — one short paragraph. Ask the user before editing AGENTS.md.
@@ -319,15 +319,15 @@ Keep it brief — one short paragraph. Ask the user before editing AGENTS.md.
 
 Present a brief summary table of what was set up.
 
-Then ask: "Should I commit the HarnessKit initialization?" This is the first milestone — the project setup. If the user agrees, commit all HarnessKit files:
+Then ask: "Should I commit the TandemKit initialization?" This is the first milestone — the project setup. If the user agrees, commit all TandemKit files:
 ```bash
-git add HarnessKit/ .gitignore
+git add TandemKit/ .gitignore
 # Also add AGENTS.md if it was modified
-git commit -m "Initialize HarnessKit coordination framework"
+git commit -m "Initialize TandemKit coordination framework"
 ```
 
 Then end with:
 
 > **Next step:** To start your first mission:
 >
-> `/planner`
+> `/tandemkit:planner`

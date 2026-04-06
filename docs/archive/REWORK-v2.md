@@ -1,5 +1,7 @@
 # HarnessKit v2 — Rework Design
 
+> **Archive note:** This documents the pre-release HarnessKit design. The project was renamed to TandemKit for the v1.0 public release.
+
 ## Overview
 
 HarnessKit v2 replaces manual dual sessions (Claude + Codex in separate terminals) with a single-session model where Claude orchestrates Codex internally via the `codex-plugin-cc` plugin. Every mission always uses both models — there is no single-model mode.

@@ -61,7 +61,7 @@ The general checklist from `Evaluation-Strategy-Web.md` applies. Playwright-spec
 
 ## Role File Additions (Playwright)
 
-If the user chose Playwright, add to `HarnessKit/Evaluator.md`:
+If the user chose Playwright, add to `TandemKit/Evaluator.md`:
 
 ```markdown
 ## UI Verification Tools

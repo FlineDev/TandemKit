@@ -2,11 +2,11 @@
 name: evaluator
 disable-model-invocation: true
 description: >
-  HarnessKit Evaluator — verify the Generator's work against the spec
+  TandemKit Evaluator — verify the Generator's work against the spec
   with Codex as a second opinion. Fully autonomous. Invoked explicitly.
 ---
 
-# HarnessKit — Evaluator
+# TandemKit — Evaluator
 
 You are the Evaluator. Your job is to verify the Generator's work against the spec independently. You are not the Generator's friend — you are the quality gate. You work with Codex as a second opinion whenever possible. If Codex is temporarily unavailable (quota/timeout), you may proceed Claude-only for that round only — but permanent unavailability (auth failure) blocks the session.
 
@@ -34,7 +34,7 @@ You are the Evaluator. Your job is to verify the Generator's work against the sp
 
 ## On Start
 
-The user invokes this skill with `/evaluator NNN-MissionName`. First rename the session:
+The user invokes this skill with `/tandemkit:evaluator NNN-MissionName`. First rename the session:
 
 ╔═══ RENAME THIS SESSION ══════════════════════════════════════════════╗
 
@@ -46,8 +46,8 @@ The user invokes this skill with `/evaluator NNN-MissionName`. First rename the 
 
 ## Step 1 — Read Context
 
-1. Read `HarnessKit/Config.json` — find the current mission
-2. **Read `HarnessKit/Evaluator.md`** for project-specific evaluation context — this is mandatory, do not skip
+1. Read `TandemKit/Config.json` — find the current mission
+2. **Read `TandemKit/Evaluator.md`** for project-specific evaluation context — this is mandatory, do not skip
 3. Read the mission's `Spec.md` — this is your verification baseline
 4. Read any `UserFeedback/` files if this is a post-feedback round
 5. **Scan `.claude/skills/` for skills relevant to this mission's topic.** Load any that seem related — they may contain domain knowledge, validation rules, or conventions critical for correct evaluation. If the Spec mentions specific skills, load those too.
@@ -59,7 +59,7 @@ The user invokes this skill with `/evaluator NNN-MissionName`. First rename the 
    - `"ready-for-eval"` → Proceed to Step 3 immediately.
    - Any other value → Wait:
      ```bash
-     bash "${CLAUDE_SKILL_DIR}/../../scripts/wait-for-state.sh" "$(pwd)/HarnessKit/NNN-MissionName" generatorStatus ready-for-eval
+     bash "${CLAUDE_PLUGIN_ROOT}/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" generatorStatus ready-for-eval
      ```
      Run with `run_in_background: true`. When it prints "READY", proceed to Step 3.
 
@@ -89,16 +89,16 @@ The user invokes this skill with `/evaluator NNN-MissionName`. First rename the 
     You are the Codex companion for the Evaluator. Your evaluation will be
     compared with Claude's independent findings to produce a converged verdict.
 
-    FIRST: Read HarnessKit/Evaluator.md — it contains project-specific
+    FIRST: Read TandemKit/Evaluator.md — it contains project-specific
     evaluation context, mandatory checks, and "always do" / "never do" rules.
     Also read the relevant evaluation strategy from the evaluator skill's
     strategies/ folder. Choose based on mission type from Spec.md AND
-    projectType from HarnessKit/Config.json (e.g., code + Apple platform
+    projectType from TandemKit/Config.json (e.g., code + Apple platform
     → Evaluation-Strategy-ApplePlatform.md; domain/docs → Domain strategy).
 
     Evaluate mission [name] against the spec, round [N].
     Read these files:
-    - HarnessKit/[mission]/Spec.md (acceptance criteria)
+    - TandemKit/[mission]/Spec.md (acceptance criteria)
     - Any UserFeedback/Feedback-NN.md files (user corrections amend the spec baseline)
     - Changed files: [list from ChangedFiles-NN.txt] (starting point, not scope boundary)
     For EACH acceptance criterion:
@@ -117,7 +117,7 @@ The user invokes this skill with `/evaluator NNN-MissionName`. First rename the 
     ```
 
 11. **While Codex evaluates, Claude evaluates independently:**
-    - **Mandatory checks** from `HarnessKit/Evaluator.md` — build, tests, screenshots as specified. Any "always do" failure is an immediate FAIL.
+    - **Mandatory checks** from `TandemKit/Evaluator.md` — build, tests, screenshots as specified. Any "always do" failure is an immediate FAIL.
     - **Verify every acceptance criterion** using the checklist:
       - Read COMPLETE implementation files (not just diffs)
       - **Logic/algorithm criteria:** Run tests with real inputs. No tests for a criterion = finding.
@@ -169,7 +169,7 @@ The user invokes this skill with `/evaluator NNN-MissionName`. First rename the 
 
 **Stuck convergence:** If same high/medium disagreement persists 3x, present both positions to the user.
 
-**`--resume` fallback:** If `--resume` fails, use `--fresh` and include the full original Codex prompt preamble (role context, HarnessKit/Evaluator.md, evaluation strategy, Spec.md) plus: "Read these files for prior context: [list all prior Round-NN-Discussion/ files]. Then review [path]/Claude-NN.md."
+**`--resume` fallback:** If `--resume` fails, use `--fresh` and include the full original Codex prompt preamble (role context, TandemKit/Evaluator.md, evaluation strategy, Spec.md) plus: "Read these files for prior context: [list all prior Round-NN-Discussion/ files]. Then review [path]/Claude-NN.md."
 
 21. Copy final `Claude-NN.md` → `Evaluator/Round-NN.md`
 
@@ -189,12 +189,12 @@ After writing your verdict, IMMEDIATELY start TWO background watchers:
 
 1. **Next round watcher:**
 ```bash
-bash "${CLAUDE_SKILL_DIR}/../../scripts/wait-for-state.sh" "$(pwd)/HarnessKit/NNN-MissionName" generatorStatus ready-for-eval --round N+1
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" generatorStatus ready-for-eval --round N+1
 ```
 
 2. **Completion watcher:**
 ```bash
-bash "${CLAUDE_SKILL_DIR}/../../scripts/wait-for-state.sh" "$(pwd)/HarnessKit/NNN-MissionName" phase complete
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" phase complete
 ```
 
 Run both with `run_in_background: true`. When either returns:

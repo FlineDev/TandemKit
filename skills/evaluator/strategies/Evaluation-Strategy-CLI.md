@@ -84,7 +84,7 @@ Not every mission produces code. For documentation/content missions, verify clai
 
 ## Role File Template
 
-During init, create `HarnessKit/Evaluator.md` with:
+During init, create `TandemKit/Evaluator.md` with:
 
 ```markdown
 # Evaluator — Project-Specific Context

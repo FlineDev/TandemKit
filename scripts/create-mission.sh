@@ -1,9 +1,9 @@
-#!/bin/zsh
+#!/usr/bin/env bash
 set -euo pipefail
 
-# HarnessKit — create-mission
+# TandemKit — create-mission
 # Scaffolds a new mission folder with State.json and updates Config.json.
-# Must be run from the project root (where HarnessKit/ lives).
+# Must be run from the project root (where TandemKit/ lives).
 #
 # Usage: create-mission.sh <mission-name>
 #   mission-name:  e.g., 003-DebugActivityTool
@@ -29,9 +29,9 @@ if [[ ! "$MISSION_NAME" =~ ^[a-zA-Z0-9-]+$ ]]; then
    exit 1
 fi
 
-CONFIG="./HarnessKit/Config.json"
+CONFIG="./TandemKit/Config.json"
 if [[ ! -f "$CONFIG" ]]; then
-   echo "ERROR: HarnessKit/Config.json not found. Run from the project root or run init first." >&2
+   echo "ERROR: TandemKit/Config.json not found. Run from the project root or run init first." >&2
    exit 1
 fi
 
@@ -51,7 +51,7 @@ if [[ "$MISSION_NAME" != "$EXPECTED_PREFIX"* ]]; then
    exit 1
 fi
 
-MISSION_DIR="./HarnessKit/$MISSION_NAME"
+MISSION_DIR="./TandemKit/$MISSION_NAME"
 if [[ -d "$MISSION_DIR" ]]; then
    echo "ERROR: Mission directory already exists: $MISSION_DIR" >&2
    exit 1
@@ -98,7 +98,7 @@ mv "$TEMP_CONFIG" "$CONFIG"
 
 echo ""
 echo "✓ Created mission: $MISSION_NAME"
-echo "  HarnessKit/$MISSION_NAME/State.json"
+echo "  TandemKit/$MISSION_NAME/State.json"
 echo "  Config.json: currentMission=$MISSION_NAME, nextMissionNumber=$NEW_NEXT"
 echo ""
 echo "MISSION_CREATED: $MISSION_NAME"

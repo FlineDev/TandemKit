@@ -1,11 +1,11 @@
-#!/bin/zsh
+#!/usr/bin/env bash
 set -euo pipefail
 
-# HarnessKit — wait-for-state
+# TandemKit — wait-for-state
 # Blocks until a State.json field matches an expected value (or any change occurs).
 #
 # Usage: wait-for-state.sh <mission-folder> [<field> <value1> [value2 ...]] [--quiet] [--round N]
-#   mission-folder:  absolute path to the HarnessKit/NNN-MissionName/ folder
+#   mission-folder:  absolute path to the TandemKit/NNN-MissionName/ folder
 #   field:           JSON field to check (e.g., evaluatorStatus, generatorStatus)
 #   value1..N:       acceptable values — script exits when field matches any of them
 #   --quiet:         suppress all output except final READY line (for Codex)

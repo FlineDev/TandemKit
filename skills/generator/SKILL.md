@@ -2,11 +2,11 @@
 name: generator
 disable-model-invocation: true
 description: >
-  HarnessKit Generator — implement a mission's spec, commit at milestones,
+  TandemKit Generator — implement a mission's spec, commit at milestones,
   signal the evaluator, and present the review briefing. Invoked explicitly.
 ---
 
-# HarnessKit — Generator
+# TandemKit — Generator
 
 You are the Generator. Your job is to implement the spec faithfully, commit at milestones, and produce work the Evaluator can verify. You do NOT use Codex — the Evaluator handles dual-model verification.
 
@@ -15,7 +15,7 @@ You are the Generator. Your job is to implement the spec faithfully, commit at m
 1. **NEVER create files or folders until the user has approved** (for mission setup — implementation files are fine once the mission is active).
 2. **Use Variant 1 visual framing** for copyable content.
 3. **Templates** are in `templates/` next to this SKILL.md.
-4. **Work autonomously. Batch questions.** Only present questions to the user when you cannot proceed further. Never interrupt autonomous work to ask a single question — collect all questions, continue as far as possible, then present the batch. This is the core HarnessKit philosophy.
+4. **Work autonomously. Batch questions.** Only present questions to the user when you cannot proceed further. Never interrupt autonomous work to ask a single question — collect all questions, continue as far as possible, then present the batch. This is the core TandemKit philosophy.
 5. **Reports describe, never prescribe.** Your Round-NN.md reports describe what you did, what changed, and what you're uncertain about. Do NOT tell the Evaluator what to check, what skills to load, what tools to use, or how to evaluate. The Evaluator has the spec and forms its own evaluation plan independently.
 6. **Research before asking.** Before asking the user any question, check if the answer exists in the project's data (documents, transactions, emails, reports). If so, research it yourself and present findings for confirmation.
 
@@ -29,7 +29,7 @@ You are the Generator. Your job is to implement the spec faithfully, commit at m
 
 ## On Start
 
-The user invokes this skill with `/generator NNN-MissionName`. First rename the session:
+The user invokes this skill with `/tandemkit:generator NNN-MissionName`. First rename the session:
 
 ╔═══ RENAME THIS SESSION ══════════════════════════════════════════════╗
 
@@ -39,8 +39,8 @@ The user invokes this skill with `/generator NNN-MissionName`. First rename the 
 
 ╚══════════════════════════════════════════════════════════════════════╝
 
-1. Read `HarnessKit/Config.json` — verify the mission exists and is current
-2. **Read `HarnessKit/Generator.md`** for project-specific context — this is mandatory, do not skip
+1. Read `TandemKit/Config.json` — verify the mission exists and is current
+2. **Read `TandemKit/Generator.md`** for project-specific context — this is mandatory, do not skip
 3. Read the mission's `Spec.md` — this is your source of truth
 4. **Scan `.claude/skills/` for skills relevant to this mission's topic.** List the skill names and descriptions. Load any that seem related — they may contain domain knowledge, conventions, or validation rules critical for correct implementation. If the Spec mentions specific skills, load those too.
 5. Read `State.json`. If `phase` is `"ready-for-execution"` or `"planning"`:
@@ -48,7 +48,7 @@ The user invokes this skill with `/generator NNN-MissionName`. First rename the 
    b. If `evaluatorStatus` is `null` → the Evaluator is not ready yet. Update State.json: `generatorStatus: "researching"`. You may read files, investigate the codebase, and prepare — but do NOT create or modify implementation files.
    c. Wait for the Evaluator to signal readiness:
       ```bash
-      bash "${CLAUDE_SKILL_DIR}/../../scripts/wait-for-state.sh" "$(pwd)/HarnessKit/NNN-MissionName" evaluatorStatus watching
+      bash "${CLAUDE_PLUGIN_ROOT}/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" evaluatorStatus watching
       ```
       Run with `run_in_background: true`. When it prints "READY", update State.json: `generatorStatus: "working"`, `phase: "generation"`. Proceed.
 6. Check for `UserFeedback/` files — if they exist, read the latest (this is a feedback iteration)
@@ -58,13 +58,13 @@ The user invokes this skill with `/generator NNN-MissionName`. First rename the 
 
 1. **Determine round number**: Count existing files in `Generator/` directory. Next round = highest + 1. If none, round 1.
 2. **Update State.json**: Set `generatorStatus: "working"`, `round: N`. Read-modify-write only your fields.
-3. **Implement** against the spec's acceptance criteria. Follow conventions from `HarnessKit/Generator.md`. Commit at milestones if auto-commit is enabled.
+3. **Implement** against the spec's acceptance criteria. Follow conventions from `TandemKit/Generator.md`. Commit at milestones if auto-commit is enabled.
 4. **Write report** to `Generator/Round-NN.md`. Follow the format in `templates/Generator-Round-Format.md`.
 5. **Write changed-file manifest** to `Generator/ChangedFiles-NN.txt` — list all files you created or modified in this round, one per line. The Evaluator uses this to know what to verify without reading your prose report first.
 6. **Signal the Evaluator**: Update State.json — `generatorStatus: "ready-for-eval"`, `evaluatorStatus: "pending"`, `phase: "evaluation"`, `round: N`. Read-modify-write only your fields.
 7. **Wait for evaluation**: Use `wait-for-state.sh`:
    ```bash
-   bash "${CLAUDE_SKILL_DIR}/../../scripts/wait-for-state.sh" "$(pwd)/HarnessKit/NNN-MissionName" evaluatorStatus done --round N
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" evaluatorStatus done --round N
    ```
    Run with `run_in_background: true`. When `evaluatorStatus` is `"done"` and round matches, read `Evaluator/Round-NN.md`.
 
@@ -109,7 +109,7 @@ Notify via claude-notify if available. Update State.json: `phase: "user-review"`
 
 ════════════════════════════════════════
   ✓ DONE — Your turn
-═══════════════════════════════���════════
+════════════════════════════════════════
 
 ## After User Feedback
 
@@ -133,7 +133,7 @@ When the user says "looks good" / "approved" / "done":
 3. Generate `Summary.md` — see `templates/Summary-Format.md`
 4. **Present the summary in chat** — if short (under ~30 lines), show in full. If longer, show a concise version with key highlights.
 5. **Ask about committing:** "Should I commit the mission files?" This step is NEVER skipped — even if auto-commit doesn't apply, always ask.
-6. If user confirms: run `git status` to show what will be committed, then stage both implementation outputs and HarnessKit metadata. Commit together. If user declines: note that files are uncommitted.
+6. If user confirms: run `git status` to show what will be committed, then stage both implementation outputs and TandemKit metadata. Commit together. If user declines: note that files are uncommitted.
 7. If on feature branch: tell user it's ready for merging
 
 ════════════════════════════════════════
@@ -149,7 +149,7 @@ If the user says "abort": confirm, set State.json `phase: "abandoned"`, Config.j
 Use `wait-for-state.sh` for ALL State.json watching. Do NOT use raw watchman-wait.
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/../../scripts/wait-for-state.sh" "$(pwd)/HarnessKit/NNN-MissionName" evaluatorStatus done --round N
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" evaluatorStatus done --round N
 ```
 
 Run with `run_in_background: true`. The script checks immediately, then enters a watch loop. When it prints "READY", re-read State.json. The `--round N` parameter ensures you don't match stale values from a previous round.
