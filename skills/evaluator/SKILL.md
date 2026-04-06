@@ -59,7 +59,7 @@ The user invokes this skill with `/tandemkit:evaluator NNN-MissionName`. First r
    - `"ready-for-eval"` → Proceed to Step 3 immediately.
    - Any other value → Wait:
      ```bash
-     bash "${CLAUDE_PLUGIN_ROOT}/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" generatorStatus ready-for-eval
+     bash "${CLAUDE_PLUGIN_ROOT:-${CLAUDE_SKILL_DIR}/../..}/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" generatorStatus ready-for-eval
      ```
      Run with `run_in_background: true`. When it prints "READY", proceed to Step 3.
 
@@ -189,12 +189,12 @@ After writing your verdict, IMMEDIATELY start TWO background watchers:
 
 1. **Next round watcher:**
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" generatorStatus ready-for-eval --round N+1
+bash "${CLAUDE_PLUGIN_ROOT:-${CLAUDE_SKILL_DIR}/../..}/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" generatorStatus ready-for-eval --round N+1
 ```
 
 2. **Completion watcher:**
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" phase complete
+bash "${CLAUDE_PLUGIN_ROOT:-${CLAUDE_SKILL_DIR}/../..}/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" phase complete
 ```
 
 Run both with `run_in_background: true`. When either returns:

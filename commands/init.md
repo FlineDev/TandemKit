@@ -103,7 +103,7 @@ Options:
 
 **For Apple platform projects:**
 
-Read `references/Evaluation-Strategy-ApplePlatform.md` for full details. Recommend XcodeBuildMCP CLI as the primary tool for BOTH Claude and Codex sessions (if both allow bash/shell commands). Only suggest MCP mode if the user's Codex config restricts bash.
+Read `${CLAUDE_PLUGIN_ROOT}/skills/evaluator/strategies/Evaluation-Strategy-ApplePlatform.md` for full details. Recommend XcodeBuildMCP CLI as the primary tool for BOTH Claude and Codex sessions (if both allow bash/shell commands). Only suggest MCP mode if the user's Codex config restricts bash.
 
 Install XcodeBuildMCP if the user agrees:
 ```bash
@@ -114,7 +114,7 @@ xcodebuildmcp init
 
 **For web projects:**
 
-Read `references/Evaluation-Strategy-Web.md` for full details. **Recommend browser-use CLI as the primary browser automation tool.** Explain the tradeoffs:
+Read `${CLAUDE_PLUGIN_ROOT}/skills/evaluator/strategies/Evaluation-Strategy-Web.md` for full details. **Recommend browser-use CLI as the primary browser automation tool.** Explain the tradeoffs:
 
 > "For browser-based verification, I recommend **browser-use CLI** — it uses 10–50× fewer tokens than Playwright MCP for the same operations, which means faster and cheaper evaluations. It runs as a simple CLI command (no MCP server needed) and has built-in session management for parallel testing.
 >
@@ -132,7 +132,7 @@ Read `references/Evaluation-Strategy-Web.md` for full details. **Recommend brows
 
 **Playwright setup (if user explicitly prefers):**
 
-Read `references/Evaluation-Strategy-Web-Playwright.md`. Set up the MCP server in `.mcp.json`:
+Read `${CLAUDE_PLUGIN_ROOT}/skills/evaluator/strategies/Evaluation-Strategy-Web-Playwright.md`. Set up the MCP server in `.mcp.json`:
 ```json
 {
    "mcpServers": {
@@ -270,17 +270,23 @@ Only if the user said yes in Question 6.
 
 ## Step 8 — Verify Codex Skill Access
 
-Codex needs access to the TandemKit skills. Check in this order:
+Codex needs access to the TandemKit skills so it can read evaluation strategies and role context. Check in this order:
 
 1. **Check user-level Codex symlinks first:** Do `~/.agents/skills/planner`, `~/.agents/skills/generator`, `~/.agents/skills/evaluator` exist and point to valid TandemKit skill folders?
-   - If YES → skip project-level symlinks. Tell user: "Codex skills already installed at user level."
+   - If YES → skip to Step 9. Tell user: "Codex skills already installed at user level."
    - If NO → continue to step 2.
 
-2. **Find the TandemKit repo path** from the Claude skill symlink:
+2. **Resolve the TandemKit repo path** using the plugin root:
+   ```bash
+   # For plugin installs, CLAUDE_PLUGIN_ROOT points to the plugin directory
+   TANDEM_PATH="${CLAUDE_PLUGIN_ROOT}"
+   ```
+   If `CLAUDE_PLUGIN_ROOT` is not set (standalone symlink install), resolve from the Claude skill symlink:
    ```bash
    TANDEM_PATH=$(readlink -f ~/.claude/skills/planner | sed 's|/skills/planner$||')
    ```
-   Then create **user-level** Codex symlinks (not project-level):
+
+3. **Create user-level Codex symlinks:**
    ```bash
    mkdir -p ~/.agents/skills
    ln -sf "$TANDEM_PATH/skills/planner" ~/.agents/skills/planner
@@ -288,16 +294,11 @@ Codex needs access to the TandemKit skills. Check in this order:
    ln -sf "$TANDEM_PATH/skills/evaluator" ~/.agents/skills/evaluator
    ```
 
-3. **If neither Claude nor Codex user-level symlinks exist** (rare — plugin-only install): create project-level symlinks as fallback:
+4. **Verify the symlinks resolve correctly:**
    ```bash
-   mkdir -p .agents/skills
-   ln -sf "<resolved-plugin-path>/skills/planner" .agents/skills/planner
-   ln -sf "<resolved-plugin-path>/skills/generator" .agents/skills/generator
-   ln -sf "<resolved-plugin-path>/skills/evaluator" .agents/skills/evaluator
+   ls -la ~/.agents/skills/planner/SKILL.md
    ```
-   Add `.agents/skills/` to `.gitignore`.
-
-**CRITICAL:** Always resolve to the actual TandemKit repo path. NEVER use the plugin cache path (`~/.claude/plugins/cache/...`) — it becomes stale after updates.
+   If the symlink is broken, tell the user and ask them to verify their TandemKit installation.
 
 ## Step 9 — Update AGENTS.md (Safety Net)
 

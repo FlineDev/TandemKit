@@ -101,7 +101,7 @@ an "Open Questions" section.
 
 8. On name confirmation: run the scaffolding script and create branch (if configured):
    ```bash
-   bash "${CLAUDE_PLUGIN_ROOT}/scripts/create-mission.sh" "NNN-MissionName"
+   bash "${CLAUDE_PLUGIN_ROOT:-${CLAUDE_SKILL_DIR}/../..}/scripts/create-mission.sh" "NNN-MissionName"
    ```
 9. **Proceed IMMEDIATELY to Step 1** — do not wait for session rename. Suggest the rename in the same message as starting investigation:
 

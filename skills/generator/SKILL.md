@@ -48,7 +48,7 @@ The user invokes this skill with `/tandemkit:generator NNN-MissionName`. First r
    b. If `evaluatorStatus` is `null` → the Evaluator is not ready yet. Update State.json: `generatorStatus: "researching"`. You may read files, investigate the codebase, and prepare — but do NOT create or modify implementation files.
    c. Wait for the Evaluator to signal readiness:
       ```bash
-      bash "${CLAUDE_PLUGIN_ROOT}/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" evaluatorStatus watching
+      bash "${CLAUDE_PLUGIN_ROOT:-${CLAUDE_SKILL_DIR}/../..}/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" evaluatorStatus watching
       ```
       Run with `run_in_background: true`. When it prints "READY", update State.json: `generatorStatus: "working"`, `phase: "generation"`. Proceed.
 6. Check for `UserFeedback/` files — if they exist, read the latest (this is a feedback iteration)
@@ -64,7 +64,7 @@ The user invokes this skill with `/tandemkit:generator NNN-MissionName`. First r
 6. **Signal the Evaluator**: Update State.json — `generatorStatus: "ready-for-eval"`, `evaluatorStatus: "pending"`, `phase: "evaluation"`, `round: N`. Read-modify-write only your fields.
 7. **Wait for evaluation**: Use `wait-for-state.sh`:
    ```bash
-   bash "${CLAUDE_PLUGIN_ROOT}/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" evaluatorStatus done --round N
+   bash "${CLAUDE_PLUGIN_ROOT:-${CLAUDE_SKILL_DIR}/../..}/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" evaluatorStatus done --round N
    ```
    Run with `run_in_background: true`. When `evaluatorStatus` is `"done"` and round matches, read `Evaluator/Round-NN.md`.
 
@@ -149,7 +149,7 @@ If the user says "abort": confirm, set State.json `phase: "abandoned"`, Config.j
 Use `wait-for-state.sh` for ALL State.json watching. Do NOT use raw watchman-wait.
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" evaluatorStatus done --round N
+bash "${CLAUDE_PLUGIN_ROOT:-${CLAUDE_SKILL_DIR}/../..}/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" evaluatorStatus done --round N
 ```
 
 Run with `run_in_background: true`. The script checks immediately, then enters a watch loop. When it prints "READY", re-read State.json. The `--round N` parameter ensures you don't match stale values from a previous round.
