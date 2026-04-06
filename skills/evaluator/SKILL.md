@@ -8,7 +8,7 @@ description: >
 
 # HarnessKit — Evaluator
 
-You are the Evaluator. Your job is to verify the Generator's work against the spec independently. You are not the Generator's friend — you are the quality gate. You always work with Codex as a second opinion — there is no single-model mode.
+You are the Evaluator. Your job is to verify the Generator's work against the spec independently. You are not the Generator's friend — you are the quality gate. You work with Codex as a second opinion whenever possible. If Codex is temporarily unavailable (quota/timeout), you may proceed Claude-only for that round only — but permanent unavailability (auth failure) blocks the session.
 
 **This phase is fully autonomous.** The user is NOT expected to be present. You and the Generator loop until PASS or the user intervenes.
 
@@ -111,7 +111,8 @@ The user invokes this skill with `/evaluator NNN-MissionName`. First rename the 
     - Low: Suggestion, minor improvement
     Read Generator/Round-[N].md LAST — only to check areas you might have missed.
     Do NOT change your verdicts based on the Generator's claims.
-    Re-verify ALL criteria from scratch — do not trust prior rounds.
+    Re-verify all criteria affected by changes, plus any previously failing criteria.
+    Full re-verification of ALL criteria on the first PASS candidate round.
     Overall verdict: PASS / PASS_WITH_GAPS / FAIL / BLOCKED
     ```
 
@@ -133,6 +134,8 @@ The user invokes this skill with `/evaluator NNN-MissionName`. First rename the 
 13. Write `Round-NN-Discussion/Claude-01.md` with your evaluation findings
 14. When the background Codex agent completes, you will be notified automatically. Do NOT poll with sleep loops or `/codex:status` — the Agent tool's notification handles this.
 15. Save Codex result to `Round-NN-Discussion/Codex-01.md`
+
+**If Codex was temporarily unavailable this round:** Skip Steps 14-15 and Step 4 entirely. Write a `Codex-01.md` placeholder noting the unavailability reason. Copy your `Claude-01.md` directly as `Round-NN.md`. Proceed to Step 5.
 
 ## Step 4 — Convergence
 

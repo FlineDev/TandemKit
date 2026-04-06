@@ -38,7 +38,7 @@ USER
 - One Claude Generator session
 - One Claude Evaluator session (maintains one persistent Codex thread across all rounds)
 
-Codex threads persist across rounds via `--resume` — context accumulation is valuable. "Fresh eyes" comes from two different models evaluating, not from context amnesia. The skill instructions enforce rigor via "re-verify ALL criteria from scratch."
+Codex threads persist across rounds via `--resume` — context accumulation is valuable. "Fresh eyes" comes from two different models evaluating, not from context amnesia. Re-verification is risk-based: all changed/feedback-implicated/previously-failing criteria each round, full pass on the first PASS candidate and before completion.
 
 ---
 
@@ -182,7 +182,7 @@ Codex is invoked via the `codex-plugin-cc` plugin's `/codex:rescue` command. Key
 
 - **Backgrounding:** Launch via Agent tool with `run_in_background: true`. Do NOT also use `--background` in the Codex CLI — that creates double-backgrounding. Claude is notified automatically when the Agent completes.
 - **Thread persistence:** First call uses `--fresh`, subsequent calls use `--resume` to continue the same thread. Context accumulates across rounds.
-- **Unavailability:** If Codex is unavailable, the session blocks. No single-model fallback — the entire value proposition is multi-model verification.
+- **Unavailability:** Permanent failure (auth, CLI missing) blocks the session. Temporary failure (quota, timeout) allows Claude-only for that round, flagged explicitly. Dual evaluation resumes next round.
 
 ---
 
