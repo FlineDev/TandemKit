@@ -140,11 +140,11 @@ This saves tokens (Codex already has context) and gives Codex continuity across 
 
 For the initial parallel investigation/evaluation (Round 1):
 
-1. Claude launches Codex in **background**: `/codex:rescue --background --fresh [prompt]`
+1. Claude launches Codex via the Agent tool with `run_in_background: true` and `/codex:rescue --fresh [prompt]`. Do NOT also use `--background` in the Codex CLI — that creates double-backgrounding where the Agent "completes" but Codex is still running.
 2. Claude does its own investigation/evaluation (reads files, verifies, etc.)
 3. Claude writes `Claude-01.md`
-4. Claude checks Codex: `/codex:status` → if still running, wait; if done, proceed
-5. Claude fetches result: `/codex:result` → saves to `Codex-01.md`
+4. When the background Agent completes, Claude is notified automatically. No polling needed — do NOT use sleep loops or `/codex:status`.
+5. Claude saves Codex result to `Codex-01.md`
 6. Convergence begins (Round 2+)
 
 For subsequent review rounds (Codex reviews Claude's merged work):
@@ -377,9 +377,10 @@ HarnessKit/NNN-MissionName/
 
 5. Read `Generator/ChangedFiles-NN.txt` to get the file list (independent of Generator's prose report)
 6. Claude starts its own evaluation (reads generated files, verifies against source code, runs builds/tests per Evaluator.md)
-7. **Simultaneously**, Claude launches Codex in background:
-   - First eval cycle: `/codex:rescue --background --fresh [eval prompt]`
-   - Subsequent cycles: `/codex:rescue --background --resume [eval prompt]`
+7. **Simultaneously**, Claude launches Codex via Agent tool with `run_in_background: true`:
+   - First eval cycle: `/codex:rescue --fresh [eval prompt]`
+   - Subsequent cycles: `/codex:rescue --resume [eval prompt]`
+   Do NOT use `--background` in Codex CLI (Agent tool handles backgrounding).
 
 The evaluation prompt includes:
 - Role context ("You are the Codex companion for the Evaluator")
@@ -394,7 +395,7 @@ The evaluation prompt includes:
     - Per-criterion verdicts with evidence
     - Findings classified as high/medium/low
     - Optional qualityScore (1-10, non-gating)
-9. Claude fetches Codex result → saves to `Round-NN-Discussion/Codex-01.md`
+9. When background Codex agent completes (automatic notification), Claude saves result to `Round-NN-Discussion/Codex-01.md`
 
 ### Step 3 — Convergence
 
@@ -708,6 +709,6 @@ The Generator implements against a spec. Implementation correctness is verified 
 
 1. **Codex prompt refinement**: The prompts need iteration based on real usage. Codex may need more/less context, different structure.
 
-2. **Codex timeout handling**: If `/codex:rescue` times out, retry once. If it times out again, tell the user to check `/codex:status`. Do NOT proceed without Codex.
+2. **Codex timeout handling**: If the background Codex Agent times out, retry once. If it times out again, tell the user to run `/codex:setup`. Do NOT proceed without Codex.
 
 3. **`--resume` viability**: Needs testing on first real mission. If it doesn't work as expected, fall back to `--fresh` with full context in every prompt (costs more tokens but functionally equivalent).

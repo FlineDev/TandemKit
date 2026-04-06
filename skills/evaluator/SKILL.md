@@ -125,7 +125,7 @@ The user invokes this skill with `/evaluator NNN-MissionName`. First rename the 
 
 12. Create `Evaluator/Round-NN-Discussion/` folder
 13. Write `Round-NN-Discussion/Claude-01.md` with your evaluation findings
-14. Check Codex: `/codex:status` — if still running, wait. When done: `/codex:result`
+14. When the background Codex agent completes, you will be notified automatically. Do NOT poll with sleep loops or `/codex:status` — the Agent tool's notification handles this.
 15. Save Codex result to `Round-NN-Discussion/Codex-01.md`
 
 ## Step 4 — Convergence

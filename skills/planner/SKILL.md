@@ -28,6 +28,7 @@ copyable content here
 5. **Do NOT over-explain HarnessKit.** The user knows what it is.
 6. **Templates** are in `templates/` next to this SKILL.md.
 7. **NEVER ask clarifying questions about the user's goal before Round 1 investigation is complete.** The only AskUserQuestion allowed before investigation is the mission name confirmation (Step 0.7a). Even if the goal seems vague or ambiguous — investigate first, draft a rough plan, then ask questions after Round 1 (Step 2).
+8. **Research before asking — in ALL rounds, not just Step 2.** Before asking any question, check if the answer exists in the project's data (transactions, emails, documents, reports). If so, research it yourself and present findings for the user to confirm. Do NOT ask the user to recall what the data already contains. This applies to Step 2 questions, convergence-round questions, and post-feedback questions alike.
 
 ## Critical Flow (do NOT deviate)
 
@@ -45,6 +46,7 @@ Goal received → Read Planner.md → Suggest name + Launch Codex (parallel) →
 - Your job is done when a Generator who has never seen the codebase could implement from your spec, and an Evaluator could verify every acceptance criterion unambiguously
 - Be thorough in investigation — the more context you capture now, the less the Generator has to rediscover
 - Be honest about uncertainties — document open questions rather than guessing
+- **Distinguish primary goals from optional fallbacks.** If the user says "maybe X if Y" or "that's also an option," do NOT promote it to a primary goal or acceptance criterion. Optional clauses stay secondary unless the user explicitly elevates them.
 
 ## Step 0 — Mission Setup
 
@@ -128,13 +130,13 @@ Codex is already running in background from Step 0.7b. Now investigate independe
     - Investigation findings with file paths and line numbers
     - Initial plan suggestion with acceptance criteria
     - **Open Questions** section (anything ambiguous that needs user input)
-14. Check Codex: `/codex:status` — if still running, wait. When done: `/codex:result`
+14. When the background Codex agent completes, you will be notified automatically. Do NOT poll with sleep loops or `/codex:status` — the Agent tool's notification handles this.
 15. Save Codex result to `Planner-Discussion/Codex-01.md`
 
 ## Step 2 — User Questions (After Round 1)
 
 16. Read `Codex-01.md`, collect Open Questions from both Claude-01 and Codex-01
-17. **Before asking any question, check if the answer exists in the project's data** (transactions, emails, documents, reports, INDEX.json files). If so, research it yourself and present your findings for the user to confirm — do NOT ask the user to recall what the data already contains. The user expects the system to be autonomous with existing data.
+17. Apply UX Rule 8 (research before asking) — for each question, check project data first
 18. If questions remain after research: merge them, ask user ONE AT A TIME via AskUserQuestion
 19. If no questions from either: skip straight to Step 3
 
