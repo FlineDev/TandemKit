@@ -211,24 +211,24 @@ Generator session --> Claude implements --> signals Evaluator ------------------
 ```
 TandemKit/
 ├── Config.json
-├── Planner.md                       <-- project-specific planner context
-├── Generator.md                     <-- project-specific generator context
-├── Evaluator.md                     <-- project-specific evaluator context
-├── ClaudeEvaluatorPrompt.md         <-- hardened system prompt
+├── Planner.md                       ← project-specific planner context
+├── Generator.md                     ← project-specific generator context
+├── Evaluator.md                     ← project-specific evaluator context
+├── ClaudeEvaluatorPrompt.md         ← hardened system prompt
 │
 └── 003-DebugActivityTool/
     ├── State.json
-    ├── Spec.md                      <-- approved spec
-    ├── Summary.md                   <-- written at mission completion
+    ├── Spec.md                      ← approved spec
+    ├── Summary.md                   ← written at mission completion
     │
     ├── Planner-Discussion/
-    │   ├── Claude-01.md             <-- Claude's investigation
-    │   ├── Codex-01.md              <-- Codex's investigation (run by Claude)
-    │   ├── Claude-02.md             <-- merged plan + user answers
-    │   ├── Codex-02.md              <-- Codex review (NOT APPROVED - 1 high)
-    │   ├── Claude-03.md             <-- revised plan
-    │   ├── Codex-03.md              <-- Codex review (APPROVED)
-    │   └── Claude-04.md             <-- final draft (> Spec.md)
+    │   ├── Claude-01.md             ← Claude's investigation
+    │   ├── Codex-01.md              ← Codex's investigation (run by Claude)
+    │   ├── Claude-02.md             ← merged plan + user answers
+    │   ├── Codex-02.md              ← Codex review (NOT APPROVED - 1 high)
+    │   ├── Claude-03.md             ← revised plan
+    │   ├── Codex-03.md              ← Codex review (APPROVED)
+    │   └── Claude-04.md             ← final draft (→ Spec.md)
     │
     ├── Generator/
     │   ├── Round-01.md
@@ -237,13 +237,13 @@ TandemKit/
     │   └── ChangedFiles-02.txt
     │
     ├── Evaluator/
-    │   ├── Round-01.md              <-- FAIL (2 high findings)
-    │   ├── Round-01-Discussion/     <-- Claude + Codex convergence
-    │   ├── Round-02.md              <-- PASS
+    │   ├── Round-01.md              ← FAIL (2 high findings)
+    │   ├── Round-01-Discussion/     ← Claude + Codex convergence
+    │   ├── Round-02.md              ← PASS
     │   └── Round-02-Discussion/
     │
     └── UserFeedback/
-        └── Feedback-01.md           <-- (if user gave feedback after PASS)
+        └── Feedback-01.md           ← (if user gave feedback after PASS)
 ```
 
 ## Design Decisions
