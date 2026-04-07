@@ -285,37 +285,21 @@ Run the build command once to verify it works. Fix if needed.
 
 Only if the user said yes in Question 6.
 
-## Step 8 — Verify Codex Skill Access
+## Step 8 — Codex Skill Access
 
-Codex needs access to the TandemKit skills so it can read evaluation strategies and role context. Check in this order:
+Run the setup script — it handles everything: creates the `~/.agents/skills/` symlinks, sets up the version-agnostic `latest` indirection, and verifies they resolve. Idempotent: makes no changes if everything is already correct.
 
-1. **Check user-level Codex symlinks first:** Do `~/.agents/skills/planner`, `~/.agents/skills/generator`, `~/.agents/skills/evaluator` exist and point to valid TandemKit skill folders?
-   - If YES → skip to Step 9. Tell user: "Codex skills already installed at user level."
-   - If NO → continue to step 2.
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/setup-codex-skills.sh"
+```
 
-2. **Resolve the TandemKit repo path** using the plugin root:
-   ```bash
-   # For plugin installs, CLAUDE_PLUGIN_ROOT points to the plugin directory
-   TANDEM_PATH="${CLAUDE_PLUGIN_ROOT}"
-   ```
-   If `CLAUDE_PLUGIN_ROOT` is not set (standalone symlink install), resolve from the Claude skill symlink:
-   ```bash
-   TANDEM_PATH=$(readlink -f ~/.claude/skills/planner | sed 's|/skills/planner$||')
-   ```
+- **Silent** if everything is already correct
+- **Prints** what it created or updated
+- **Errors** if the TandemKit plugin is not installed — tell the user and stop
 
-3. **Create user-level Codex symlinks:**
-   ```bash
-   mkdir -p ~/.agents/skills
-   ln -sf "$TANDEM_PATH/skills/planner" ~/.agents/skills/planner
-   ln -sf "$TANDEM_PATH/skills/generator" ~/.agents/skills/generator
-   ln -sf "$TANDEM_PATH/skills/evaluator" ~/.agents/skills/evaluator
-   ```
+**How it works:** The script routes skill symlinks through a `latest` pointer at `~/.claude/plugins/cache/FlineDev/tandemkit/latest`. After a plugin upgrade, only that single pointer needs updating — the `~/.agents/skills/` symlinks are stable forever.
 
-4. **Verify the symlinks resolve correctly:**
-   ```bash
-   ls -la ~/.agents/skills/planner/SKILL.md
-   ```
-   If the symlink is broken, tell the user and ask them to verify their TandemKit installation.
+The Planner and Evaluator SKILL.md files contain the same preflight call (Codex-only), so Codex auto-repairs stale symlinks at session start whenever a plugin upgrade happened between sessions.
 
 ## Step 9 — Update AGENTS.md (Safety Net)
 

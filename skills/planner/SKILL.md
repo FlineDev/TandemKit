@@ -48,6 +48,17 @@ Goal received → Read Planner.md → Suggest name + Launch Codex (parallel) →
 - Be honest about uncertainties — document open questions rather than guessing
 - **Distinguish primary goals from optional fallbacks.** If the user says "maybe X if Y" or "that's also an option," do NOT promote it to a primary goal or acceptance criterion. Optional clauses stay secondary unless the user explicitly elevates them.
 
+## Preflight — Self-Healing Symlink Check (Codex only — Claude skip)
+
+> **If you are Claude Code: skip this section entirely.**
+> **If you are Codex:** Run the setup script before anything else. It verifies that your `~/.agents/skills/` symlinks resolve correctly and auto-repairs them if stale — handles plugin upgrades transparently with no user involvement.
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT:-${CLAUDE_SKILL_DIR}/../..}/scripts/setup-codex-skills.sh"
+```
+
+Silent if everything is up to date. Prints what changed if repairs were made. Exits with an error if the TandemKit plugin is not installed.
+
 ## Step 0 — Mission Setup
 
 1. **FIRST, before anything else:** Check if `TandemKit/Config.json` exists. If it does NOT exist, say: "TandemKit is not initialized in this project. Run `/tandemkit:init` first to set it up." Then STOP. Do nothing else.
