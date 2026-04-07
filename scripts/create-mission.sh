@@ -62,6 +62,7 @@ fi
 NOW=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 mkdir -p "$MISSION_DIR"
+mkdir -p "$MISSION_DIR/Planner-Discussion"
 
 cat > "$MISSION_DIR/State.json" << EOF
 {
@@ -99,6 +100,7 @@ mv "$TEMP_CONFIG" "$CONFIG"
 echo ""
 echo "✓ Created mission: $MISSION_NAME"
 echo "  TandemKit/$MISSION_NAME/State.json"
+echo "  TandemKit/$MISSION_NAME/Planner-Discussion/"
 echo "  Config.json: currentMission=$MISSION_NAME, nextMissionNumber=$NEW_NEXT"
 echo ""
 echo "MISSION_CREATED: $MISSION_NAME"
