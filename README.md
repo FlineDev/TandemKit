@@ -1,46 +1,50 @@
 # TandemKit
 
-Claude plans and builds. Codex reviews. They converge until it's right.
+Claude + Codex plan together, Claude builds, Claude + Codex verify together. They converge until it's right.
 
-TandemKit is a [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin that orchestrates Claude and Codex across three sessions — Planner, Generator, and Evaluator — to produce higher-quality results than either model alone. Claude handles execution and communication, Codex provides independent review. They iterate autonomously until both agree the work meets spec.
+TandemKit is a [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin that runs three Claude Code sessions — Planner, Generator, and Evaluator — to produce higher-quality results than a single session alone. In the Planner and Evaluator sessions, Claude automatically launches [Codex](https://openai.com/index/introducing-codex/) as a background task within its own session, so two different models independently investigate and then converge on a result. You never need to open Codex separately — everything happens inside Claude Code.
 
 ## Who Is This For?
 
-You have both a **Claude Code** subscription and a **Codex** subscription. You've noticed that Claude is great at executing, adjusting related code, and communicating — but can sometimes declare "looks good!" prematurely. Codex reads more carefully, digs deeper, and catches things Claude misses. TandemKit puts them in tandem: Claude does the work, Codex keeps it honest.
+You have both a **Claude Code** subscription and a **Codex** subscription. You've noticed that Claude is great at executing, adjusting related code, and communicating — but can sometimes declare "looks good!" prematurely. Codex reads more carefully, digs deeper, and catches things Claude misses. TandemKit makes Claude invoke Codex internally as its second opinion — you get the benefits of both models without switching tools.
 
 ## Why TandemKit?
 
 Anthropic's [Harness article](https://www.anthropic.com/engineering/harness-design-long-running-apps) (March 2026) showed that long-running AI sessions need structured evaluation to avoid premature completion. A single session tends to anchor on its own work and miss issues.
 
-TandemKit applies that insight with a twist: instead of two Claude sessions, it pairs **Claude + Codex** — two different models that think differently. This gives you:
+TandemKit applies that insight with a twist: instead of two Claude sessions checking each other, it pairs **Claude + Codex** within the same session — two different models that think differently. Claude runs Codex in the background, reads its findings, and they converge through structured back-and-forth. This gives you:
 
-- **Two planners** (Claude + Codex investigate independently, then converge on a spec)
-- **One generator** (Claude implements against the spec)
-- **Two evaluators** (Claude + Codex verify independently, then converge on a verdict)
+- **Two planners** — Claude and Codex investigate independently within the Planner session, then converge on a spec
+- **One generator** — Claude implements against the spec
+- **Two evaluators** — Claude and Codex verify independently within the Evaluator session, then converge on a verdict
 
 Different models catch different issues. In early missions, Codex found real bugs that Claude marked as passing. The dual-model approach is the entire value proposition — there is no single-model mode.
 
+The Harness article also showed that evaluation quality depends on **concrete verification tools**. Without them, evaluators guess based on surface impressions — apps "looked impressive but still had real bugs when you actually tried to use them." Giving evaluators the ability to interact with the running artifact — run tests, navigate the UI, take screenshots, inspect state — transforms evaluation from subjective impression into evidence-based assessment. TandemKit's `/tandemkit:init` sets up exactly these tools for your project type.
+
 ## How It Works
+
+All three sessions are Claude Code sessions. Claude orchestrates everything — including launching Codex as a background task when a second opinion is needed.
 
 ```
 USER
-  |
-  |---> Planner Session (Claude + Codex converge on a spec)
-  |       \---> Spec.md
-  |
-  |---> Generator Session (Claude implements against Spec.md)
-  |       \---> commits at milestones, signals Evaluator
-  |
-  \---> Evaluator Session (Claude + Codex converge on a verdict)
-          \---> PASS / FAIL ---> Generator iterates until PASS
+  │
+  ├──→ Planner Session (Claude invokes Codex internally, they converge on a spec)
+  │       └──→ Spec.md
+  │
+  ├──→ Generator Session (Claude implements against Spec.md)
+  │       └──→ commits at milestones, signals Evaluator
+  │
+  └──→ Evaluator Session (Claude invokes Codex internally, they converge on a verdict)
+          └──→ PASS / FAIL ──→ Generator iterates until PASS
 ```
 
-**Three persistent sessions for the entire mission:**
-1. **Planner** — Claude and Codex investigate the codebase in parallel, ask you questions, and converge on a detailed spec. You approve it.
-2. **Generator** — Claude implements against the spec, committing at milestones. Fully autonomous.
-3. **Evaluator** — Claude and Codex independently verify the work, then converge on a verdict. On FAIL, the Generator fixes and resubmits. On PASS, you review the result.
+**Three Claude Code sessions for the entire mission:**
+1. **Planner** — Claude investigates the codebase and launches Codex in the background to do the same. Both produce independent findings. Claude reads Codex's results, merges them, and they iterate until converged. You answer questions and approve the final spec.
+2. **Generator** — Claude implements against the spec, committing at milestones. Fully autonomous — no Codex needed here since the Evaluator handles verification.
+3. **Evaluator** — Claude evaluates independently while Codex does the same in the background. They converge on a verdict. On FAIL, the Generator fixes and resubmits. On PASS, you review the result.
 
-The user is active during planning, then steps away while Generator and Evaluator loop autonomously until the work passes.
+You are active during planning, then step away while Generator and Evaluator loop autonomously until the work passes.
 
 ## Installation
 
@@ -58,6 +62,8 @@ Start Claude Code, then run:
 /tandemkit:init
 ```
 
+`/tandemkit:init` investigates your project, asks configuration questions, and sets up role files. Run it once per project.
+
 If you're in an active session, run `/reload-plugins` to activate immediately. TandemKit is part of the [FlineDev Marketplace](https://github.com/FlineDev/Marketplace) — see the full list of available plugins there.
 
 > [!TIP]
@@ -69,7 +75,7 @@ If you're in an active session, run `/reload-plugins` to activate immediately. T
 
 ### Prerequisites
 
-- **Claude Code** with the `codex-plugin-cc` plugin installed (TandemKit always uses both models)
+- **Claude Code** with the `codex-plugin-cc` plugin installed (Claude uses this to invoke Codex internally)
 - **Codex CLI** authenticated (`/codex:setup` to verify)
 - **python3** (used by coordination scripts)
 - **watchman** (`brew install watchman`) — for file-watching between sessions
@@ -78,39 +84,83 @@ The `/tandemkit:init` command checks all prerequisites and guides you through se
 
 ## Quick Start
 
+The only command you need to remember is `/tandemkit:planner`:
+
 ```bash
-# 1. Start a Planner session
+# Option A: Provide your goal directly
 /tandemkit:planner Add JWT authentication with refresh tokens
 
-# 2. After spec is approved, start Generator and Evaluator
-#    (Planner shows the exact commands to copy)
-
-# 3. Generator and Evaluator work autonomously until PASS
-#    User reviews the final result
+# Option B: Just start the planner — it will ask you to describe your goal
+/tandemkit:planner
 ```
+
+After planning, Claude presents the exact commands to copy-paste for the Generator and Evaluator sessions. You don't need to remember those — they're always provided for you.
 
 ## Commands
 
-| Command | Purpose |
-|---------|---------|
-| `/tandemkit:init` | First-time setup — project investigation, tool installation, role configuration |
-| `/tandemkit:planner` | Start a mission — investigate, plan with Codex, produce a spec |
-| `/tandemkit:generator` | Implement against the spec, commit at milestones, signal evaluator |
-| `/tandemkit:evaluator` | Verify the Generator's work with Codex as second opinion |
+| Command | When to use |
+|---------|-------------|
+| `/tandemkit:init` | **Once per project** — first-time setup, project investigation, role configuration |
+| `/tandemkit:planner` | **Every mission** — the only command you need to remember. Describe your goal (or omit it and the planner will ask). |
+| `/tandemkit:generator` | Copy-paste from planner output — never need to remember this |
+| `/tandemkit:evaluator` | Copy-paste from planner output — never need to remember this |
+
+## Evaluation Strategies & Customization
+
+### Why verification tooling matters
+
+An evaluator that can only read code will miss real bugs. The Harness article demonstrated this directly: "the evaluator used the Playwright MCP to click through the running application the way a user would, testing UI features, API endpoints, and database states." Without concrete tools, evaluation degrades to guessing.
+
+`/tandemkit:init` detects your project type and recommends the right verification tools:
+
+| Project Type | Primary Tool | What it enables |
+|---|---|---|
+| **Apple platforms** (iOS, macOS, visionOS) | [XcodeBuildMCP](https://github.com/getsentry/XcodeBuildMCP) CLI | Build, test, run simulator, UI automation, take screenshots, navigate the app |
+| **Web** (frontend, full-stack) | [browser-use](https://github.com/browser-use/browser-use) CLI | Open pages, click around, take screenshots, extract data, verify UI flows |
+| **CLI / Libraries** | Test suites (`swift test`, `npm test`, etc.) | Build, run tests, verify command output and exit codes |
+| **Domain systems** (tax, health, legal) | Canonical case testing | Predefined test cases, consistency checks, fabrication detection |
+
+For Apple projects, init also recommends Apple's native Xcode MCP for SwiftUI preview rendering and documentation search. For web projects, [Playwright MCP](https://github.com/microsoft/playwright-mcp) is available as a fallback.
+
+The key principle: **the Evaluator should be able to do whatever a human reviewer would do** — build, run, navigate, screenshot, test. The more verification paths available, the harder it is for bugs to slip through.
+
+### Strategy reference files
+
+Evaluation strategies are documented in [`skills/evaluator/strategies/`](skills/evaluator/strategies/):
+
+- **`Evaluation-Strategy-ApplePlatform.md`** — XcodeBuildMCP setup, simulator UI automation, SwiftUI previews
+- **`Evaluation-Strategy-Web.md`** — browser-use CLI setup, token-optimized extraction patterns
+- **`Evaluation-Strategy-Web-Playwright.md`** — Playwright MCP fallback for web projects
+- **`Evaluation-Strategy-CLI.md`** — test suites, command-line verification, library testing
+- **`Evaluation-Strategy-Domain.md`** — canonical case testing, consistency checks, fabrication detection
+
+These files are what `/tandemkit:init` uses to configure your Evaluator. **PRs with new strategies or improvements to existing ones are welcome** — different project types benefit from different verification approaches.
+
+### Project role files
+
+During init, TandemKit creates three role files in your project's `TandemKit/` folder:
+
+| File | Purpose |
+|---|---|
+| **`Planner.md`** | Project context for the Planner — documentation locations, domain references, key decisions |
+| **`Generator.md`** | Project context for the Generator — build commands, code standards, available skills |
+| **`Evaluator.md`** | Project context for the Evaluator — verification tools, test commands, evaluation checklist |
+
+These are **your customization points**. Edit them any time to refine how each session works for your project. For example, add domain-specific test cases to `Evaluator.md`, point the Planner at additional documentation, or configure the Generator's commit conventions.
 
 ## The Convergence Protocol
 
-Both the Planner and Evaluator use the same back-and-forth pattern with Codex. This is the core quality mechanism.
+Both the Planner and Evaluator use the same back-and-forth pattern. Claude launches Codex as a background task within its own session, reads the results, and they iterate until they agree. This is the core quality mechanism.
 
 ```
-    ROUND 1 (parallel)
-    -------------------
-    Claude investigates          Codex investigates (background)
+    ROUND 1 (parallel, within the same Claude session)
+    ---------------------------------------------------
+    Claude investigates          Codex runs in background
            |                              |
            v                              v
       Claude-01.md                   Codex-01.md
            |                              |
-           \------ Claude reads Codex-01 -/
+           └────── Claude reads Codex-01 ─┘
                         |
                         v
     ROUND 2
@@ -121,9 +171,8 @@ Both the Planner and Evaluator use the same back-and-forth pattern with Codex. T
                         v
                    Claude-02.md
                         |
-              Codex reads Claude-01 + Claude-02
-              (first time seeing Claude's work)
-              Re-investigates any disagreed points
+              Claude sends Claude-02 to Codex for review
+              Codex re-investigates any disagreed points
                         |
                         v
                    Codex-02.md  (agreement feedback with severity)
@@ -150,11 +199,11 @@ Both the Planner and Evaluator use the same back-and-forth pattern with Codex. T
 ## Mission Lifecycle
 
 ```
-/tandemkit:planner --> investigation --> Codex convergence --> user approval --> Spec.md
-                                                                                  |
-/tandemkit:generator --> implement milestone --> signal evaluator --------------->|
-                ^                                                                 |
-                \---- fix <-- FAIL <-- evaluation <-- /tandemkit:evaluator <------/
+/tandemkit:planner --> Claude + Codex investigate --> converge --> user approval --> Spec.md
+                                                                                      |
+Generator session --> Claude implements --> signals Evaluator ----------------------->|
+                ^                                                                     |
+                └──── fix <── FAIL <── Claude + Codex evaluate <── Evaluator session <─┘
                                           |
                                        PASS --> Review Briefing --> user approval --> done
 ```
@@ -163,64 +212,40 @@ Both the Planner and Evaluator use the same back-and-forth pattern with Codex. T
 
 ```
 TandemKit/
-|-- Config.json
-|-- Planner.md                       <-- project-specific planner context
-|-- Generator.md                     <-- project-specific generator context
-|-- Evaluator.md                     <-- project-specific evaluator context
-|-- ClaudeEvaluatorPrompt.md         <-- hardened system prompt
-|
-\-- 003-DebugActivityTool/
-    |-- State.json
-    |-- Spec.md                      <-- approved spec
-    |-- Summary.md                   <-- written at mission completion
-    |
-    |-- Planner-Discussion/
-    |   |-- Claude-01.md             <-- investigation + questions
-    |   |-- Codex-01.md              <-- investigation + questions
-    |   |-- Claude-02.md             <-- merged plan + user answers
-    |   |-- Codex-02.md              <-- review (NOT APPROVED - 1 high)
-    |   |-- Claude-03.md             <-- revised plan
-    |   |-- Codex-03.md              <-- review (APPROVED)
-    |   \-- Claude-04.md             <-- final draft (-> Spec.md)
-    |
-    |-- Generator/
-    |   |-- Round-01.md              <-- prose report
-    |   |-- ChangedFiles-01.txt      <-- machine-readable file manifest
-    |   |-- Round-02.md
-    |   \-- ChangedFiles-02.txt
-    |
-    |-- Evaluator/
-    |   |-- Round-01.md              <-- FAIL (2 high findings)
-    |   |-- Round-01-Discussion/
-    |   |   |-- Claude-01.md         <-- Claude's eval
-    |   |   |-- Codex-01.md          <-- Codex's eval
-    |   |   |-- Claude-02.md         <-- merged eval
-    |   |   |-- Codex-02.md          <-- APPROVED
-    |   |   \-- Claude-03.md         <-- final (-> Round-01.md)
-    |   |
-    |   |-- Round-02.md              <-- PASS
-    |   \-- Round-02-Discussion/
-    |       \-- ...
-    |
-    \-- UserFeedback/
-        \-- Feedback-01.md           <-- (if user gave feedback after PASS)
-```
-
-## State Coordination
-
-Generator and Evaluator communicate via `State.json` in the mission folder:
-
-```json
-{
-  "phase": "planning | ready-for-execution | generation | evaluation | user-review | complete | abandoned",
-  "round": 0,
-  "generatorStatus": "null | researching | working | ready-for-eval | awaiting-user | done",
-  "evaluatorStatus": "null | watching | evaluating | done",
-  "verdict": "null | PASS | PASS_WITH_GAPS | FAIL | BLOCKED",
-  "userFeedbackRounds": 0,
-  "started": "ISO-8601",
-  "updated": "ISO-8601"
-}
+├── Config.json
+├── Planner.md                       ← project-specific planner context
+├── Generator.md                     ← project-specific generator context
+├── Evaluator.md                     ← project-specific evaluator context
+├── ClaudeEvaluatorPrompt.md         ← hardened system prompt
+│
+└── 003-DebugActivityTool/
+    ├── State.json
+    ├── Spec.md                      ← approved spec
+    ├── Summary.md                   ← written at mission completion
+    │
+    ├── Planner-Discussion/
+    │   ├── Claude-01.md             ← Claude's investigation
+    │   ├── Codex-01.md              ← Codex's investigation (run by Claude)
+    │   ├── Claude-02.md             ← merged plan + user answers
+    │   ├── Codex-02.md              ← Codex review (NOT APPROVED - 1 high)
+    │   ├── Claude-03.md             ← revised plan
+    │   ├── Codex-03.md              ← Codex review (APPROVED)
+    │   └── Claude-04.md             ← final draft (→ Spec.md)
+    │
+    ├── Generator/
+    │   ├── Round-01.md
+    │   ├── ChangedFiles-01.txt
+    │   ├── Round-02.md
+    │   └── ChangedFiles-02.txt
+    │
+    ├── Evaluator/
+    │   ├── Round-01.md              ← FAIL (2 high findings)
+    │   ├── Round-01-Discussion/     ← Claude + Codex convergence
+    │   ├── Round-02.md              ← PASS
+    │   └── Round-02-Discussion/
+    │
+    └── UserFeedback/
+        └── Feedback-01.md           ← (if user gave feedback after PASS)
 ```
 
 ## Design Decisions
@@ -237,59 +262,9 @@ Context accumulation is valuable — by Round 6, Codex knows the codebase and pa
 
 Scores (1-10) can hide criterion failures behind a good average. A score of 8/10 could mean 2 criteria completely failed. Criterion-by-criterion PASS/FAIL with severity-based agreement is fundamentally safer.
 
-### Why Generator doesn't use Codex
+### Why the Generator doesn't invoke Codex
 
-The Generator implements against a spec. Implementation correctness is verified by the Evaluator (with Codex). Adding Codex to the Generator would double the cost of every implementation round for marginal benefit.
-
-## Project Structure
-
-```
-TandemKit/
-|-- scripts/
-|   |-- create-mission.sh            # Scaffold new mission folder
-|   \-- wait-for-state.sh            # Generator<->Evaluator coordination
-|-- skills/
-|   |-- planner/
-|   |   |-- SKILL.md                 # Planning + Codex convergence
-|   |   \-- templates/Spec-Format.md
-|   |-- generator/
-|   |   |-- SKILL.md                 # Implementation loop
-|   |   \-- templates/
-|   |       |-- Generator-Round-Format.md
-|   |       \-- Summary-Format.md
-|   \-- evaluator/
-|       |-- SKILL.md                 # Evaluation + Codex convergence
-|       |-- templates/Evaluator-Round-Format.md
-|       \-- strategies/
-|           |-- Evaluation-Strategy-ApplePlatform.md
-|           |-- Evaluation-Strategy-CLI.md
-|           |-- Evaluation-Strategy-Domain.md
-|           |-- Evaluation-Strategy-Web.md
-|           \-- Evaluation-Strategy-Web-Playwright.md
-|-- system-prompts/
-|   \-- claude-evaluator.md          # Hardened evaluator system prompt
-\-- commands/
-    \-- init.md                      # Project initialization
-```
-
-## Development Setup (Symlinks)
-
-For local development or contributing, you can symlink the skills directly instead of installing the plugin:
-
-```bash
-# Claude Code (user-level)
-ln -sf /path/to/TandemKit/skills/planner ~/.claude/skills/planner
-ln -sf /path/to/TandemKit/skills/generator ~/.claude/skills/generator
-ln -sf /path/to/TandemKit/skills/evaluator ~/.claude/skills/evaluator
-
-# Codex (user-level)
-mkdir -p ~/.agents/skills
-ln -sf /path/to/TandemKit/skills/planner ~/.agents/skills/planner
-ln -sf /path/to/TandemKit/skills/generator ~/.agents/skills/generator
-ln -sf /path/to/TandemKit/skills/evaluator ~/.agents/skills/evaluator
-```
-
-Note: With symlinks, commands use unprefixed names (`/planner`, `/generator`, `/evaluator`) instead of the plugin-qualified form.
+The Generator implements against a spec. Implementation correctness is verified by the Evaluator (where Claude invokes Codex). Adding Codex to the Generator would double the cost of every implementation round for marginal benefit — the same issues will be caught during evaluation.
 
 ## License
 

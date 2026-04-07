@@ -1,7 +1,7 @@
 {
   "name": "tandemkit",
   "version": "1.0.0",
-  "description": "Claude plans and builds, Codex reviews — autonomous multi-session orchestration that converges on quality",
+  "description": "Claude + Codex plan, Claude builds, Claude + Codex verify — autonomous multi-session orchestration that converges on quality",
   "author": {
     "name": "Cihat Gündüz",
     "url": "https://fline.dev"
