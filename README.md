@@ -12,7 +12,7 @@ TandemKit is a [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plu
 
 ### Who Is It For?
 
-You have a **Claude Max** subscription (which includes Claude Code) and a **ChatGPT** subscription (which includes Codex). You work on tasks complex enough to warrant the extra cost — TandemKit is not recommended for simple, small, or mechanical tasks, since the multi-session loop uses significantly more tokens than a regular Claude session.
+You have a **Claude Max** subscription (which includes Claude Code) and a **ChatGPT** subscription (which includes Codex). You work on tasks complex enough to warrant the extra cost — TandemKit is not recommended for simple, small, or mechanical tasks, since the multi-session loop uses more tokens than a regular Claude session.
 
 ### The Reasoning
 
