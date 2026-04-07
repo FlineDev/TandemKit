@@ -120,8 +120,6 @@ An evaluator that can only read code will miss real bugs. The Harness article de
 | **CLI / Libraries** | Test suites (`swift test`, `npm test`, etc.) | Build, run tests, verify command output and exit codes |
 | **Domain systems** (tax, health, legal) | Canonical case testing | Predefined test cases, consistency checks, fabrication detection |
 
-For Apple projects, init also recommends Apple's native Xcode MCP for SwiftUI preview rendering and documentation search. For web projects, [Playwright MCP](https://github.com/microsoft/playwright-mcp) is available as a fallback.
-
 The key principle: **the Evaluator should be able to do whatever a human reviewer would do** — build, run, navigate, screenshot, test. The more verification paths available, the harder it is for bugs to slip through.
 
 ### Strategy reference files
