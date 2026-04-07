@@ -8,21 +8,19 @@ Describe your goal, approve the spec, then step away — Claude and Codex loop t
 
 TandemKit is a [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin that runs three sessions — Planner, Generator, and Evaluator — with two of them pairing Claude and Codex as independent reviewers. You are only needed at two points: during **planning** (questions and spec approval) and at **review** (when evaluation passes and you give feedback or call it done). Between those two points, the Generator implements and the Evaluator verifies in a tight loop, with no manual review or copy-pasting from you. In both the Planner and Evaluator sessions, Claude automatically launches [Codex](https://openai.com/index/introducing-codex/) as a background task using the official [Codex plugin](https://github.com/openai/codex-plugin-cc), so two different models independently investigate and converge on a result — everything inside Claude Code.
 
-## Who Is This For?
+## Why TandemKit?
+
+### Who Is It For?
 
 You have a **Claude Max** subscription (which includes Claude Code) and a **ChatGPT** subscription (which includes Codex). You work on tasks complex enough to warrant the extra cost — TandemKit is not recommended for simple, small, or mechanical tasks, since the multi-session loop uses significantly more tokens than a regular Claude session.
 
-You've noticed that Claude is great at executing, adjusting related code, and communicating — but can sometimes declare "looks good!" prematurely. Codex reads more carefully, digs deeper, and catches things Claude misses. TandemKit pairs Claude and Codex in the Planner and Evaluator sessions — the two phases where independent investigation and verification matter most — while Claude handles implementation alone in between. You get the benefits of both models without switching tools.
+### The Reasoning
 
-## Why TandemKit?
+Anthropic's [Harness article](https://www.anthropic.com/engineering/harness-design-long-running-apps) (March 2026) identified the core problem with agentic sessions: **Claude stops too early.** A single session anchors on its own work, declares "looks good!" prematurely, and misses real bugs. The fix is a separate evaluator session that verifies independently rather than rubber-stamping its own output.
 
-Anthropic's [Harness article](https://www.anthropic.com/engineering/harness-design-long-running-apps) (March 2026) identified the core problem with agentic sessions: **Claude stops too early.** A single session anchors on its own work, declares "looks good!" prematurely, and misses real bugs — especially in longer, multi-step tasks. The fix is a separate evaluator session that verifies independently rather than rubber-stamping its own output.
+TandemKit applies that insight with a twist: instead of two Claude sessions checking each other, it pairs **Claude + Codex** in both planning and evaluation — two models that approach problems differently. Codex tends to explore more files and dig into details Claude passes over. TandemKit runs Codex at `--effort xhigh` (maximum) and in practice it finds real bugs Claude has already marked as passing. There is no single-model mode — the dual-model approach is the entire value proposition.
 
-TandemKit applies that insight with a twist: instead of two Claude sessions checking each other, it pairs **Claude + Codex** — two different models that approach problems differently — in both the planning and evaluation phases. See *How It Works* below for the exact session breakdown.
-
-Different models catch different issues — not because one is better, but because they approach problems differently. Codex tends to explore more files and dig into details Claude passes over — a pattern observed consistently across months of working with both tools, and independently reported by others. TandemKit runs Codex at `--effort xhigh` (the maximum reasoning level) to get the most thorough investigation it can produce. In practice, Codex at this setting finds real bugs that Claude has already marked as passing. This is the second insight TandemKit builds on: the evaluator should not be the same model. The dual-model approach is the entire value proposition — there is no single-model mode.
-
-The Harness article also showed that evaluation quality depends on **concrete verification tools**. Without them, evaluators guess based on surface impressions — apps "looked impressive but still had real bugs when you actually tried to use them." Giving evaluators the ability to interact with the running artifact — run tests, navigate the UI, take screenshots, inspect state — transforms evaluation from subjective impression into evidence-based assessment. TandemKit's `/tandemkit:init` sets up exactly these tools for your project type.
+Concrete verification tools matter too: the Harness article showed that without them, evaluators guess from surface impressions. `/tandemkit:init` sets up project-type-specific tools (build, run, navigate, screenshot) so the Evaluator can do what a human reviewer would.
 
 ## How It Works
 
@@ -59,7 +57,7 @@ USER  ── step 2: open both sessions in parallel — they coordinate autonomo
 
 You are active during planning, then step away while Generator and Evaluator loop autonomously. When evaluation passes, you receive a Review Briefing — approve it or give feedback, and the loop continues with updated requirements until you're satisfied.
 
-The whole system is structurally similar to **pair programming** — a proven practice that demonstrably improves output quality even for experienced humans, simply by having a second set of eyes on the work. TandemKit maps directly onto that model: the Generator is the **driver** (writing code, fully focused on implementation), and the Evaluator — Claude and Codex working together — is the **navigator** (reviewing, catching mistakes, thinking ahead). That AI-to-AI driver/navigator loop is the core of what TandemKit adds over a single session. You play the navigator role at two points: during planning (guiding the investigation and approving the spec) and at the final review (deciding whether the result meets your standard or needs another pass).
+The structure mirrors **pair programming**: the Generator is the **driver** (implementing, focused on the code), and the Evaluator — Claude and Codex together — is the **navigator** (reviewing, catching mistakes, thinking ahead). You step in as navigator at two points: spec approval and final review.
 
 **Model and effort settings:** Codex runs at `--effort xhigh` (maximum) throughout. Claude runs at whatever model and effort level you have configured locally — Sonnet 4.6 is the minimum recommended model; Opus produces better results at higher cost. Both are yours to tune based on task complexity and how much you want to spend.
 
@@ -182,23 +180,13 @@ These are **your customization points**. Edit them any time to refine how each s
 
 ### Hardened Evaluator system prompt
 
-By default, Claude optimizes its tool use for efficiency — reading diffs instead of full files, sampling relevant lines, skipping re-verification of criteria it already checked. This is fine for most work, but exactly wrong for evaluation, where thoroughness matters more than speed.
+Claude by default optimizes for efficiency — reading diffs instead of full files, skipping re-verification of criteria it already checked. That's exactly wrong for evaluation. `TandemKit/ClaudeEvaluatorPrompt.md` (created during init) overrides this: read full files, gather explicit evidence per criterion, re-verify every round, do a second pass on suspiciously clean results, return BLOCKED (not PASS) when required verification can't be performed.
 
-TandemKit addresses this with `TandemKit/ClaudeEvaluatorPrompt.md` — a hardened system prompt created during init that overrides Claude's default efficiency behavior for the Evaluator session. It enforces explicit rules that Claude would otherwise bend in the name of token savings:
-
-- **Read full implementation files**, not diffs or snippets
-- **Gather explicit evidence** (file path, line number, actual behavior) before deciding on each criterion
-- **No inherited trust between rounds** — re-verify all criteria each round, regardless of prior verdicts
-- **Second pass if zero findings** — non-trivial work with no issues is suspicious; do a second pass looking for omissions, regressions, and edge cases
-- **BLOCKED, not PASS**, when required verification can't be performed
-
-The Planner provides the exact launch command at the end of the planning phase:
+The Planner provides the exact launch command at the end of planning:
 
 ```bash
 claude --append-system-prompt-file TandemKit/ClaudeEvaluatorPrompt.md
 ```
-
-Open your Evaluator session with this command so the hardened prompt is active from the start.
 
 ## The Convergence Protocol
 
