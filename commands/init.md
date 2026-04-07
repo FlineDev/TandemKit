@@ -103,18 +103,26 @@ Options:
 
 **For Apple platform projects:**
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/evaluator/strategies/Evaluation-Strategy-ApplePlatform.md` for full details. Recommend XcodeBuildMCP CLI as the primary tool for BOTH Claude and Codex sessions (if both allow bash/shell commands). Only suggest MCP mode if the user's Codex config restricts bash.
+Read `${CLAUDE_PLUGIN_ROOT}/skills/evaluator/strategies/ApplePlatform.md` for full details. Recommend XcodeBuildMCP CLI as the primary tool for BOTH Claude and Codex sessions (if both allow bash/shell commands). Only suggest MCP mode if the user's Codex config restricts bash.
 
-Install XcodeBuildMCP if the user agrees:
+Explain to the user that XcodeBuildMCP provides build, test, simulator, UI automation, and screenshot tools — and that you recommend installing it so the Evaluator can do real verification rather than code-reading alone. Ask for confirmation, then install:
+
 ```bash
 brew tap getsentry/xcodebuildmcp
 brew install xcodebuildmcp
+```
+
+Then tell the user to install the official Claude Code skill by pasting the following into a **separate terminal window** and clicking through the prompts (recommended choices: **user-level**, **CLI** variant — not MCP):
+
+```bash
 xcodebuildmcp init
 ```
 
+Ask the user to come back and say "done" when finished so you can verify the skill was installed.
+
 **For web projects:**
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/evaluator/strategies/Evaluation-Strategy-Web.md` for full details. **Recommend browser-use CLI as the primary browser automation tool.** Explain the tradeoffs:
+Read `${CLAUDE_PLUGIN_ROOT}/skills/evaluator/strategies/Web.md` for full details. **Recommend browser-use CLI as the primary browser automation tool.** Explain the tradeoffs:
 
 > "For browser-based verification, I recommend **browser-use CLI** — it uses 10–50× fewer tokens than Playwright MCP for the same operations, which means faster and cheaper evaluations. It runs as a simple CLI command (no MCP server needed) and has built-in session management for parallel testing.
 >
@@ -123,16 +131,25 @@ Read `${CLAUDE_PLUGIN_ROOT}/skills/evaluator/strategies/Evaluation-Strategy-Web.
 **browser-use setup (if user agrees — recommended):**
 
 1. Check if browser-use is installed: `which browser-use` (also check aliases: `bu`, `browser`, `browseruse`)
-2. If not installed:
+2. If not installed, ask for confirmation then install:
    ```bash
    curl -fsSL https://browser-use.com/cli/install.sh | bash
    ```
-3. Verify: `browser-use doctor`
-4. **Check permissions** — read `~/.claude/settings.json` and project `.claude/settings.json`. Look for a permission `allow` entry that covers `Bash(browser-use *)` — either explicitly or via a broader rule like `Bash(*)` or `Bash`. If no matching permission exists, recommend adding `"Bash(browser-use *)"` to the allow list so browser-use commands run without prompting during evaluation.
+3. Verify and run initial setup:
+   ```bash
+   browser-use doctor
+   browser-use setup
+   ```
+4. Tell the user to install the official Claude Code skill by pasting the following into a **separate terminal window** and clicking through the prompts (recommended choices: **Claude Code + Codex**, **user-level**, **symlink**):
+   ```bash
+   npx skills add https://github.com/browser-use/browser-use --skill browser-use
+   ```
+   Ask the user to come back and say "done" when finished so you can verify the skill was installed.
+5. **Check permissions** — read `~/.claude/settings.json` and project `.claude/settings.json`. Look for a permission `allow` entry that covers `Bash(browser-use *)` — either explicitly or via a broader rule like `Bash(*)` or `Bash`. If no matching permission exists, recommend adding `"Bash(browser-use *)"` to the allow list so browser-use commands run without prompting during evaluation.
 
 **Playwright setup (if user explicitly prefers):**
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/evaluator/strategies/Evaluation-Strategy-Web-Playwright.md`. Set up the MCP server in `.mcp.json`:
+Read `${CLAUDE_PLUGIN_ROOT}/skills/evaluator/strategies/Web-Playwright.md`. Set up the MCP server in `.mcp.json`:
 ```json
 {
    "mcpServers": {
@@ -155,7 +172,7 @@ Present what you found in the project's commit conventions and branch patterns, 
 1. Should the Generator make commits automatically at milestones? (default: yes)
 2. Should each mission use a feature branch? (default: yes)
 
-**Branch naming:** Show the pattern you detected from existing branches (e.g., "Your branches follow `jeehut/feature-description`"). TandemKit will use the same pattern. Do NOT invent a new convention or add prefixes like "hk-".
+**Branch naming:** Show the pattern you detected from existing branches (e.g., "Your branches follow `username/feature-description`"). TandemKit will use the same pattern. Do NOT invent a new convention or add prefixes like "hk-".
 
 **If submodules exist:** Ask specifically about commit scope:
 - "Should auto-commits happen in the umbrella repo, in submodules, or submodules only?"
@@ -314,7 +331,13 @@ This project uses TandemKit — Claude and Codex always work in tandem for plann
 Project-specific role context: `TandemKit/Planner.md`, `TandemKit/Generator.md`, `TandemKit/Evaluator.md`.
 ```
 
-Keep it brief — one short paragraph. Ask the user before editing AGENTS.md.
+**For Apple platform projects**, also append this line to the TandemKit section:
+
+```markdown
+**XcodeBuildMCP:** Always use the CLI (`xcodebuildmcp <command>`). Never configure or use it as an MCP server — MCP mode is not set up for this project.
+```
+
+Keep it brief. Ask the user before editing AGENTS.md.
 
 ## Step 10 — Summary + Commit
 
@@ -329,6 +352,6 @@ git commit -m "Initialize TandemKit coordination framework"
 
 Then end with:
 
-> **Next step:** To start your first mission:
+> **Before starting your first mission:** If any new skills were installed during init (XcodeBuildMCP, browser-use), run `/exit` to restart the session so Claude picks them up. Then open a fresh session and run:
 >
 > `/tandemkit:planner`

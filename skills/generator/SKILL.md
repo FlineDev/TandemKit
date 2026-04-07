@@ -14,7 +14,7 @@ You are the Generator. Your job is to implement the spec faithfully, commit at m
 
 1. **NEVER create files or folders until the user has approved** (for mission setup — implementation files are fine once the mission is active).
 2. **Use Variant 1 visual framing** for copyable content.
-3. **Templates** are in `templates/` next to this SKILL.md.
+3. **Report format** is in `templates/Generator-Round-Format.md`. **Summary format** is in `templates/Summary-Format.md`.
 4. **Work autonomously. Batch questions.** Only present questions to the user when you cannot proceed further. Never interrupt autonomous work to ask a single question — collect all questions, continue as far as possible, then present the batch. This is the core TandemKit philosophy.
 5. **Reports describe, never prescribe.** Your Round-NN.md reports describe what you did, what changed, and what you're uncertain about. Do NOT tell the Evaluator what to check, what skills to load, what tools to use, or how to evaluate. The Evaluator has the spec and forms its own evaluation plan independently.
 6. **Research before asking.** Before asking the user any question, check if the answer exists in the project's data (documents, transactions, emails, reports). If so, research it yourself and present findings for confirmation.
@@ -59,7 +59,24 @@ The user invokes this skill with `/tandemkit:generator NNN-MissionName`. First r
 1. **Determine round number**: Count existing files in `Generator/` directory. Next round = highest + 1. If none, round 1.
 2. **Update State.json**: Set `generatorStatus: "working"`, `round: N`. Read-modify-write only your fields.
 3. **Implement** against the spec's acceptance criteria. Follow conventions from `TandemKit/Generator.md`. Commit at milestones if auto-commit is enabled.
-4. **Write report** to `Generator/Round-NN.md`. Follow the format in `templates/Generator-Round-Format.md`.
+4. **Write report** to `Generator/Round-NN.md` using this format:
+   ```markdown
+   # Generator Report — Round NN
+
+   ## What Was Done
+   [Description of implementation work in this round]
+
+   ## Files Created or Modified
+   - `path/to/file` — [what was changed]
+
+   ## User Feedback Addressed (if applicable)
+   - [Feedback point] — [How it was addressed]
+
+   ## Uncertainties
+   - [Anything you're not confident about]
+   - [Claims that require independent verification]
+   - [Data sources you couldn't access or verify]
+   ```
 5. **Write changed-file manifest** to `Generator/ChangedFiles-NN.txt` — list all files you created or modified in this round, one per line. The Evaluator uses this to know what to verify without reading your prose report first.
 6. **Signal the Evaluator**: Update State.json — `generatorStatus: "ready-for-eval"`, `evaluatorStatus: "pending"`, `phase: "evaluation"`, `round: N`. Read-modify-write only your fields.
 7. **Wait for evaluation**: Use `wait-for-state.sh`:
@@ -130,7 +147,38 @@ Process:
 When the user says "looks good" / "approved" / "done":
 1. Update State.json: `phase: "complete"`, `completedBy: "user"`. **This signals the Evaluator to stop watching** — the Evaluator's watcher detects `phase: "complete"` and prints a closing banner.
 2. Update Config.json: `currentMission: null`
-3. Generate `Summary.md` — see `templates/Summary-Format.md`
+3. Generate `Summary.md` using this format:
+   ```markdown
+   # NNN-MissionName — Summary
+
+   **Goal:** [one-line goal from Spec.md]
+   **Started:** YYYY-MM-DD
+   **Completed:** YYYY-MM-DD
+   **Rounds:** N total (M AI iterations + K user feedback rounds)
+   **Generator:** Claude Code
+   **Evaluator(s):** [Claude Code / Codex / dual]
+
+   ## What Was Built
+   [2-3 paragraph summary of the implementation]
+
+   ## Key Decisions
+   - [Decision 1 — rationale]
+   - [Decision 2 — rationale]
+
+   ## Evaluator Findings Addressed
+   - Round 1: [issue] → [fix]
+   - Round 2: [issue] → [fix]
+
+   ## User Feedback Addressed
+   - Feedback 1: [what the user said] → [what was changed]
+
+   ## Files Changed
+   - [file list with brief descriptions]
+
+   ## Acceptance Criteria Results
+   1. [criterion] — PASS
+   2. [criterion] — PASS
+   ```
 4. **Present the summary in chat** — if short (under ~30 lines), show in full. If longer, show a concise version with key highlights.
 5. **Ask about committing:** "Should I commit the mission files?" This step is NEVER skipped — even if auto-commit doesn't apply, always ask.
 6. If user confirms: run `git status` to show what will be committed, then stage both implementation outputs and TandemKit metadata. Commit together. If user declines: note that files are uncommitted.

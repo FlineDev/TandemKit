@@ -45,6 +45,13 @@ browser-use doctor    # verify installation
 
 No separate Playwright or Chromium install required — browser-use bundles its own Chromium.
 
+After installing the CLI, also install the official Claude Code skill so the Evaluator knows how to use browser-use efficiently. Run the interactive installer and select **Claude Code + Codex**, **user-level**, **symlink**:
+
+```bash
+npx skills add https://github.com/browser-use/browser-use --skill browser-use
+```
+
+
 #### Core Commands
 
 ```bash
@@ -127,7 +134,7 @@ browser-use eval "JSON.stringify(window.__errors)"
 
 ### Playwright MCP (Fallback)
 
-If the user prefers Playwright MCP or has it already configured, it remains a viable option. See **`Evaluation-Strategy-Web-Playwright.md`** for the full Playwright-specific setup, commands, and evaluation patterns.
+If the user prefers Playwright MCP or has it already configured, it remains a viable option. See **`Web-Playwright.md`** for the full Playwright-specific setup, commands, and evaluation patterns.
 
 When to use Playwright instead:
 - User already has Playwright MCP configured and working
@@ -191,7 +198,7 @@ Web application ([React/Vue/Svelte/static/full-stack])
 
 ## UI Verification Tools
 - browser-use CLI for browser interaction and screenshots (recommended — 10–50× fewer tokens than Playwright)
-- Playwright MCP as fallback (see Evaluation-Strategy-Web-Playwright.md)
+- Playwright MCP as fallback (see Web-Playwright.md)
 - Dev server at http://localhost:XXXX
 
 ## Evaluation Priorities

@@ -1,6 +1,6 @@
 # Evaluation Strategy: Web Applications — Playwright Fallback
 
-This document provides the Playwright MCP-specific setup and evaluation patterns for web applications. **browser-use CLI is the recommended primary tool** (see `Evaluation-Strategy-Web.md`) — use Playwright only if the user explicitly prefers it or already has it configured.
+This document provides the Playwright MCP-specific setup and evaluation patterns for web applications. **browser-use CLI is the recommended primary tool** (see `Web.md`) — use Playwright only if the user explicitly prefers it or already has it configured.
 
 ## Why This Is the Fallback
 
@@ -51,7 +51,7 @@ Through Playwright's JavaScript execution, you can:
 
 ## Playwright-Specific Evaluation Checklist
 
-The general checklist from `Evaluation-Strategy-Web.md` applies. Playwright-specific notes:
+The general checklist from `Web.md` applies. Playwright-specific notes:
 
 1. **Navigate to affected pages** via Playwright's `browser_navigate`
 2. **Take screenshots** via `browser_take_screenshot`

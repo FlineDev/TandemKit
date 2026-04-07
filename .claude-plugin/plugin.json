@@ -1,7 +1,7 @@
 {
   "name": "tandemkit",
   "version": "1.0.0",
-  "description": "Claude + Codex plan, Claude builds, Claude + Codex verify — autonomous multi-session orchestration that converges on quality",
+  "description": "Describe your goal, approve the spec, then step away — Claude and Codex loop together until it's right.",
   "author": {
     "name": "Cihat Gündüz",
     "url": "https://fline.dev"

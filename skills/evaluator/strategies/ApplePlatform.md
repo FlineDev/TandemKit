@@ -28,8 +28,10 @@ The primary tool for Apple platform evaluation. Provides 76 CLI tools across 14 
 ```bash
 brew tap getsentry/xcodebuildmcp
 brew install xcodebuildmcp
-xcodebuildmcp init    # installs the CLI skill
+xcodebuildmcp init
 ```
+
+`xcodebuildmcp init` is an interactive skill installer — choose **user-level** and the **CLI** variant (not MCP). It installs the official Claude Code skill to `~/.claude/skills/`, priming the Evaluator with the right commands and workflows. Re-run it after major version upgrades.
 
 Or without global install (MCP mode for Codex):
 ```json
@@ -131,6 +133,7 @@ Not every mission is a code mission. For documentation/content missions (e.g., w
 - Never mark PASS without running tests
 - Never assume UI correctness from code alone — take screenshots and read accessibility tree
 - Never skip regression testing
+- **Never use XcodeBuildMCP as an MCP server** — always use the CLI (`xcodebuildmcp <command>`). MCP mode is not configured for this project.
 
 ## Role File Template
 
@@ -175,4 +178,5 @@ During init, create `TandemKit/Evaluator.md` with:
 - Mark PASS without running tests (code missions)
 - Mark PASS without source verification (documentation missions)
 - Assume UI looks correct without screenshots
+- Use XcodeBuildMCP as an MCP server — always use the CLI (`xcodebuildmcp <command>`)
 ```

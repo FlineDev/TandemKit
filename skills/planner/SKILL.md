@@ -26,7 +26,7 @@ copyable content here
 ╚══════════════════════════════════════════════════════════════════════╝
 
 5. **Do NOT over-explain TandemKit.** The user knows what it is.
-6. **Templates** are in `templates/` next to this SKILL.md.
+6. **Spec format** is in `templates/Spec-Format.md`.
 7. **NEVER ask clarifying questions about the user's goal before Round 1 investigation is complete.** The only AskUserQuestion allowed before investigation is the mission name confirmation (Step 0.7a). Even if the goal seems vague or ambiguous — investigate first, draft a rough plan, then ask questions after Round 1 (Step 2).
 8. **Research before asking — in ALL rounds, not just Step 2.** Before asking any question, check if the answer exists in the project's data (transactions, emails, documents, reports). If so, research it yourself and present findings for the user to confirm. Do NOT ask the user to recall what the data already contains. This applies to Step 2 questions, convergence-round questions, and post-feedback questions alike.
 
@@ -69,12 +69,10 @@ Goal received → Read Planner.md → Suggest name + Launch Codex (parallel) →
 Launch via the Agent tool with `run_in_background: true`. Do NOT also use `--background` in the Codex CLI flags — that creates double-backgrounding where the Agent "completes" immediately but Codex is still running, and you never get the result notification.
 
 ```
-/codex:rescue --fresh
-You are the Codex companion for the Planner. Your investigation will be
-compared with Claude's independent findings to produce a converged plan.
+/codex:rescue --fresh --effort xhigh
+You are the Codex companion for the Planner. Your investigation will be compared with Claude's independent findings to produce a converged plan.
 
-FIRST: Read TandemKit/Planner.md — it contains project-specific context,
-key reference documents, and conventions for this project type.
+FIRST: Read TandemKit/Planner.md — it contains project-specific context, key reference documents, and conventions for this project type.
 
 Investigate the codebase for this mission goal: [user's goal text]
 Read all relevant source files, docs, and architecture.
@@ -93,8 +91,7 @@ Structure your plan following the Spec.md format:
 
 Source-of-truth: current source code > project docs > external references.
 Only document current verified behavior.
-If anything is ambiguous or unclear about the user's intent, list it in
-an "Open Questions" section.
+If anything is ambiguous or unclear about the user's intent, list it in an "Open Questions" section.
 ```
 
 **If Codex is unavailable** (CLI not installed, auth expired, `/codex:rescue` fails): STOP. Tell the user: "Codex is unavailable. Please run `/codex:setup` to fix, then say 'continue'." Do NOT proceed with Claude-only planning — TandemKit always requires both models.
@@ -153,7 +150,7 @@ Codex is already running in background from Step 0.7b. Now investigate independe
 
 21. Invoke Codex to review (`--resume` — continues the same Codex thread):
     ```
-    /codex:rescue --resume
+    /codex:rescue --resume --effort xhigh
     Review the merged plan for mission [name].
     Read these files:
     - [path]/Claude-01.md (Claude's original investigation — you haven't seen this yet)

@@ -15,7 +15,7 @@ You are the Evaluator. Your job is to verify the Generator's work against the sp
 ## UX Rules
 
 1. **Use Variant 1 visual framing** for copyable content.
-2. **Templates** in `templates/`. **Strategies** in `strategies/`.
+2. **Report format** is in `templates/Evaluator-Round-Format.md`. **Strategies** are in `strategies/`.
 3. Do NOT use subagents for evaluation — you and Codex are the two independent evaluators.
 
 ## Mindset + Anti-Bias Rules
@@ -71,14 +71,14 @@ The user invokes this skill with `/tandemkit:evaluator NNN-MissionName`. First r
 
 7. Read `Generator/ChangedFiles-NN.txt` as a **starting point** for what to verify — NOT a scope boundary. If the spec or user feedback implies broader checks beyond the changed files, expand your scope accordingly. The Generator does not define your evaluation scope; the spec does.
 8. **Check the Mission Type** from Spec.md and read the matching evaluation strategy:
-   - **code**: `strategies/Evaluation-Strategy-ApplePlatform.md` (or CLI/Web depending on project type in Config.json)
-   - **documentation**: `strategies/Evaluation-Strategy-Domain.md`
-   - **domain**: `strategies/Evaluation-Strategy-Domain.md`
+   - **code**: `strategies/ApplePlatform.md` (or CLI/Web depending on project type in Config.json)
+   - **documentation**: `strategies/Domain.md`
+   - **domain**: `strategies/Domain.md`
    - **mixed**: Read both code and domain strategies
 9. Update State.json: `evaluatorStatus: "evaluating"`
 10. **Launch Codex in background** for independent evaluation. Use the Agent tool with `run_in_background: true`. Do NOT also use `--background` in the Codex CLI flags — that creates double-backgrounding where the Agent "completes" but Codex is still running.
-    - First eval cycle of the mission: `/codex:rescue --fresh [eval prompt]`
-    - Subsequent eval cycles: `/codex:rescue --resume [eval prompt]`
+    - First eval cycle of the mission: `/codex:rescue --fresh --effort xhigh [eval prompt]`
+    - Subsequent eval cycles: `/codex:rescue --resume --effort xhigh [eval prompt]`
 
     **If Codex is unavailable:**
     - **Permanent** (auth failure, CLI not installed): STOP. Tell the user: "Codex is unavailable. Please run `/codex:setup` to fix, then say 'continue'."
@@ -86,15 +86,10 @@ The user invokes this skill with `/tandemkit:evaluator NNN-MissionName`. First r
 
     The evaluation prompt:
     ```
-    You are the Codex companion for the Evaluator. Your evaluation will be
-    compared with Claude's independent findings to produce a converged verdict.
+    You are the Codex companion for the Evaluator. Your evaluation will be compared with Claude's independent findings to produce a converged verdict.
 
-    FIRST: Read TandemKit/Evaluator.md — it contains project-specific
-    evaluation context, mandatory checks, and "always do" / "never do" rules.
-    Also read the relevant evaluation strategy from the evaluator skill's
-    strategies/ folder. Choose based on mission type from Spec.md AND
-    projectType from TandemKit/Config.json (e.g., code + Apple platform
-    → Evaluation-Strategy-ApplePlatform.md; domain/docs → Domain strategy).
+    FIRST: Read TandemKit/Evaluator.md — it contains project-specific evaluation context, mandatory checks, and "always do" / "never do" rules.
+    Also read the relevant evaluation strategy from the evaluator skill's strategies/ folder. Choose based on mission type from Spec.md AND projectType from TandemKit/Config.json (e.g., code + Apple platform → ApplePlatform.md; domain/docs → Domain strategy).
 
     Evaluate mission [name] against the spec, round [N].
     Read these files:
@@ -131,7 +126,37 @@ The user invokes this skill with `/tandemkit:evaluator NNN-MissionName`. First r
     - **ONLY AFTER your evaluation:** Read `Generator/Round-NN.md` to check for areas you missed. Do NOT change existing verdicts.
 
 12. Create `Evaluator/Round-NN-Discussion/` folder
-13. Write `Round-NN-Discussion/Claude-01.md` with your evaluation findings
+13. Write `Round-NN-Discussion/Claude-01.md` with your evaluation findings, using this format:
+    ```markdown
+    # Evaluation Report — Round NN
+
+    **Verdict: PASS / PASS_WITH_GAPS / FAIL / BLOCKED**
+
+    ## Mandatory Checks
+    - Build: PASS / FAIL — [details]
+    - Tests: PASS / FAIL — [N passed, M failed]
+
+    ## Acceptance Criteria Results
+
+    ### 1. [Criterion text from spec]
+    **Verdict: PASS / FAIL / BLOCKED**
+    Evidence: [What you observed, how you verified]
+
+    ## Edge Cases & Boundaries
+    - [Edge case]: PASS / FAIL — [evidence]
+
+    ## User Feedback Points (if applicable)
+    - [Point]: Addressed / Not addressed — [evidence]
+
+    ## Issues Found (Not in Spec)
+    - [Issue]: [Severity], [Reproduction], [Suggestion]
+
+    ## What Works Well
+    [Positive observations]
+
+    ## Suggestions (Non-Blocking)
+    [Improvements that don't block PASS]
+    ```
 14. When the background Codex agent completes, you will be notified automatically. Do NOT poll with sleep loops or `/codex:status` — the Agent tool's notification handles this.
 15. Save Codex result to `Round-NN-Discussion/Codex-01.md`
 
@@ -146,7 +171,7 @@ The user invokes this skill with `/tandemkit:evaluator NNN-MissionName`. First r
 
 17. Invoke Codex to review (`--resume` — continues the same thread):
     ```
-    /codex:rescue --resume
+    /codex:rescue --resume --effort xhigh
     Review the merged evaluation for mission [name], round [N].
     Read these files:
     - [path]/Claude-01.md (Claude's original evaluation — you haven't seen this yet)
