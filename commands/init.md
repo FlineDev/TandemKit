@@ -200,7 +200,21 @@ TandemKit ALWAYS uses Codex alongside Claude — this is not optional. Do NOT as
 
 3. If installed: run `/codex:setup` to verify authentication works. If auth fails, tell the user to fix it before continuing.
 
-### Question 6: .gitignore Preference
+### Question 6: Codex Reasoning Effort
+
+Explain that TandemKit invokes Codex multiple times per mission (once per Planner round, once per Evaluator round) and the reasoning effort controls how thorough each invocation is — at the cost of token usage and rate-limit pressure on personal Codex accounts. Then ask via AskUserQuestion:
+
+> "What Codex reasoning effort should TandemKit use for this project?"
+
+Present these options (and recommend `high` as the default):
+
+- **high** (recommended) — Very thorough reasoning, friendlier to personal-account rate limits than xhigh. Good default for almost all projects. Codex still finds bugs Claude misses at this level.
+- **xhigh** — Maximum effort, slightly more thorough than `high` but burns through Codex tokens noticeably faster. Pick this only for projects where you genuinely need every last bit of reasoning quality and don't mind hitting rate limits sooner.
+- **medium** — Faster and cheaper than `high`. Pick this for routine missions in established codebases where deep investigation is rarely needed, or if you're hitting rate limits even on `high`.
+
+The selection is stored in `Config.json` under `codex.effort` and used by every Planner and Evaluator Codex invocation. It can be changed later by editing Config.json directly.
+
+### Question 7: .gitignore Preference
 
 > "Do you want TandemKit coordination files gitignored during active missions?"
 
@@ -221,7 +235,7 @@ If Codex is enabled, check `~/.codex/config.toml`. Only mention issues if restri
 > - Evaluation scope: [list]
 > - Tools: [list]
 > - Git: auto-commit [yes/no], scope [where], feature branches [yes/no], branch pattern [pattern]
-> - Codex: [enabled/disabled], mode [CLI/MCP]
+> - Codex: effort [high/xhigh/medium]
 > - .gitignore: [yes/no]
 >
 > Does this look right?"
@@ -240,7 +254,7 @@ This file is NOT modified by the self-learning system — keep it stable.
 
 ### Config.json
 
-Do NOT add a `codex` section — Codex is always required and not configurable.
+The `codex.effort` field stores the Codex reasoning effort answered in Question 6 — this is the only Codex setting (whether Codex is used at all is non-negotiable).
 Do NOT add `learnings` sections to any role file — the self-learning system has been removed.
 
 ```json
@@ -259,6 +273,9 @@ Do NOT add `learnings` sections to any role file — the self-learning system ha
   "evaluation": {
     "scope": ["code", "ui-previews", "domain-content"],
     "tools": ["xcodebuildmcp-cli", "xcode-mcp"]
+  },
+  "codex": {
+    "effort": "high"
   }
 }
 ```

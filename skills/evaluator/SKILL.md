@@ -74,7 +74,9 @@ The user invokes this skill with `/tandemkit:evaluator NNN-MissionName`. First r
 
 ## Step 1 — Read Context
 
-1. Read `TandemKit/Config.json` — find the current mission
+1. Read `TandemKit/Config.json`. Two things to extract:
+   - The current mission name (`currentMission`)
+   - **`codex.effort`** (default: `high` if missing — older projects). You will substitute this into every Codex prompt below. Valid values: `none`, `minimal`, `low`, `medium`, `high`, `xhigh`.
 2. **Read `TandemKit/Evaluator.md`** for project-specific evaluation context — this is mandatory, do not skip
 3. Read the mission's `Spec.md` — this is your verification baseline
 4. Read any `UserFeedback/` files if this is a post-feedback round
@@ -108,13 +110,25 @@ The user invokes this skill with `/tandemkit:evaluator NNN-MissionName`. First r
     ```bash
     mkdir -p TandemKit/NNN-MissionName/Evaluator/Round-NN-Discussion
     ```
-11. **Launch Codex in background** for independent evaluation. Use the Agent tool with `run_in_background: true`. Do NOT also use `--background` in the Codex CLI flags — that creates double-backgrounding where the Agent "completes" but Codex is still running.
-    - First eval cycle of the mission: `/codex:rescue --fresh --effort xhigh --write [eval prompt]`
-    - Subsequent eval cycles: `/codex:rescue --resume --effort xhigh --write [eval prompt]`
+11. **Launch Codex in background** for independent evaluation. Use the Agent tool with `run_in_background: true`. Do NOT also use `--background` in the Codex CLI flags — that creates double-backgrounding where the Agent "completes" but Codex is still running. Substitute `{EFFORT}` below with the `codex.effort` value you captured from `Config.json` in Step 1.
+    - First eval cycle of the mission: `/codex:rescue --fresh --effort {EFFORT} --write [eval prompt]`
+    - Subsequent eval cycles: `/codex:rescue --resume --effort {EFFORT} --write [eval prompt]`
 
     **If Codex is unavailable:**
-    - **Permanent** (auth failure, CLI not installed): STOP. Tell the user: "Codex is unavailable. Please run `/codex:setup` to fix, then say 'continue'."
-    - **Temporary** (rate limit, quota exhaustion, timeout): Continue with Claude-only for THIS round only. Flag it clearly in Claude-01.md: "⚠️ Codex unavailable this round (quota/timeout). Claude-only evaluation." Resume with Codex on the next round.
+    - **Permanent** (CLI not installed, auth expired/invalid, `/codex:rescue` errors out before Codex even starts): STOP. Tell the user: "Codex is unavailable. Please run `/codex:setup` to fix, then say 'continue'." Do NOT proceed Claude-only — a permanent failure needs the user to fix it.
+    - **Temporary** (rate limit / token quota: `"You've hit your usage limit. To get more access now... try again at <date>"`, or similar quota/throttle/timeout errors): Do NOT keep retrying — token-limit errors won't clear within this round. Instead:
+      1. Write a placeholder `Round-NN-Discussion/Codex-01.md` containing exactly:
+         ```markdown
+         # Codex-01 — Skipped (Codex Unavailable)
+
+         **Status:** Codex was unavailable for this round.
+         **Reason:** [exact error message Codex returned, e.g. "Hit usage limit, retry after <date>"]
+         **Round mode:** Claude-only — no Codex independent evaluation this round.
+         ```
+      2. Flag it clearly in Claude-01.md: "⚠️ Codex unavailable this round (rate limit / quota / timeout). Claude-only evaluation."
+      3. Skip Step 4 (Convergence) entirely and copy `Claude-01.md` directly as `Round-NN.md`.
+      4. Tell the user briefly: "⚠️ Codex hit its rate limit / quota for round [N]. Proceeded Claude-only. Verdict may be less thorough than usual."
+      5. **On the next round**, attempt Codex again — quotas may reset between rounds, especially if there's a long Generator-implementation gap.
 
     The evaluation prompt (substitute `NNN-MissionName` and `NN` for the round number):
     ```
@@ -202,9 +216,9 @@ The user invokes this skill with `/tandemkit:evaluator NNN-MissionName`. First r
     - For disagreements: **RE-INVESTIGATE** — re-read the actual source files, re-check facts. Do NOT argue from memory.
     - Explain your rationale for remaining disagreements
 
-17. Invoke Codex to review (`--resume` — continues the same thread). Substitute the absolute mission path:
+17. Invoke Codex to review (`--resume` — continues the same thread). Substitute the absolute mission path AND `{EFFORT}` with the `codex.effort` value from `Config.json`:
     ```
-    /codex:rescue --resume --effort xhigh --write
+    /codex:rescue --resume --effort {EFFORT} --write
     Review the merged evaluation for mission [name], round [N].
     Read these files:
     - TandemKit/NNN-MissionName/Evaluator/Round-NN-Discussion/Claude-01.md (Claude's original evaluation — you haven't seen this yet)
@@ -231,7 +245,7 @@ The user invokes this skill with `/tandemkit:evaluator NNN-MissionName`. First r
 
 **Stuck convergence:** If same high/medium disagreement persists 3x, present both positions to the user.
 
-**`--resume` fallback:** If `--resume` fails, use `--fresh --write` and include the full original Codex prompt preamble (role context, TandemKit/Evaluator.md, evaluation strategy, Spec.md) plus: "Read these files for prior context: [list all prior Round-NN-Discussion/ files]. Then review TandemKit/NNN-MissionName/Evaluator/Round-NN-Discussion/Claude-NN.md and write your review to TandemKit/NNN-MissionName/Evaluator/Round-NN-Discussion/Codex-NN.md (respond only with a brief confirmation per the Discussion File Convention)."
+**`--resume` fallback:** If `--resume` fails, use `--fresh --effort {EFFORT} --write` (substituting effort from `Config.json`) and include the full original Codex prompt preamble (role context, TandemKit/Evaluator.md, evaluation strategy, Spec.md) plus: "Read these files for prior context: [list all prior Round-NN-Discussion/ files]. Then review TandemKit/NNN-MissionName/Evaluator/Round-NN-Discussion/Claude-NN.md and write your review to TandemKit/NNN-MissionName/Evaluator/Round-NN-Discussion/Codex-NN.md (respond only with a brief confirmation per the Discussion File Convention)."
 
 21. Copy final `Claude-NN.md` → `Evaluator/Round-NN.md`
 

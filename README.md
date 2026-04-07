@@ -18,7 +18,7 @@ You have a **Claude Max** subscription (which includes Claude Code) and a **Chat
 
 Anthropic's [Harness article](https://www.anthropic.com/engineering/harness-design-long-running-apps) (March 2026) identified the core problem with agentic sessions: **Claude stops too early.** A single session anchors on its own work, declares "looks good!" prematurely, and misses real bugs. The fix is a separate evaluator session that verifies independently rather than rubber-stamping its own output.
 
-TandemKit applies that insight with a twist: instead of two Claude sessions checking each other, it pairs **Claude + Codex** in both planning and evaluation — two models that approach problems differently. Codex tends to explore more files and dig into details Claude passes over. TandemKit runs Codex at `--effort xhigh` (maximum) and in practice it finds real bugs Claude has already marked as passing. There is no single-model mode — the dual-model approach is the entire value proposition.
+TandemKit applies that insight with a twist: instead of two Claude sessions checking each other, it pairs **Claude + Codex** in both planning and evaluation — two models that approach problems differently. Codex tends to explore more files and dig into details Claude passes over, and in practice it finds real bugs Claude has already marked as passing. There is no single-model mode — the dual-model approach is the entire value proposition.
 
 Concrete verification tools matter too: the Harness article showed that without them, evaluators guess from surface impressions. `/tandemkit:init` sets up project-type-specific tools (build, run, navigate, screenshot) so the Evaluator can do what a human reviewer would.
 
@@ -59,7 +59,7 @@ You are active during planning, then step away while Generator and Evaluator loo
 
 The structure mirrors **pair programming**: the Generator is the **driver** (implementing, focused on the code), and the Evaluator — Claude and Codex together — is the **navigator** (reviewing, catching mistakes, thinking ahead). You step in as navigator at two points: spec approval and final review.
 
-**Model and effort settings:** Codex runs at `--effort xhigh` (maximum) throughout. Claude runs at whatever model and effort level you have configured locally — Sonnet 4.6 is the minimum recommended model; Opus produces better results at higher cost. Both are yours to tune based on task complexity and how much you want to spend.
+**Model and effort settings:** Codex's reasoning effort is configurable per project — `/tandemkit:init` asks during setup and stores it in `Config.json` under `codex.effort`. Default is `high` (very thorough, friendly to personal-account rate limits); pick `xhigh` if you need maximum reasoning quality and don't mind hitting rate limits sooner, or `medium` for routine missions where you want to save tokens. Claude runs at whatever model and effort level you have configured locally — Sonnet 4.6 is the minimum recommended model; Opus produces better results at higher cost. Both are yours to tune based on task complexity and how much you want to spend.
 
 ## Installation
 

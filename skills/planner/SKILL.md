@@ -87,7 +87,9 @@ Silent if everything is up to date. Prints what changed if repairs were made. Ex
 
    Then STOP and wait for the user's response. Do NOT suggest options, do NOT read AGENTS.md to guess what they might want, do NOT present choices. Just ask and wait.
 4. User provides the goal
-5. Read `TandemKit/Config.json` — if `currentMission` is not null: tell the user and ask what to do
+5. Read `TandemKit/Config.json`. Two things to extract:
+   - If `currentMission` is not null: tell the user and ask what to do
+   - **Capture `codex.effort`** (default: `high` if the field is missing — older projects from before this field existed). You will substitute this into every Codex prompt below. Valid values: `none`, `minimal`, `low`, `medium`, `high`, `xhigh`.
 6. **Read `TandemKit/Planner.md`** for project-specific context. This is mandatory — it informs your mission name suggestion and the Codex prompt. Do NOT skip this.
 7. **Suggest a short PascalCase mission name** based on the goal. Ask the user to confirm via AskUserQuestion. STOP and wait for the answer — do NOT launch Codex yet (Codex needs the confirmed name to know where to write its output file).
 8. **On name confirmation:** run the scaffolding script. This creates the mission folder, `Planner-Discussion/` subfolder, and `State.json` in one shot:
@@ -97,10 +99,10 @@ Silent if everything is up to date. Prints what changed if repairs were made. Ex
    Also create the feature branch if configured.
 9. **Immediately launch Codex in background** using the Agent tool with `run_in_background: true`. Do NOT also use `--background` in the Codex CLI flags — that creates double-backgrounding where the Agent "completes" immediately but Codex is still running, and you never get the result notification.
 
-   The Codex prompt (substitute `NNN-MissionName` and the user's goal text):
+   The Codex prompt (substitute `NNN-MissionName`, the user's goal text, AND `{EFFORT}` with the `codex.effort` value you captured from `Config.json` in Step 0.5):
 
    ```
-   /codex:rescue --fresh --effort xhigh --write
+   /codex:rescue --fresh --effort {EFFORT} --write
    You are the Codex companion for the Planner. Your investigation will be compared with Claude's independent findings to produce a converged plan.
 
    FIRST: Read TandemKit/Planner.md — it contains project-specific context, key reference documents, and conventions for this project type.
@@ -137,7 +139,22 @@ Silent if everything is up to date. Prints what changed if repairs were made. Ex
    OUTPUT: Write your full report to TandemKit/NNN-MissionName/Planner-Discussion/Codex-01.md using the Write tool. The folder already exists. Do NOT include the report itself in your stdout response — respond ONLY with a single line confirming the write, e.g.: "Wrote Codex-01.md (NNN lines)". This is required by the TandemKit Discussion File Convention (see the Planner SKILL.md).
    ```
 
-   **If Codex is unavailable** (CLI not installed, auth expired, `/codex:rescue` fails): STOP. Tell the user: "Codex is unavailable. Please run `/codex:setup` to fix, then say 'continue'." Do NOT proceed with Claude-only planning — TandemKit always requires both models.
+   **If Codex is unavailable**, distinguish two cases:
+
+   - **Permanent** (CLI not installed, auth expired/invalid, `/codex:rescue` itself errors out before Codex even starts): STOP. Tell the user: "Codex is unavailable. Please run `/codex:setup` to fix, then say 'continue'." Do NOT proceed with Claude-only planning — TandemKit's value comes from the dual-model approach and a permanent failure is something the user needs to fix.
+
+   - **Temporary** (Codex returned a rate-limit / token-quota error like `"You've hit your usage limit. To get more access now... try again at <date>"`, or the `codex-companion` reported a quota/throttle error, or a network/timeout error): Do NOT keep retrying — token-limit errors won't clear within this session. Instead:
+     1. Write a **placeholder `Codex-01.md`** to `Planner-Discussion/` containing exactly:
+        ```markdown
+        # Codex-01 — Skipped (Codex Unavailable)
+
+        **Status:** Codex was unavailable for this round.
+        **Reason:** [exact error message Codex returned, e.g. "Hit usage limit, retry after <date>"]
+        **Round mode:** Claude-only — no Codex independent investigation this round.
+        ```
+     2. Tell the user clearly in chat: "⚠️ Codex hit its rate limit / quota. Proceeding Claude-only for this round. The plan will still be produced but lacks Codex's independent second opinion. You can re-run the planner later when Codex is available, or accept the Claude-only plan."
+     3. Continue with Claude's own investigation (Step 1) and skip the Codex-merge / Step 3 convergence loop entirely. Claude's `Claude-NN.md` files become the spec input directly.
+     4. Do NOT try to dispatch Codex again later in the same session — if it's rate-limited now, it will still be rate-limited 5 minutes from now. The user can re-run the planner in a fresh session once the limit resets.
 
 10. **Proceed IMMEDIATELY to Step 1** — do not wait for session rename. Suggest the rename in the same message as starting investigation:
 
@@ -186,9 +203,9 @@ Codex is already running in background from Step 0.9. The `Planner-Discussion/` 
     - Include user's answers to any questions from Step 2
     - Add any new **Open Questions** that arose
 
-21. Invoke Codex to review (`--resume` — continues the same Codex thread). Substitute the absolute mission path:
+21. Invoke Codex to review (`--resume` — continues the same Codex thread). Substitute the absolute mission path AND `{EFFORT}` with the `codex.effort` value from `Config.json`:
     ```
-    /codex:rescue --resume --effort xhigh --write
+    /codex:rescue --resume --effort {EFFORT} --write
     Review the merged plan for mission [name].
     Read these files:
     - TandemKit/NNN-MissionName/Planner-Discussion/Claude-01.md (Claude's original investigation — you haven't seen this yet)
@@ -221,7 +238,7 @@ Codex is already running in background from Step 0.9. The `Planner-Discussion/` 
 24. If **NOT APPROVED** (has high or medium disagreements):
     - **RE-INVESTIGATE the disagreed points** — re-read the actual source files, re-check facts. Do NOT argue from memory.
     - Create `Claude-03.md` with improvements and rationale for remaining disagreements
-    - Invoke Codex (`--resume --write`) with the same OUTPUT instruction targeted at `Codex-03.md`: "Review TandemKit/NNN-MissionName/Planner-Discussion/Claude-03.md. RE-INVESTIGATE disagreed points. Write your review to TandemKit/NNN-MissionName/Planner-Discussion/Codex-03.md and respond only with a brief confirmation."
+    - Invoke Codex (`--resume --effort {EFFORT} --write`, substituting from `Config.json`) with the same OUTPUT instruction targeted at `Codex-03.md`: "Review TandemKit/NNN-MissionName/Planner-Discussion/Claude-03.md. RE-INVESTIGATE disagreed points. Write your review to TandemKit/NNN-MissionName/Planner-Discussion/Codex-03.md and respond only with a brief confirmation."
     - Codex only needs to read the latest Claude-NN.md (it already has prior context)
     - Verify `Codex-03.md` exists and is non-empty
     - Continue until APPROVED (each round: increment the file number, repeat the same write-and-confirm instruction)
@@ -233,7 +250,7 @@ Codex is already running in background from Step 0.9. The `Planner-Discussion/` 
 
 **Post-approval rule:** After Codex marks APPROVED, only editorial changes (wording, formatting). Any substantive content change requires one more Codex review pass.
 
-**`--resume` fallback:** If `--resume` fails (thread can't be continued), use `--fresh --write` instead and include the full original Codex prompt preamble (role context, TandemKit/Planner.md, Spec format) plus: "Read these files for prior context: [list all prior Claude-NN.md and Codex-NN.md files]. Then review TandemKit/NNN-MissionName/Planner-Discussion/Claude-NN.md and write your review to TandemKit/NNN-MissionName/Planner-Discussion/Codex-NN.md (respond only with a brief confirmation per the Discussion File Convention)." This costs more tokens but produces the same result.
+**`--resume` fallback:** If `--resume` fails (thread can't be continued), use `--fresh --effort {EFFORT} --write` instead (substituting effort from `Config.json`) and include the full original Codex prompt preamble (role context, TandemKit/Planner.md, Spec format) plus: "Read these files for prior context: [list all prior Claude-NN.md and Codex-NN.md files]. Then review TandemKit/NNN-MissionName/Planner-Discussion/Claude-NN.md and write your review to TandemKit/NNN-MissionName/Planner-Discussion/Codex-NN.md (respond only with a brief confirmation per the Discussion File Convention)." This costs more tokens but produces the same result.
 
 ## Step 4 — User Approval
 
