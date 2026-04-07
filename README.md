@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://github.com/FlineDev/TandemKit/blob/main/Logo.png?raw=true" height="256" />
+</p>
+
 # TandemKit
 
 Describe your goal, approve the spec, then step away — Claude and Codex loop together until it's right.
