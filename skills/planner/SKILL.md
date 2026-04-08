@@ -32,7 +32,7 @@ copyable content here
 
 ## Critical Flow (do NOT deviate)
 
-Goal received → Read Planner.md → Suggest name → Confirm name → Create mission (folder + Planner-Discussion/) → Launch Codex (background, with explicit Codex-01.md path) → Investigate independently → Write Claude-01 → Codex writes Codex-01 → Questions (Step 2) → Converge (Step 3)
+Goal received → Read Planner.md → Suggest name → Confirm name → **Print rename command first** → Create mission (folder + Planner-Discussion/) → Launch Codex (background, with explicit Codex-01.md path) → Investigate independently → Write Claude-01 → Codex writes Codex-01 → Questions (Step 2) → Converge (Step 3)
 
 **Three non-negotiable rules:**
 1. **No clarifying questions before Step 2** — mission name confirmation is the only exception
@@ -92,7 +92,17 @@ Silent if everything is up to date. Prints what changed if repairs were made. Ex
    - **Capture `codex.effort`** (default: `high` if the field is missing — older projects from before this field existed). You will substitute this into every Codex prompt below. Valid values: `none`, `minimal`, `low`, `medium`, `high`, `xhigh`.
 6. **Read `TandemKit/Planner.md`** for project-specific context. This is mandatory — it informs your mission name suggestion and the Codex prompt. Do NOT skip this.
 7. **Suggest a short PascalCase mission name** based on the goal. Ask the user to confirm via AskUserQuestion. STOP and wait for the answer — do NOT launch Codex yet (Codex needs the confirmed name to know where to write its output file).
-8. **On name confirmation:** run the scaffolding script. This creates the mission folder, `Planner-Discussion/` subfolder, and `State.json` in one shot:
+8. **On name confirmation, IMMEDIATELY output the session rename command as the very first thing in your response** — before scaffolding, before launching Codex, before any status text. The user should see this block at the top of your message so they can copy-paste it right away while the rest of the setup runs:
+
+╔═══ RENAME THIS SESSION ══════════════════════════════════════════════╗
+
+```
+/rename 📝 Planner: NNN-MissionName
+```
+
+╚══════════════════════════════════════════════════════════════════════╝
+
+   Only AFTER that block is in the response do you run the scaffolding script. This creates the mission folder, `Planner-Discussion/` subfolder, and `State.json` in one shot:
    ```bash
    bash "${CLAUDE_PLUGIN_ROOT:-${CLAUDE_SKILL_DIR}/../..}/scripts/create-mission.sh" "NNN-MissionName"
    ```
@@ -156,15 +166,7 @@ Silent if everything is up to date. Prints what changed if repairs were made. Ex
      3. Continue with Claude's own investigation (Step 1) and skip the Codex-merge / Step 3 convergence loop entirely. Claude's `Claude-NN.md` files become the spec input directly.
      4. Do NOT try to dispatch Codex again later in the same session — if it's rate-limited now, it will still be rate-limited 5 minutes from now. The user can re-run the planner in a fresh session once the limit resets.
 
-10. **Proceed IMMEDIATELY to Step 1** — do not wait for session rename. Suggest the rename in the same message as starting investigation:
-
-╔═══ RENAME THIS SESSION ══════════════════════════════════════════════╗
-
-```
-/rename 📝 Planner: NNN-MissionName
-```
-
-╚══════════════════════════════════════════════════════════════════════╝
+10. **Proceed IMMEDIATELY to Step 1** — do not wait for the user to actually run the rename command. The rename block was already printed at the top of your Step 0.8 response; the same message should then flow into the scaffold/Codex-launch status and straight into investigation.
 
 ## Step 1 — Claude's Independent Investigation (Round 1)
 
@@ -273,18 +275,29 @@ Codex is already running in background from Step 0.9. The `Planner-Discussion/` 
 
 31. Update State.json: `"phase": "ready-for-execution"`
 
-╔═══ START GENERATOR SESSION ═════════════════════════════════════════╗
+**Present the commands below as separate copy-paste blocks — one command per box. Each block must be run one at a time in order; do NOT merge multiple commands into a single box.**
+
+### Generator session (stay in this session)
+
+╔═══ 1/2 — RENAME THIS SESSION ════════════════════════════════════════╗
 
 ```
 /rename 🛠️ Generator: NNN-MissionName
 ```
+
+╚══════════════════════════════════════════════════════════════════════╝
+
+╔═══ 2/2 — START THE GENERATOR ════════════════════════════════════════╗
+
 ```
 /tandemkit:generator NNN-MissionName
 ```
 
 ╚══════════════════════════════════════════════════════════════════════╝
 
-╔═══ START EVALUATOR SESSION (from project root) ═════════════════════╗
+### Evaluator session (open a new terminal at the project root)
+
+╔═══ 1/3 — OPEN A NEW CLAUDE SESSION (in a new terminal) ══════════════╗
 
 ```
 claude --append-system-prompt-file TandemKit/ClaudeEvaluatorPrompt.md
@@ -292,11 +305,16 @@ claude --append-system-prompt-file TandemKit/ClaudeEvaluatorPrompt.md
 
 ╚══════════════════════════════════════════════════════════════════════╝
 
-╔═══ THEN IN THE EVALUATOR SESSION ═══════════════════════════════════╗
+╔═══ 2/3 — IN THAT NEW SESSION, RENAME IT ═════════════════════════════╗
 
 ```
 /rename 🔍 Evaluator: NNN-MissionName
 ```
+
+╚══════════════════════════════════════════════════════════════════════╝
+
+╔═══ 3/3 — THEN START THE EVALUATOR ═══════════════════════════════════╗
+
 ```
 /tandemkit:evaluator NNN-MissionName
 ```
