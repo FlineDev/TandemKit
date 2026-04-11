@@ -111,8 +111,8 @@ The user invokes this skill with `/tandemkit:evaluator NNN-MissionName`. First r
     mkdir -p TandemKit/NNN-MissionName/Evaluator/Round-NN-Discussion
     ```
 11. **Launch Codex in background** for independent evaluation. Use the Agent tool with `run_in_background: true`. Do NOT also use `--background` in the Codex CLI flags — that creates double-backgrounding where the Agent "completes" but Codex is still running. Substitute `{EFFORT}` below with the `codex.effort` value you captured from `Config.json` in Step 1.
-    - First eval cycle of the mission: use the **fresh** wrapper with `--fresh`
-    - Subsequent eval cycles in the same mission: use the **resume** wrapper with `--resume` (continues the prior Codex thread)
+    - First eval cycle of the mission: use `--fresh`
+    - Subsequent eval cycles in the same mission: use `--resume` (continues the prior Codex thread)
 
     **If Codex is unavailable:**
     - **Permanent** (CLI not installed, auth expired/invalid, `/codex:rescue` errors out before Codex even starts): STOP. Tell the user: "Codex is unavailable. Please run `/codex:setup` to fix, then say 'continue'." Do NOT proceed Claude-only — a permanent failure needs the user to fix it.
@@ -126,16 +126,11 @@ The user invokes this skill with `/tandemkit:evaluator NNN-MissionName`. First r
          **Round mode:** Claude-only — no Codex independent evaluation this round.
          ```
       2. Flag it clearly in Claude-01.md: "⚠️ Codex unavailable this round (rate limit / quota / timeout). Claude-only evaluation."
-      3. Skip Step 4 (Convergence) entirely and copy `Claude-01.md` directly as `Round-NN.md` via Bash `cp` (no regeneration):
-         ```bash
-         cp TandemKit/NNN-MissionName/Evaluator/Round-NN-Discussion/Claude-01.md TandemKit/NNN-MissionName/Evaluator/Round-NN.md
-         ```
+      3. Skip Step 4 (Convergence) entirely and copy `Claude-01.md` directly as `Round-NN.md`.
       4. Tell the user briefly: "⚠️ Codex hit its rate limit / quota for round [N]. Proceeded Claude-only. Verdict may be less thorough than usual."
       5. **On the next round**, attempt Codex again — quotas may reset between rounds, especially if there's a long Generator-implementation gap.
 
-    The evaluation wrapper is a **thin pointer** to the static template file in Codex's skill folder, plus the per-round inputs. Substitute `NNN-MissionName`, the round number `NN`, the file list from `ChangedFiles-NN.txt`, AND `{EFFORT}` from `Config.json`. The list of UserFeedback files may be empty if no feedback exists yet — in that case omit the bullet entirely.
-
-    **For the first eval cycle in this mission (use `--fresh`):**
+    The evaluation prompt points Codex at its template file plus the per-round inputs. Substitute `NNN-MissionName`, the round number `NN`, the file list from `ChangedFiles-NN.txt`, AND `{EFFORT}` from `Config.json`:
     ```
     /codex:rescue --fresh --effort {EFFORT} --write
     ROLE: Evaluator companion, eval cycle round NN (independent evaluation).
@@ -155,14 +150,7 @@ The user invokes this skill with `/tandemkit:evaluator NNN-MissionName`. First r
     - Output target: TandemKit/NNN-MissionName/Evaluator/Round-NN-Discussion/Codex-01.md
     ```
 
-    **For subsequent eval cycles (use `--resume`):**
-    Same wrapper as above but with `--resume` instead of `--fresh`. Codex retains its thread context from the prior cycle, including the Evaluator.md and strategy file it already read. The template file note about "read these BEFORE evaluating" still applies — Codex re-reads the template each round to refresh the protocol.
-
-    **Reliability rules for the wrapper:**
-    - The "Files to read" list MUST include `Spec.md`, the changed-file paths from `ChangedFiles-NN.txt`, and `Generator/Round-NN.md` LAST.
-    - If `UserFeedback/` is empty, omit that bullet entirely — do not leave a placeholder.
-    - The output target file path MUST end in `Codex-01.md` (this is the FIRST file Codex writes in this eval cycle's discussion folder; convergence files are numbered separately in Step 4).
-    - Do NOT inline the criterion verification rules, the severity classification, or the verdict definitions — those live in the template file.
+    For subsequent eval cycles, use `--resume` instead of `--fresh`.
 
 12. **While Codex evaluates, Claude evaluates independently:**
     - **Mandatory checks** from `TandemKit/Evaluator.md` — build, tests, screenshots as specified. Any "always do" failure is an immediate FAIL.
@@ -212,37 +200,16 @@ The user invokes this skill with `/tandemkit:evaluator NNN-MissionName`. First r
 14. When the background Codex agent completes, you will be notified automatically. Do NOT poll with sleep loops or `/codex:status` — the Agent tool's notification handles this.
 15. **Verify `Round-NN-Discussion/Codex-01.md` exists and is non-empty.** Codex was instructed to write its full evaluation directly to that path (per the Discussion File Convention). If the file is missing or empty (rare — usually a Codex tool failure), fall back: read the Agent's stdout and Write `Codex-01.md` manually.
 
-**If Codex was temporarily unavailable this round:** Skip Steps 14-15 and Step 4 entirely. Write a `Codex-01.md` placeholder noting the unavailability reason. Then copy your `Claude-01.md` directly as `Round-NN.md` via Bash `cp` (no regeneration):
-```bash
-cp TandemKit/NNN-MissionName/Evaluator/Round-NN-Discussion/Claude-01.md TandemKit/NNN-MissionName/Evaluator/Round-NN.md
-```
-Proceed to Step 5.
+**If Codex was temporarily unavailable this round:** Skip Steps 14-15 and Step 4 entirely. Write a `Codex-01.md` placeholder noting the unavailability reason. Copy your `Claude-01.md` directly as `Round-NN.md`. Proceed to Step 5.
 
 ## Step 4 — Convergence
 
-### How to write any `Claude-MM.md` where MM > 01 — derivative, not fresh
-
-**Convergence files (Claude-02.md, Claude-03.md, ...) are derivatives of the previous round, not fresh writes.** Generating the entire file from scratch each round wastes a large amount of output tokens and time. Use this pattern for every `Claude-MM.md` where MM > 01 in the discussion folder:
-
-1. **Copy the previous file via Bash:**
-   ```bash
-   cp TandemKit/NNN-MissionName/Evaluator/Round-NN-Discussion/Claude-(MM-1).md TandemKit/NNN-MissionName/Evaluator/Round-NN-Discussion/Claude-MM.md
-   ```
-2. **Read the new file** to confirm the copy succeeded.
-3. **Apply the changes via the Edit tool** — one Edit per change. Each `old_string` must be unique within the file (use surrounding context if needed).
-4. **Read the file again after all edits** to verify the result is what you intended. If anything looks wrong, fix it before notifying Codex.
-5. **Fall back to Write only if** Edit fails repeatedly because changes touch many overlapping regions, OR the restructuring is so deep that targeted edits would be more error-prone than a clean rewrite. When falling back to Write, still Read the previous file first to preserve unchanged content faithfully.
-
-**Why this matters:** A merged evaluation is typically 80–95% identical to the independent evaluation it builds on — only the disagreements and merge notes change. Regenerating everything costs ~10× the output tokens of editing the diff. The end result is identical.
-
-### Create the merged evaluation
-
-16. Read Codex findings, then create the merged evaluation `Claude-02.md` using the cp+Edit pattern above.
+16. Read Codex findings, create merged evaluation: `Claude-02.md`
     - Incorporate Codex findings you agree with
     - For disagreements: **RE-INVESTIGATE** — re-read the actual source files, re-check facts. Do NOT argue from memory.
     - Explain your rationale for remaining disagreements
 
-17. Invoke Codex to review (`--resume` — continues the same Codex thread). The wrapper points Codex at the resume template file and supplies only the per-round inputs. Substitute `NNN-MissionName`, the eval cycle round number `NN`, the convergence file number `MM` (e.g., `02` for the first review of a merged eval), AND `{EFFORT}` from `Config.json`:
+17. Invoke Codex to review (`--resume` — continues the same thread). Substitute the absolute mission path AND `{EFFORT}` with the `codex.effort` value from `Config.json`:
     ```
     /codex:rescue --resume --effort {EFFORT} --write
     ROLE: Evaluator companion, eval cycle round NN, convergence file MM (review of merged evaluation).
@@ -258,43 +225,19 @@ Proceed to Step 5.
       2. TandemKit/NNN-MissionName/Evaluator/Round-NN-Discussion/Claude-MM.md  (Claude's latest merged evaluation — THIS is what you're reviewing)
     - Output target: TandemKit/NNN-MissionName/Evaluator/Round-NN-Discussion/Codex-MM.md
     ```
-
-    **Reliability rules for the wrapper:**
-    - The "Files to read" list MUST include the latest `Claude-MM.md`. On the very first convergence review (MM=02) it should also include `Claude-01.md`.
-    - The output target file number MUST match the merged-eval file number you're sending in (Claude-02 → Codex-02, Claude-03 → Codex-03, etc.).
-    - Do NOT inline the three review check questions or the severity classification — those live in the template file.
 18. **Verify `Round-NN-Discussion/Codex-02.md` exists and is non-empty.** If missing, fall back to writing it manually from the Agent's stdout.
-19. If **NOT APPROVED**: RE-INVESTIGATE disagreed points (re-read source!), then create `Claude-03.md` using the cp+Edit pattern above (`cp Claude-02.md Claude-03.md`, then Edit). Invoke Codex (`--resume --effort {EFFORT} --write`) using the resume wrapper format from step 17, but with the convergence file number `MM` bumped: file to review is `Claude-03.md`, output target is `Codex-03.md`. Codex only needs to read the latest `Claude-MM.md` (it already has prior context from --resume). Verify `Codex-03.md` exists and is non-empty. Continue until APPROVED — each subsequent round: cp+Edit the previous Claude file, bump the file number in the wrapper, repeat.
-20. If **APPROVED** (only low disagreements remain): create the final `Claude-MM.md` using the cp+Edit pattern above (`cp Claude-(MM-1).md Claude-MM.md`, then Edit). Apply only editorial adjustments — wording, formatting, minor clarifications. No substantive changes (those would re-trigger a Codex review per the post-approval rule below). Read the file once more to verify the result. This becomes the input to step 21.
+19. If **NOT APPROVED**: RE-INVESTIGATE disagreed points (re-read source!), create `Claude-03.md`, invoke Codex (`--resume --write`) with the same OUTPUT instruction targeted at `Codex-03.md` ("Write your review to TandemKit/NNN-MissionName/Evaluator/Round-NN-Discussion/Codex-03.md and respond only with a brief confirmation"), verify `Codex-03.md` exists. Codex only reads the latest Claude-NN.md (it already has prior context). Continue until APPROVED — each round increments the file number and repeats the same write-and-confirm instruction.
+20. If **APPROVED**: make editorial-only adjustments → final `Claude-NN.md`
 
 **Post-approval rule:** After APPROVED, only editorial changes. Substantive changes require one more Codex review.
 
 **Stuck convergence:** If same high/medium disagreement persists 3x, present both positions to the user.
 
-**`--resume` fallback:** If `--resume` fails (thread can't be continued), invoke Codex with `--fresh` and have it read BOTH template files (init + resume) plus all prior round files. This costs more tokens but produces the same result. Substitute `NNN-MissionName`, the eval cycle round `NN`, the convergence file number `MM`, and `{EFFORT}` from `Config.json`:
+**`--resume` fallback:** If `--resume` fails, use `--fresh --effort {EFFORT} --write` (substituting effort from `Config.json`) and include the full original Codex prompt preamble (role context, TandemKit/Evaluator.md, evaluation strategy, Spec.md) plus: "Read these files for prior context: [list all prior Round-NN-Discussion/ files]. Then review TandemKit/NNN-MissionName/Evaluator/Round-NN-Discussion/Claude-NN.md and write your review to TandemKit/NNN-MissionName/Evaluator/Round-NN-Discussion/Codex-NN.md (respond only with a brief confirmation per the Discussion File Convention)."
 
-```
-/codex:rescue --fresh --effort {EFFORT} --write
-ROLE: Evaluator companion, eval cycle round NN, convergence file MM (review of merged evaluation, FRESH thread because --resume failed).
+21. Copy final `Claude-NN.md` → `Evaluator/Round-NN.md`
 
-INSTRUCTIONS — read these BEFORE reviewing, in order:
-1. ~/.agents/skills/evaluator/templates/Codex-Init-Prompt.md   (your original task context)
-2. ~/.agents/skills/evaluator/templates/Codex-Resume-Prompt.md (your review task)
-
-INPUTS:
-- Mission name: NNN-MissionName
-- Round number: NN
-- Prior files for context (read all of them, in order):
-  [list every prior Round-NN-Discussion/Claude-NN.md and Codex-NN.md from this eval cycle, in order]
-- File to review: TandemKit/NNN-MissionName/Evaluator/Round-NN-Discussion/Claude-MM.md
-- Output target: TandemKit/NNN-MissionName/Evaluator/Round-NN-Discussion/Codex-MM.md
-```
-
-21. Copy the final convergence file to the canonical round report via Bash (no regeneration). The source is the latest `Claude-MM.md` from this round's discussion folder; the destination is `Round-NN.md` at the eval folder root, where `NN` is the eval cycle round number:
-    ```bash
-    cp TandemKit/NNN-MissionName/Evaluator/Round-NN-Discussion/Claude-MM.md TandemKit/NNN-MissionName/Evaluator/Round-NN.md
-    ```
-    Read `Round-NN.md` once to verify the copy succeeded and is non-empty.
+**Efficiency tip:** When the changes between rounds are small (e.g., a few findings adjusted, one section updated), consider copying the previous file and editing only the changed parts (`cp` + Edit tool) instead of writing the entire file from scratch. This saves output tokens and time. Use your judgment — if the restructuring is substantial, a fresh Write is cleaner.
 
 ## Step 5 — Signal Generator
 

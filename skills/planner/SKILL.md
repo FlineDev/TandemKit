@@ -109,28 +109,20 @@ Silent if everything is up to date. Prints what changed if repairs were made. Ex
    Also create the feature branch if configured.
 9. **Immediately launch Codex in background** using the Agent tool with `run_in_background: true`. Do NOT also use `--background` in the Codex CLI flags — that creates double-backgrounding where the Agent "completes" immediately but Codex is still running, and you never get the result notification.
 
-   The Codex prompt is a **thin wrapper** that points Codex at a static template file in its skill folder, then provides only the per-mission inputs. Substitute `NNN-MissionName`, the user's verbatim goal text, AND `{EFFORT}` (the `codex.effort` value you captured from `Config.json` in Step 0.5):
+   The Codex prompt points at its template file plus the per-mission inputs. Substitute `NNN-MissionName`, the user's verbatim goal text, AND `{EFFORT}` (the `codex.effort` value you captured from `Config.json` in Step 0.5):
 
    ```
    /codex:rescue --fresh --effort {EFFORT} --write
    ROLE: Planner companion, Round 1 (independent investigation).
 
-   INSTRUCTIONS — read these BEFORE doing anything else, and follow them exactly:
+   INSTRUCTIONS — read these BEFORE doing anything else:
    ~/.agents/skills/planner/templates/Codex-Init-Prompt.md
 
    INPUTS:
    - Mission name: NNN-MissionName
    - Output target: TandemKit/NNN-MissionName/Planner-Discussion/Codex-01.md
-   - User goal (verbatim, between the markers):
-   <<<USER_GOAL
-   [paste the user's goal text here exactly as they typed it, including any newlines]
-   USER_GOAL
+   - User goal (verbatim): [paste the user's goal text here]
    ```
-
-   **Reliability rules for the wrapper:**
-   - The user goal MUST be wrapped in the `<<<USER_GOAL ... USER_GOAL` markers so Codex can extract it cleanly even if it contains code, quotes, or markdown.
-   - Do NOT inline the spec format, the WHAT-vs-HOW lecture, or the 9 spec sections — the template file already contains all of that. The template is the canonical source; if you put the rules inline you risk drift between the two copies.
-   - The output target path MUST end in `Codex-01.md` for Round 1 invocations.
 
    **If Codex is unavailable**, distinguish two cases:
 
@@ -182,33 +174,13 @@ Codex is already running in background from Step 0.9. The `Planner-Discussion/` 
 
 ## Step 3 — Convergence (Round 2+)
 
-### How to write any `Claude-NN.md` where N > 1 — derivative, not fresh
-
-**Round 2+ files are derivatives of the previous round, not fresh writes.** Generating the entire file from scratch each round wastes a large amount of output tokens and time. Use this pattern for every `Claude-NN.md` where N > 1 (both in this Step 3 convergence loop AND in any post-feedback iteration):
-
-1. **Copy the previous round file via Bash:**
-   ```bash
-   cp TandemKit/NNN-MissionName/Planner-Discussion/Claude-(N-1).md TandemKit/NNN-MissionName/Planner-Discussion/Claude-NN.md
-   ```
-2. **Read the new file** to confirm the copy succeeded and you know its current state.
-3. **Apply the changes via the Edit tool** — one Edit per change. Each Edit's `old_string` must be unique within the file (use a few lines of surrounding context if needed).
-4. **Read the file again after all edits** to verify the result is what you intended. If anything looks wrong, fix it before notifying Codex.
-5. **Fall back to Write only if:**
-   - The Edit tool fails repeatedly because changes touch many overlapping regions, OR
-   - The restructuring is so deep (new top-level sections affecting ordering) that targeted edits would be more error-prone than a clean rewrite.
-   When falling back to Write, still Read the previous file first so you preserve all unchanged content faithfully.
-
-**Why this matters:** Round 2 of a typical 300-line plan has ~30 lines of actual changes. Regenerating all 300 lines costs ~10× the output tokens of editing the 30. The end result is identical.
-
-### The merged plan
-
-20. Create merged plan: `Claude-02.md` — use the cp+Edit pattern above.
+20. Create merged plan: `Claude-02.md`
     - Incorporate Codex findings you agree with
     - For disagreements: explain your rationale clearly (WHY you disagree)
     - Include user's answers to any questions from Step 2
     - Add any new **Open Questions** that arose
 
-21. Invoke Codex to review (`--resume` — continues the same Codex thread). The wrapper points Codex at the resume template file and supplies only the per-round inputs. Substitute `NNN-MissionName`, the round number `NN`, AND `{EFFORT}` with the `codex.effort` value from `Config.json`:
+21. Invoke Codex to review (`--resume` — continues the same Codex thread). Substitute the absolute mission path AND `{EFFORT}` with the `codex.effort` value from `Config.json`:
     ```
     /codex:rescue --resume --effort {EFFORT} --write
     ROLE: Planner companion, Round NN (review of merged plan).
@@ -223,45 +195,26 @@ Codex is already running in background from Step 0.9. The `Planner-Discussion/` 
       2. TandemKit/NNN-MissionName/Planner-Discussion/Claude-NN.md  (Claude's latest merged plan — THIS is what you're reviewing)
     - Output target: TandemKit/NNN-MissionName/Planner-Discussion/Codex-NN.md
     ```
-
-    **Reliability rules for the wrapper:**
-    - The "Files to read" list MUST include the latest `Claude-NN.md` (the file Codex is reviewing). On the very first convergence round it should also include `Claude-01.md` so Codex sees Claude's original investigation.
-    - The output target file number MUST match the merged-plan round number you're sending in.
-    - Do NOT inline the severity classification or the over-prescription flagging rules — those live in the template file.
 22. **Verify `Planner-Discussion/Codex-02.md` exists and is non-empty.** If missing, fall back to writing it manually from the Agent's stdout.
 23. If Codex or you have new Open Questions: ask user before next round
 24. If **NOT APPROVED** (has high or medium disagreements):
     - **RE-INVESTIGATE the disagreed points** — re-read the actual source files, re-check facts. Do NOT argue from memory.
-    - Create `Claude-03.md` using the cp+Edit pattern above (`cp Claude-02.md Claude-03.md`, then Edit). Include improvements and rationale for any remaining disagreements.
-    - Invoke Codex (`--resume --effort {EFFORT} --write`) using the same thin wrapper format from step 21, but with the round number bumped: file to review is `Claude-03.md`, output target is `Codex-03.md`. Codex only needs to read the latest `Claude-NN.md` (it already has prior context from --resume).
+    - Create `Claude-03.md` with improvements and rationale for remaining disagreements
+    - Invoke Codex (`--resume --effort {EFFORT} --write`, substituting from `Config.json`) with the same OUTPUT instruction targeted at `Codex-03.md`: "Review TandemKit/NNN-MissionName/Planner-Discussion/Claude-03.md. RE-INVESTIGATE disagreed points. Write your review to TandemKit/NNN-MissionName/Planner-Discussion/Codex-03.md and respond only with a brief confirmation."
+    - Codex only needs to read the latest Claude-NN.md (it already has prior context)
     - Verify `Codex-03.md` exists and is non-empty
-    - Continue until APPROVED. Each subsequent round: cp+Edit the previous Claude file, bump the file number in the wrapper, repeat.
+    - Continue until APPROVED (each round: increment the file number, repeat the same write-and-confirm instruction)
 25. If **APPROVED** (only low disagreements remain):
-    - Read Codex's low feedback
-    - Create the final `Claude-NN.md` using the cp+Edit pattern above (`cp Claude-(N-1).md Claude-NN.md`, then Edit). Apply only editorial adjustments — wording, formatting, minor clarifications. No substantive changes (those would re-trigger a Codex review per the post-approval rule below).
-    - Read the file once more to verify the result. This becomes the input to Step 4 user approval.
+    - Read the low feedback, make editorial adjustments only
+    - Write final `Claude-NN.md`
 
 **Stuck convergence:** If the same high/medium disagreement persists across 3 consecutive Codex reviews, stop iterating. Present both positions to the user: "Codex and I disagree on [X]. Codex's position: [A]. My position: [B]. Which do you prefer?"
 
 **Post-approval rule:** After Codex marks APPROVED, only editorial changes (wording, formatting). Any substantive content change requires one more Codex review pass.
 
-**`--resume` fallback:** If `--resume` fails (thread can't be continued), invoke Codex with `--fresh` and have it read BOTH template files (init + resume) plus all prior round files. This costs more tokens but produces the same result. Substitute mission name, round number `NN`, and `{EFFORT}` from `Config.json`:
+**`--resume` fallback:** If `--resume` fails (thread can't be continued), use `--fresh --effort {EFFORT} --write` instead (substituting effort from `Config.json`) and include the full original Codex prompt preamble (role context, TandemKit/Planner.md, Spec format) plus: "Read these files for prior context: [list all prior Claude-NN.md and Codex-NN.md files]. Then review TandemKit/NNN-MissionName/Planner-Discussion/Claude-NN.md and write your review to TandemKit/NNN-MissionName/Planner-Discussion/Codex-NN.md (respond only with a brief confirmation per the Discussion File Convention)." This costs more tokens but produces the same result.
 
-```
-/codex:rescue --fresh --effort {EFFORT} --write
-ROLE: Planner companion, Round NN (review of merged plan, FRESH thread because --resume failed).
-
-INSTRUCTIONS — read these BEFORE reviewing, in order:
-1. ~/.agents/skills/planner/templates/Codex-Init-Prompt.md   (your original task context)
-2. ~/.agents/skills/planner/templates/Codex-Resume-Prompt.md (your review task)
-
-INPUTS:
-- Mission name: NNN-MissionName
-- Prior round files for context (read all of them, in order):
-  [list every prior Planner-Discussion/Claude-NN.md and Codex-NN.md, in order]
-- File to review: TandemKit/NNN-MissionName/Planner-Discussion/Claude-NN.md
-- Output target: TandemKit/NNN-MissionName/Planner-Discussion/Codex-NN.md
-```
+**Efficiency tip:** When the changes between rounds are small (e.g., one section adjusted, a few criteria tweaked), consider copying the previous file and editing only the changed parts (`cp` + Edit tool) instead of writing the entire file from scratch. This saves output tokens and time. Use your judgment — if the restructuring is substantial, a fresh Write is cleaner.
 
 ## Step 4 — User Approval
 
@@ -297,8 +250,8 @@ INPUTS:
     4. Proceed to step 29.
 
     **C. Substantive changes needed** (new criteria, changed scope, different approach, new information): **CRITICAL — you MUST run one more Codex review before finalizing.** Do NOT write `Spec.md` or set `ready-for-execution` until Codex approves the changes. Skipping this is a protocol violation. Process:
-    1. Create the next round file `Claude-(N+1).md` using the cp+Edit pattern from Step 3 (`cp Claude-NN.md Claude-(N+1).md`, then Edit to apply the user's substantive changes).
-    2. Invoke Codex with the resume wrapper (Step 3 step 21 format), bumped to the new round number.
+    1. Create the next round file `Claude-(N+1).md` incorporating the user's substantive changes.
+    2. Invoke Codex (`--resume --effort {EFFORT} --write`) with the same format as Step 3 step 21, bumped to the new round number.
     3. Wait for Codex's review. If APPROVED, return to step 26 with the new file as the final draft. If NOT APPROVED, address Codex's disagreements and iterate.
     4. **Do not skip the Codex review and copy the file directly to `Spec.md`.** The Spec.md baseline must always be a Codex-approved Claude-NN.md.
 
