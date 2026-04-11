@@ -354,3 +354,16 @@ TandemKit evaluates the full spec in one pass. There is no milestone-by-mileston
 The practical implication is that **mission scope matters**. A mission that spans a large feature with many acceptance criteria will produce large evaluation rounds that strain context limits and make findings harder to act on. If a task feels too large to describe cleanly in a single spec, it probably is.
 
 The right approach is to split upfront — before starting TandemKit — rather than trying to phase evaluation mid-mission. [PlanKit](https://github.com/FlineDev/PlanKit) is designed exactly for this: it breaks a large feature into focused, session-sized implementation steps. Each step becomes its own TandemKit mission with a tight spec and a tractable evaluation scope. No PlanKit required though — any upfront breakdown works. The point is that a well-scoped mission produces a spec that two AI models can evaluate completely and confidently in one pass.
+
+### One mission at a time per working copy
+
+TandemKit tracks the active mission in `TandemKit/Config.json` (`currentMission`) and uses a single shared `nextMissionNumber` counter. **You cannot run two missions in parallel from the same checkout** — the Planner refuses to start a new mission while one is already active, and the Generator/Evaluator pair coordinates through `State.json` files in the active mission folder.
+
+If you genuinely want to work on two missions in parallel, the workaround is to give each mission its own working copy:
+
+- **Recommended: a `git worktree`** (`git worktree add ../my-repo-mission-2`) so each mission has its own checkout sharing the same repo. Run a separate Planner/Generator/Evaluator trio in each worktree.
+- **Alternatively: a second clone** of the repo in another folder.
+
+Either way, the two working copies share no `Config.json` state, so **mission numbers can collide**. After starting the second mission, manually edit `TandemKit/Config.json` in one of the working copies to bump `nextMissionNumber` past the range the other one will use (e.g., add 100). Otherwise both copies will try to create `004-...`, `005-...`, etc., and you'll end up with duplicate mission numbers when you eventually merge.
+
+In practice this is only worth the trouble if the two missions are completely independent and you have the rate-limit headroom to run two simultaneous Codex tandems. For most users, sequential missions in a single checkout is the right answer.

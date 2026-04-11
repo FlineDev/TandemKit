@@ -103,26 +103,42 @@ The user invokes this skill with `/tandemkit:generator NNN-MissionName`. First r
 
 ## Review Briefing
 
-This is the most important communication in the entire mission — the handoff from AI work to human review. Be direct and practical. Lead with what they should test, not with what you implemented.
+This is the handoff from AI work to human review. Be direct and practical. **Don't paraphrase content that's already on disk** — link to it. The user reads files faster than you can regenerate prose, and regeneration risks drift between the chat summary and the actual artifacts.
 
-Present to the user:
+### What goes in chat (keep it tight)
 
-1. **What was done** — 2-3 paragraph summary. Not technical details — what the user will notice.
+1. **A 1–2 line headline** — what changed, in plain English the user can scan in two seconds.
 
-2. **Stats** — keep it brief:
-   - Files created/changed: N
-   - AI evaluation rounds: N (M FAIL, K PASS)
-   - User feedback rounds: N (if any)
+2. **Clickable file links** to the existing artifacts the user might want to read. Use the `[name](file:///absolute/path)` format from the workspace AGENTS.md so they open in the user's editor. Always include:
+   - 📋 `[Spec.md](file:///absolute/path/...)` — what was asked for
+   - 🔍 `[latest Evaluator/Round-NN.md](file:///absolute/path/...)` — what was verified (substitute the actual latest round number)
+   - 🛠️ `[latest Generator/Round-NN.md](file:///absolute/path/...)` — implementation notes (substitute the actual latest round number)
+   - 📝 `[any UserFeedback/Feedback-NN.md](file:///...)` — only if any exist
 
-3. **Evaluator Findings Addressed** — only significant ones the user would care about
+   The user reads narrative ("what was done", "evaluator findings addressed", "key decisions") **from these linked files**. Do NOT regenerate that content in chat — it already exists in the linked files byte-for-byte.
 
-4. **Key decisions made** — choices you made that the user should know about
+3. **One stats line** in this format (substitute the actual numbers):
+   ```
+   Stats: N files changed · M evaluator rounds (X FAIL → Y PASS) · K user-feedback iterations
+   ```
+   Numbers come from counting `Generator/Round-*.md`, `Evaluator/Round-*.md`, and `UserFeedback/Feedback-*.md` files in the mission folder. Do not guess.
 
-5. **What the user should test** — specific, actionable instructions
+4. **What the user should test** — bulleted, specific, actionable. ≤ 8 items. **This is fresh content the user cannot get from any file** — it's your judgment about which behaviors matter most for the user to verify by hand. This is the section with the highest information density per token; spend output here, not on summaries.
 
-6. **Aspects AI cannot fully verify** — be honest about your limitations
+5. **Limitations — what AI could not fully verify** — bulleted, specific, ≤ 5 items. **Also fresh content.** Be honest about what runtime checks were skipped, what UI flows could only be screenshot-checked, what depends on real-world inputs you couldn't simulate.
 
-Notify via claude-notify if available. Update State.json: `phase: "user-review"`, `generatorStatus: "awaiting-user"`.
+### What does NOT go in chat
+
+- ❌ A "What was done" 2–3 paragraph summary — that content lives in `Generator/Round-NN.md` §What Was Done. Link to it.
+- ❌ An "Evaluator Findings Addressed" list — that content lives in both `Evaluator/Round-NN.md` and `Generator/Round-NN.md`. Link to them.
+- ❌ A "Key decisions" list — that content lives in `Spec.md §Key Decisions` and any new ones in `Generator/Round-NN.md`. Link to them.
+- ❌ Any quoted excerpt longer than 2 lines from a linked file. If it's worth reading, the link is enough.
+
+**Why this matters:** The user is the slow link. Their reading is fast and free; your generation is slow and costly. Every paragraph you regenerate from a file is one paragraph of latency between PASS and the user's hands on the keyboard. Linking is faster for both of you.
+
+### After presenting
+
+Notify via `claude-notify` if available. Update State.json: `phase: "user-review"`, `generatorStatus: "awaiting-user"`.
 
 ════════════════════════════════════════
   ✓ DONE — Your turn
