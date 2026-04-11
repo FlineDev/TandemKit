@@ -6,6 +6,8 @@
 
 Describe your goal, approve the spec, then step away — Claude and Codex loop together until it's right.
 
+[Why TandemKit?](#why-tandemkit) · [How It Works](#how-it-works) · [Installation](#installation) · [Quick Start](#quick-start) · [Commands](#commands) · [Strategies](#evaluation-strategies--customization) · [Convergence Protocol](#the-convergence-protocol) · [Mission Lifecycle](#mission-lifecycle) · [FAQ](#faq)
+
 TandemKit is a [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin that runs three sessions — Planner, Generator, and Evaluator — with two of them pairing Claude and Codex as independent reviewers. You are only needed at two points: during **planning** (questions and spec approval) and at **review** (when evaluation passes and you give feedback or call it done). Between those two points, the Generator implements and the Evaluator verifies in a tight loop, with no manual review or copy-pasting from you. In both the Planner and Evaluator sessions, Claude automatically launches [Codex](https://openai.com/index/introducing-codex/) as a background task using the official [Codex plugin](https://github.com/openai/codex-plugin-cc), so two different models independently investigate and converge on a result — everything inside Claude Code.
 
 ## Why TandemKit?
@@ -18,7 +20,7 @@ You have a **Claude Max** subscription (which includes Claude Code) and a **Chat
 
 Anthropic's [Harness article](https://www.anthropic.com/engineering/harness-design-long-running-apps) (March 2026) identified the core problem with agentic sessions: **Claude stops too early.** A single session anchors on its own work, declares "looks good!" prematurely, and misses real bugs. The fix is a separate evaluator session that verifies independently rather than rubber-stamping its own output.
 
-TandemKit applies that insight with a twist: instead of two Claude sessions checking each other, it pairs **Claude + Codex** in both planning and evaluation — two models that approach problems differently. Codex tends to explore more files and dig into details Claude passes over, and in practice it finds real bugs Claude has already marked as passing. There is no single-model mode — the dual-model approach is the entire value proposition.
+The article puts it well: "tuning a standalone evaluator to be skeptical turns out to be far more tractable than making a generator critical of its own work." That separation is TandemKit's foundation. On top of that, it pairs **Claude + Codex** in both planning and evaluation — two models that approach problems differently. Codex tends to explore more files and dig into details Claude passes over, and in practice it finds real bugs Claude has already marked as passing.
 
 Concrete verification tools matter too: the Harness article showed that without them, evaluators guess from surface impressions. `/tandemkit:init` sets up project-type-specific tools (build, run, navigate, screenshot) so the Evaluator can do what a human reviewer would.
 
@@ -103,20 +105,20 @@ The only command you need to remember is `/planner` — Claude resolves it to `/
 
 ```
 # Option A: Provide your goal directly
-/planner Add JWT authentication with refresh tokens
+/planner Add offline mode with background sync and conflict resolution
 
 # Option B: Just start — the planner will ask you to describe your goal
 /planner
 ```
 
-After planning, Claude presents the exact commands to copy-paste for the Generator and Evaluator sessions. Those use the full `/tandemkit:` prefix because the short alias doesn't apply reliably to pasted text — but you never need to remember them yourself, they're always provided for you.
+After planning, Claude presents the exact commands to copy-paste for the Generator and Evaluator sessions.
 
 ## Commands
 
 | Command | When to use |
 |---------|-------------|
 | `/tandemkit:init` | **Once per project** — first-time setup, project investigation, role configuration |
-| `/tandemkit:planner` | **Every mission** — the only command you need to remember. Describe your goal (or omit it and the planner will ask). |
+| `/tandemkit:planner` | **Every mission** — describe your goal or let the planner ask |
 | `/tandemkit:generator` | Copy-paste from planner output — never need to remember this |
 | `/tandemkit:evaluator` | Copy-paste from planner output — never need to remember this |
 
@@ -137,21 +139,7 @@ An evaluator that can only read code will miss real bugs. The Harness article de
 
 The key principle: **the Evaluator should be able to do whatever a human reviewer would do** — build, run, navigate, screenshot, test. The more verification paths available, the harder it is for bugs to slip through.
 
-> **Apple platforms note:** XcodeBuildMCP CLI and Apple's built-in Xcode MCP are complementary, not alternatives. XcodeBuildMCP handles everything runtime: building, running the simulator, UI automation, tapping, swiping, accessibility tree, log capture. Apple's Xcode MCP covers two things it uniquely does well: `RenderPreview` (render SwiftUI previews as screenshots without running the app) and `ExecuteSnippet` (compile and run a Swift snippet in the project context). TandemKit uses both — you don't need to choose.
-
-Both XcodeBuildMCP and browser-use ship an official Claude Code skill that primes the Evaluator with the right commands and patterns. `/tandemkit:init` guides you through installing both — but the commands are:
-
-```bash
-# XcodeBuildMCP: install CLI, then run the interactive skill installer
-# (choose user-level + CLI variant; ignore the MCP setup — not needed here)
-brew tap getsentry/xcodebuildmcp && brew install xcodebuildmcp
-xcodebuildmcp init
-
-# browser-use: install CLI, then run the interactive skill installer
-# (select Claude Code + Codex, user-level, symlink)
-curl -fsSL https://browser-use.com/cli/install.sh | bash
-npx skills add https://github.com/browser-use/browser-use --skill browser-use
-```
+Both XcodeBuildMCP and browser-use ship an official Claude Code skill that primes the Evaluator with the right commands and patterns. `/tandemkit:init` guides you through installing the right tools for your project type.
 
 
 ### Strategy reference files
@@ -281,11 +269,11 @@ TandemKit/
 
 Missions use globally unique 3-digit numbers — never reused, even after deletion, so log references stay stable.
 
-The naming convention is auto-detected during `/tandemkit:init` — Swift/Apple projects use UpperCamelCase (as shown above), while JS/web projects use kebab-case (`add-dark-mode/`, `claude-01.md`, etc.). The convention is stored in `Config.json`.
+The naming convention is auto-detected during `/tandemkit:init` and stored in `Config.json`. For example, a project following Swift conventions would get `AddDarkMode/` and `Claude-01.md`, while a kebab-case project would get `add-dark-mode/` and `claude-01.md`.
 
 **Full visibility — everything is plain text.** Every investigation, round, and convergence exchange is stored as readable files. You can open any `Claude-02.md` or `Codex-01.md` to see exactly what was found, what was disputed, and how it was resolved. Nothing is hidden in a database or API log.
 
-**To commit or not** — `/tandemkit:init` asks whether to gitignore these files. Many people commit them: they're plain text, never edited after the fact, and become a full audit trail of the development history. You might prefer to gitignore if you don't want this detail in your team's shared history. Either way, the files stay on disk for the duration of the mission.
+**To commit or not** — `/tandemkit:init` asks whether to gitignore these files. I personally commit them: they're plain text, never edited after the fact, and become a full audit trail of the development history. You might prefer to gitignore if you don't want this detail in your history. Either way, the files stay on disk for the duration of the mission.
 
 ### Inside a mission
 
@@ -327,43 +315,30 @@ The naming convention is auto-detected during `/tandemkit:init` — Swift/Apple 
     └── Feedback-01.md        ← user feedback after PASS (triggers another loop)
 ```
 
-## Design Decisions
+## FAQ
 
-### Why always dual-model (Claude + Codex)
+### What happens if Codex is unavailable?
 
-There is no single-model mode. Different models catch different things — Codex found real bugs that Claude missed in early missions. If Codex is unavailable, the session blocks until it's fixed. Solo Claude without Codex is just regular Claude Code.
+If you hit Codex rate limits or unsubscribe from ChatGPT, Claude will notice Codex isn't available and work alone in the Planner and Evaluator sessions. You lose the dual-model benefit — different models catching different things — but you still benefit from the structured workflow: separate planning, separate generator + evaluator, the hardened evaluation prompt, and severity-based convergence. The architecture from Anthropic's [Harness article](https://www.anthropic.com/engineering/harness-design-long-running-apps) still applies.
 
-### Why NOT fresh Codex threads per evaluation round
+That said, the dual-model pairing is the core value proposition. Codex consistently finds real bugs Claude misses. If you can, keep it active.
+
+### Why not fresh Codex threads per evaluation round?
 
 Context accumulation is valuable — by Round 6, Codex knows the codebase and past issues. "Fresh eyes" comes from two different models, not context amnesia. The re-investigation rule prevents lazy anchoring.
 
-### Why severity-based convergence, not numeric scores
+### Why severity-based convergence, not numeric scores?
 
 Scores (1-10) can hide criterion failures behind a good average. A score of 8/10 could mean 2 criteria completely failed. Criterion-by-criterion PASS/FAIL with severity-based agreement is fundamentally safer.
 
-### Why the Generator doesn't invoke Codex
+### Why doesn't the Generator invoke Codex?
 
 The Generator implements against a spec. Implementation correctness is verified by the Evaluator (where Claude invokes Codex). Adding Codex to the Generator would double the cost of every implementation round for marginal benefit — the same issues will be caught during evaluation.
 
-## Tips & Known Limitations
+### How large should a mission be?
 
-### Keep missions focused — TandemKit is not a replacement for task planning
+TandemKit evaluates the full spec in one pass — not milestone by milestone. If a spec is too broad, findings become hard to act on. Split upfront: [PlanKit](https://github.com/FlineDev/PlanKit) can break a large feature into focused steps, each becoming its own mission.
 
-TandemKit evaluates the full spec in one pass. There is no milestone-by-milestone or phase-by-phase evaluation — the Generator implements the complete spec, then the Evaluator verifies it as a whole. This is intentional: partial evaluation of partially implemented work tends to produce noisy, inconclusive verdicts.
+### Can I run multiple missions in parallel?
 
-The practical implication is that **mission scope matters**. A mission that spans a large feature with many acceptance criteria will produce large evaluation rounds that strain context limits and make findings harder to act on. If a task feels too large to describe cleanly in a single spec, it probably is.
-
-The right approach is to split upfront — before starting TandemKit — rather than trying to phase evaluation mid-mission. [PlanKit](https://github.com/FlineDev/PlanKit) is designed exactly for this: it breaks a large feature into focused, session-sized implementation steps. Each step becomes its own TandemKit mission with a tight spec and a tractable evaluation scope. No PlanKit required though — any upfront breakdown works. The point is that a well-scoped mission produces a spec that two AI models can evaluate completely and confidently in one pass.
-
-### One mission at a time per working copy
-
-TandemKit tracks the active mission in `TandemKit/Config.json` (`currentMission`) and uses a single shared `nextMissionNumber` counter. **You cannot run two missions in parallel from the same checkout** — the Planner refuses to start a new mission while one is already active, and the Generator/Evaluator pair coordinates through `State.json` files in the active mission folder.
-
-If you genuinely want to work on two missions in parallel, the workaround is to give each mission its own working copy:
-
-- **Recommended: a `git worktree`** (`git worktree add ../my-repo-mission-2`) so each mission has its own checkout sharing the same repo. Run a separate Planner/Generator/Evaluator trio in each worktree.
-- **Alternatively: a second clone** of the repo in another folder.
-
-Either way, the two working copies share no `Config.json` state, so **mission numbers can collide**. After starting the second mission, manually edit `TandemKit/Config.json` in one of the working copies to bump `nextMissionNumber` past the range the other one will use (e.g., add 100). Otherwise both copies will try to create `004-...`, `005-...`, etc., and you'll end up with duplicate mission numbers when you eventually merge.
-
-In practice this is only worth the trouble if the two missions are completely independent and you have the rate-limit headroom to run two simultaneous Codex tandems. For most users, sequential missions in a single checkout is the right answer.
+Not from the same checkout — TandemKit tracks the active mission in `Config.json`. Use a `git worktree` or second clone to run missions in parallel, each with its own working copy.
