@@ -1,12 +1,12 @@
 <p align="center">
   <img src="https://github.com/FlineDev/TandemKit/blob/main/Logo.png?raw=true" height="256" />
+  <br><br>
+  <a href="#how-it-works">How It Works</a> · <a href="#installation">Installation</a> · <a href="#mission-lifecycle">Mission Lifecycle</a> · <a href="#faq">FAQ</a>
 </p>
 
 # TandemKit
 
 Describe your goal, approve the spec, then step away — Claude and Codex loop together until it's right.
-
-[Why TandemKit?](#why-tandemkit) · [How It Works](#how-it-works) · [Installation](#installation) · [Quick Start](#quick-start) · [Commands](#commands) · [Strategies](#evaluation-strategies--customization) · [Convergence Protocol](#the-convergence-protocol) · [Mission Lifecycle](#mission-lifecycle) · [FAQ](#faq)
 
 TandemKit is a [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin that runs three sessions — Planner, Generator, and Evaluator — with two of them pairing Claude and Codex as independent reviewers. You are only needed at two points: during **planning** (questions and spec approval) and at **review** (when evaluation passes and you give feedback or call it done). Between those two points, the Generator implements and the Evaluator verifies in a tight loop, with no manual review or copy-pasting from you. In both the Planner and Evaluator sessions, Claude automatically launches [Codex](https://openai.com/index/introducing-codex/) as a background task using the official [Codex plugin](https://github.com/openai/codex-plugin-cc), so two different models independently investigate and converge on a result — everything inside Claude Code.
 
@@ -79,7 +79,7 @@ Start Claude Code, then run:
 /tandemkit:init
 ```
 
-`/tandemkit:init` investigates your project, asks configuration questions, and sets up role files. Run it once per project.
+This sets up role files and verification tools for your project. Run once per project.
 
 If you're in an active session, run `/reload-plugins` to activate immediately. TandemKit is part of the [FlineDev Marketplace](https://github.com/FlineDev/Marketplace) — see the full list of available plugins there.
 
@@ -90,28 +90,16 @@ If you're in an active session, run `/reload-plugins` to activate immediately. T
 > 3. Navigate to **FlineDev** and press Enter
 > 4. Press Enter on **Enable auto-update**
 
-### Prerequisites
+### Dependencies
 
 - **Claude Code** with the `codex-plugin-cc` plugin installed (Claude uses this to invoke Codex internally)
 - **Codex CLI** authenticated (`/codex:setup` to verify)
 - **python3** (used by coordination scripts)
 - **watchman** (`brew install watchman`) — for file-watching between sessions
 
-The `/tandemkit:init` command checks all prerequisites and guides you through setup.
-
 ## Quick Start
 
-The only command you need to remember is `/planner` — Claude resolves it to `/tandemkit:planner` automatically:
-
-```
-# Option A: Provide your goal directly
-/planner Add offline mode with background sync and conflict resolution
-
-# Option B: Just start — the planner will ask you to describe your goal
-/planner
-```
-
-After planning, Claude presents the exact commands to copy-paste for the Generator and Evaluator sessions.
+The only command you need to remember is `/planner` — describe what you want to build, and Claude takes it from there. After planning, it presents the exact commands to copy-paste for the Generator and Evaluator sessions.
 
 ## Commands
 
@@ -168,7 +156,7 @@ These are **your customization points**. Edit them any time to refine how each s
 
 ### Hardened Evaluator system prompt
 
-Claude by default optimizes for efficiency — reading diffs instead of full files, skipping re-verification of criteria it already checked. That's exactly wrong for evaluation. `TandemKit/ClaudeEvaluatorPrompt.md` (created during init) overrides this: read full files, gather explicit evidence per criterion, re-verify every round, do a second pass on suspiciously clean results, return BLOCKED (not PASS) when required verification can't be performed.
+Claude by default optimizes for efficiency — reading diffs instead of full files, skipping re-verification of criteria it already checked. That's exactly wrong for evaluation. `TandemKit/ClaudeEvaluatorPrompt.md` (created during init from [this template](https://github.com/FlineDev/TandemKit/blob/main/system-prompts/claude-evaluator.md)) overrides this: read full files, gather explicit evidence per criterion, re-verify every round, do a second pass on suspiciously clean results, return BLOCKED (not PASS) when required verification can't be performed.
 
 The Planner provides the exact launch command at the end of planning:
 
@@ -213,15 +201,15 @@ Both the Planner and Evaluator use the same back-and-forth pattern. Claude launc
 
 **Key rules:**
 1. **Re-investigate, don't argue from memory.** When disagreeing, both models re-read the actual source files.
-2. **Severity-based convergence.** APPROVED when no high or medium disagreements remain. No fixed iteration limit.
-3. **Stuck escalation.** If the same disagreement persists across 3 rounds, both positions are presented to you for a decision.
+2. **Severity-based convergence.** APPROVED when no high or medium disagreements remain. No iteration limit.
+3. **Stuck escalation.** If the same disagreement persists for 3 rounds, both positions are presented for your decision.
 
 ### Severity Levels
 
 | Level | In Findings (bugs/issues) | In Agreement (disagreements) |
 |---|---|---|
-| **High** | Acceptance criterion fails, regression, security issue | Assessment is factually wrong or misses critical issue |
-| **Medium** | Non-blocking issue, overclaim, missing edge case | Assessment could be improved or is missing context |
+| **High** | Criterion failure, regression, security issue | Factually wrong or misses critical issue |
+| **Medium** | Non-blocking issue, overclaim, edge case | Could be improved or missing context |
 | **Low** | Suggestion, minor wording, style | Minor note — acceptable either way |
 
 ## Mission Lifecycle
