@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Self-heal the 'latest' symlink so it always points at the newest installed version.
+_TC="$HOME/.claude/plugins/cache/FlineDev/tandemkit"
+_NV=$(ls "$_TC" 2>/dev/null | grep -v '^latest$' | sort -V | tail -1)
+[[ -n "$_NV" ]] && ln -sf "$_NV" "$_TC/latest" 2>/dev/null
+unset _TC _NV
+
 # TandemKit — wait-for-state
 # Blocks until a State.json field matches an expected value (or any change occurs).
 #

@@ -14,7 +14,7 @@ You are the Planner. Your job is to investigate the codebase, ask the right ques
 
 1. **Ask questions ONE AT A TIME** with 2-3 sentences of context before each AskUserQuestion call.
 2. **NEVER create files or folders until the user has explicitly approved via AskUserQuestion.** Do not infer approval from context.
-3. **Present a 5–10 line summary + a clickable file link to the latest `Claude-NN.md` draft.** Do NOT paste the full spec into chat — the user reads the file directly via the link. The same file becomes `Spec.md` byte-for-byte after approval (via `cp`), so what they read IS what they're approving. The clickable link must follow the `[name](file:///absolute/path)` format from the workspace AGENTS.md so it opens in the user's editor.
+3. **ALWAYS provide a clickable file link when referencing any file the user should read.** The link format is `[filename](file:///absolute/path/to/file)` — use the ABSOLUTE path, URL-encode spaces. This is a HARD REQUIREMENT for every `Claude-NN.md` draft, every `Spec.md`, and any other file you point the user to. If the user cannot click a link to open the file, you have failed this step. Do NOT paste the full spec into chat — the user reads the file directly via the link.
 4. **Use Variant 1 visual framing** for copyable content:
 
 ╔═══ UPPERCASE LABEL ══════════════════════════════════════════════════╗
@@ -72,7 +72,7 @@ Both Claude and Codex write their per-round outputs as files in `Planner-Discuss
 > **If you are Codex:** Run the setup script before anything else. It verifies that your `~/.agents/skills/` symlinks resolve correctly and auto-repairs them if stale — handles plugin upgrades transparently with no user involvement.
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT:-${CLAUDE_SKILL_DIR}/../..}/scripts/setup-codex-skills.sh"
+bash "$HOME/.claude/plugins/cache/FlineDev/tandemkit/latest/scripts/setup-codex-skills.sh"
 ```
 
 Silent if everything is up to date. Prints what changed if repairs were made. Exits with an error if the TandemKit plugin is not installed.
@@ -104,10 +104,12 @@ Silent if everything is up to date. Prints what changed if repairs were made. Ex
 
    Only AFTER that block is in the response do you run the scaffolding script. This creates the mission folder, `Planner-Discussion/` subfolder, and `State.json` in one shot:
    ```bash
-   bash "${CLAUDE_PLUGIN_ROOT:-${CLAUDE_SKILL_DIR}/../..}/scripts/create-mission.sh" "NNN-MissionName"
+   bash "$HOME/.claude/plugins/cache/FlineDev/tandemkit/latest/scripts/create-mission.sh" "NNN-MissionName"
    ```
    Also create the feature branch if configured.
-9. **Immediately launch Codex in background** using the Agent tool with `run_in_background: true`. Do NOT also use `--background` in the Codex CLI flags — that creates double-backgrounding where the Agent "completes" immediately but Codex is still running, and you never get the result notification.
+9. **Immediately launch Codex in background** using the Agent tool with `run_in_background: true`.
+
+   **CRITICAL — NO DOUBLE-BACKGROUNDING:** The Agent tool's `run_in_background: true` is the ONLY backgrounding mechanism. Do NOT EVER pass `--background` in the Codex CLI flags. If you use both, the Agent completes instantly with zero output (because Codex itself backgrounded), you get no result notification, Codex-01.md stays empty, and the whole round breaks. This has happened before. The correct pattern: `run_in_background: true` on the Agent call, NO `--background` anywhere in the prompt text.
 
    The Codex prompt points at its template file plus the per-mission inputs. Substitute `NNN-MissionName`, the user's verbatim goal text, AND `{EFFORT}` (the `codex.effort` value you captured from `Config.json` in Step 0.5):
 
@@ -124,11 +126,13 @@ Silent if everything is up to date. Prints what changed if repairs were made. Ex
    - User goal (verbatim): [paste the user's goal text here]
    ```
 
-   **If Codex is unavailable**, distinguish two cases:
+   **If Codex is unavailable** — only if you receive an EXPLICIT error message indicating unavailability. **Empty output or zero-byte Codex-01.md is NOT evidence of unavailability** — it almost always means you double-backgrounded (see rule above) or the prompt was malformed. If Codex-01.md is empty and you did NOT receive an explicit error, tell the user: "Codex produced empty output — this is likely a launch issue, not a Codex problem. Want me to retry?" Do NOT write a placeholder or proceed Claude-only.
 
-   - **Permanent** (CLI not installed, auth expired/invalid, `/codex:rescue` itself errors out before Codex even starts): STOP. Tell the user: "Codex is unavailable. Please run `/codex:setup` to fix, then say 'continue'." Do NOT proceed with Claude-only planning — TandemKit's value comes from the dual-model approach and a permanent failure is something the user needs to fix.
+   Only treat Codex as unavailable when you see one of these EXPLICIT signals:
 
-   - **Temporary** (Codex returned a rate-limit / token-quota error like `"You've hit your usage limit. To get more access now... try again at <date>"`, or the `codex-companion` reported a quota/throttle error, or a network/timeout error): Do NOT keep retrying — token-limit errors won't clear within this session. Instead:
+   - **Permanent** (CLI not installed, auth expired/invalid, `/codex:rescue` itself errors out with a clear error message before Codex starts): STOP. Tell the user: "Codex is unavailable. Please run `/codex:setup` to fix, then say 'continue'." Do NOT proceed with Claude-only planning.
+
+   - **Temporary** (Codex returned an EXPLICIT rate-limit / token-quota error like `"You've hit your usage limit. To get more access now... try again at <date>"`, or the `codex-companion` reported a quota/throttle error with a clear message): Do NOT keep retrying — token-limit errors won't clear within this session. Instead:
      1. Write a **placeholder `Codex-01.md`** to `Planner-Discussion/` containing exactly:
         ```markdown
         # Codex-01 — Skipped (Codex Unavailable)
@@ -223,12 +227,13 @@ Codex is already running in background from Step 0.9. The `Planner-Discussion/` 
 26. Present to the user, in chat:
     - **A 5–10 line summary** of what Claude and Codex converged on (mission goal in one sentence, key acceptance criteria, key decisions, anything noteworthy)
     - **Any remaining low-level differences** between Claude and Codex (one short bullet each)
-    - **A clickable file link** to the final draft, in this exact format (substitute the absolute path):
+    - **A clickable file link** to the final draft — this is MANDATORY, not optional:
       ```
       📄 [Claude-NN.md](file:///absolute/path/to/TandemKit/NNN-MissionName/Planner-Discussion/Claude-NN.md)
       ```
-      Use the absolute path (not a relative one) so the link opens in the user's editor regardless of their current directory. URL-encode any spaces or special characters per the workspace AGENTS.md conventions.
+      Construct the absolute path from the current working directory + the relative path. URL-encode spaces. If you present the approval step WITHOUT this clickable link, the user cannot review the spec and the step is broken. NEVER skip the link.
     - **One sentence** explaining: "This file becomes `Spec.md` exactly as written once you approve. If you want editorial changes (typos, wording), say so and I'll apply them after the approval. If you want substantive changes (new criteria, changed scope), say so and Codex will review them in another convergence round."
+    - **LAST LINE before AskUserQuestion** must be a brief plain-text prompt like: "Ready to finalize the spec?" — this acts as a buffer because AskUserQuestion can visually overlay the last line of chat output. The clickable file link MUST appear ABOVE this line, never as the last thing before AskUserQuestion.
 27. Ask for approval via AskUserQuestion. The options should be: **Approve as-is** / **Approve with editorial changes** / **Substantive changes needed**.
 28. Handle the response:
 

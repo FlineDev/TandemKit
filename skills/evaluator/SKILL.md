@@ -55,7 +55,7 @@ Both Claude and Codex write their per-round outputs as files in `Evaluator/Round
 > **If you are Codex:** Run the setup script before anything else. It verifies that your `~/.agents/skills/` symlinks resolve correctly and auto-repairs them if stale — handles plugin upgrades transparently with no user involvement.
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT:-${CLAUDE_SKILL_DIR}/../..}/scripts/setup-codex-skills.sh"
+bash "$HOME/.claude/plugins/cache/FlineDev/tandemkit/latest/scripts/setup-codex-skills.sh"
 ```
 
 Silent if everything is up to date. Prints what changed if repairs were made. Exits with an error if the TandemKit plugin is not installed.
@@ -89,7 +89,7 @@ The user invokes this skill with `/tandemkit:evaluator NNN-MissionName`. First r
    - `"ready-for-eval"` → Proceed to Step 3 immediately.
    - Any other value → Wait:
      ```bash
-     bash "${CLAUDE_PLUGIN_ROOT:-${CLAUDE_SKILL_DIR}/../..}/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" generatorStatus ready-for-eval
+     bash "$HOME/.claude/plugins/cache/FlineDev/tandemkit/latest/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" generatorStatus ready-for-eval
      ```
      Run with `run_in_background: true`. When it prints "READY", proceed to Step 3.
 
@@ -255,12 +255,12 @@ After writing your verdict, IMMEDIATELY start TWO background watchers:
 
 1. **Next round watcher:**
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT:-${CLAUDE_SKILL_DIR}/../..}/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" generatorStatus ready-for-eval --round N+1
+bash "$HOME/.claude/plugins/cache/FlineDev/tandemkit/latest/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" generatorStatus ready-for-eval --round N+1
 ```
 
 2. **Completion watcher:**
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT:-${CLAUDE_SKILL_DIR}/../..}/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" phase complete
+bash "$HOME/.claude/plugins/cache/FlineDev/tandemkit/latest/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" phase complete
 ```
 
 Run both with `run_in_background: true`. When either returns:
