@@ -120,7 +120,8 @@ An evaluator that can only read code will miss real bugs. The Harness article de
 
 | Project Type | Primary Tool | What it enables |
 |---|---|---|
-| **Apple platforms** (iOS, macOS, visionOS) | [XcodeBuildMCP](https://github.com/getsentry/XcodeBuildMCP) CLI + Apple's Xcode MCP | Build, test, run simulator, UI automation, screenshots, navigate the app; SwiftUI preview screenshots and Swift snippet execution via Xcode MCP |
+| **Apple platforms** (iOS, macOS, visionOS) | [XcodeBuildMCP](https://github.com/getsentry/XcodeBuildMCP) CLI + Apple's Xcode MCP (+ [Peekaboo](https://github.com/steipete/Peekaboo) CLI for macOS) | Build, test, run simulator, UI automation (iOS), screenshots; SwiftUI preview screenshots and Swift snippet execution via Xcode MCP; **runtime UI automation of running macOS apps** (screenshots, AX tree, clicks, typing, menus) via Peekaboo |
+| **Android / Flutter** | Google's official [Android CLI](https://developer.android.com/tools/agents) + [Android skills](https://github.com/android/skills) (+ `flutter` CLI for Flutter) | Build, test, emulator lifecycle, APK deploy, annotated screenshots, layout tree dumps, label-to-coordinate tap resolution; companion skills for Navigation 3, edge-to-edge, AGP 9, XML→Compose, R8 |
 | **Web** (frontend, full-stack) | [browser-use](https://github.com/browser-use/browser-use) CLI | Open pages, click around, take screenshots, extract data, verify UI flows |
 | **CLI / Libraries** | Test suites (`swift test`, `npm test`, etc.) | Build, run tests, verify command output and exit codes |
 | **Domain systems** (tax, health, legal) | Canonical case testing | Predefined test cases, consistency checks, fabrication detection |
@@ -134,7 +135,8 @@ Both XcodeBuildMCP and browser-use ship an official Claude Code skill that prime
 
 Evaluation strategies are documented in [`skills/evaluator/strategies/`](skills/evaluator/strategies/):
 
-- **`ApplePlatform.md`** — XcodeBuildMCP setup, simulator UI automation, SwiftUI previews
+- **`ApplePlatform.md`** — XcodeBuildMCP setup for iOS/Simulator + Peekaboo CLI setup for macOS runtime UI automation, SwiftUI previews, accessibility-identifier best practices
+- **`Android.md`** — Android CLI setup, Android Skills install, emulator + screenshot + layout workflow, Flutter integration
 - **`Web.md`** — browser-use CLI setup, token-optimized extraction patterns
 - **`Web-Playwright.md`** — Playwright MCP fallback for web projects
 - **`CLI.md`** — test suites, command-line verification, library testing

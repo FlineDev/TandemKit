@@ -45,14 +45,17 @@ Before asking questions, investigate thoroughly. Tell the user: "Let me investig
    - `.xcodeproj` or `.xcworkspace` → Apple platform app
    - `Package.swift` → Swift package (can coexist with .xcodeproj!)
    - `package.json` → Node.js / web
+   - `pubspec.yaml` → Flutter (may also contain an `android/` + `ios/` folder — treat as multi-platform)
+   - `build.gradle` / `build.gradle.kts` / `settings.gradle(.kts)` or an `AndroidManifest.xml` → native Android (Kotlin / Java / Compose)
    - `Cargo.toml` → Rust / `go.mod` → Go
    - **Check submodules:** Read `.gitmodules` if it exists. Check inside submodule directories for build files.
    - **If both Package.swift AND .xcodeproj exist:** Note both and present options.
+   - **If Flutter + `ios/` both exist:** note both — the Android CLI covers the Android side, XcodeBuildMCP covers the iOS side.
 
 3. **Check available tools:**
    - Read `~/.claude/settings.json` for global permissions and MCP tool allowances
    - Read project `.claude/settings.json` and `.mcp.json` for project-level MCP servers
-   - Check what's already available: Xcode MCP? browser-use CLI (`which browser-use`)? Simulator tools?
+   - Check what's already available: Xcode MCP? browser-use CLI (`which browser-use`)? Simulator tools? Android CLI (`which android`)? Flutter CLI (`which flutter`)?
 
 4. **Read commit conventions and branch patterns:**
    - Check AGENTS.md/CLAUDE.md for commit message rules, push policies, branch conventions
@@ -119,6 +122,75 @@ xcodebuildmcp init
 ```
 
 Ask the user to come back and say "done" when finished so you can verify the skill was installed.
+
+**Detect macOS target and offer Peekaboo (if applicable).**
+
+Run this detection — does the project build for macOS?
+
+```bash
+# True if any scheme / xcodebuild destination supports macOS
+grep -r "platform = macOS\|SUPPORTED_PLATFORMS.*macosx\|.macOS\|platform=macOS" --include="*.pbxproj" --include="Package.swift" -l . 2>/dev/null | head -1
+```
+
+If the project has a macOS target (or is macOS-only), XcodeBuildMCP can build/test/launch but cannot tap/read-AX-tree on the running macOS app. **Recommend installing Peekaboo CLI** so the Evaluator can do real runtime UI verification (screenshots + AX tree + clicks + typing + menu navigation) instead of falling back to preview-only testing. Explain the tradeoff:
+
+> "Your project has a macOS target. XcodeBuildMCP alone can't drive a running macOS app — Apple doesn't expose UI automation there. **Peekaboo CLI** fills that gap: it uses the macOS Accessibility API to capture screenshots, query elements, click, type, and navigate menus. It's an order of magnitude more reliable and token-efficient than Claude's built-in `computer-use` MCP, which has known 30s timeouts on complex SwiftUI apps on macOS Tahoe. It's in active beta — Homebrew has the latest published build."
+
+Ask for confirmation, then run the setup:
+
+```bash
+brew install peekaboo
+peekaboo --version
+peekaboo permissions    # must show Screen Recording + Accessibility granted
+```
+
+**If `peekaboo permissions` shows anything as "not granted"**, tell the user to open System Settings → Privacy & Security → (a) Screen & System Audio Recording AND (b) Accessibility → and enable the terminal they use to run `peekaboo`. Wait for them to confirm.
+
+**Start the daemon once** (stabilizes capture on Tahoe):
+
+```bash
+peekaboo daemon start
+peekaboo daemon status
+```
+
+**Tell the user about the companion skills** (both are user-level and reusable across any macOS/iOS project):
+
+- `macos-peekaboo` — full Peekaboo usage catalog (see → act → verify loop, gotchas, troubleshooting).
+- `macos-accessibility-ids` — how to add `.accessibilityIdentifier(…)` / `setAccessibilityIdentifier(_:)` so `peekaboo see` returns fast AX trees instead of hanging at its 25-second cap.
+
+Both skills live at `~/.claude/skills/` if already installed. If they're missing, they're documented in `ApplePlatform.md` — you can create them later or skip for now; Peekaboo still works, you just won't have inline guidance.
+
+Ask the user to come back and say "done" when Peekaboo is verified so you can proceed.
+
+**For Android / Flutter projects:**
+
+Read `${CLAUDE_PLUGIN_ROOT}/skills/evaluator/strategies/Android.md` for full details. The primary tool is Google's official **Android CLI** (released 2026-04-16), which consolidates SDK management, emulator control, APK deployment, and UI inspection into a single binary — roughly the Android counterpart of XcodeBuildMCP.
+
+Explain the tradeoff to the user:
+
+> "For Android verification, I recommend Google's official **Android CLI**. It's a single binary with commands for SDK management, emulator lifecycle, builds, screenshots (with annotated UI labels), and layout tree dumps — everything the Evaluator needs to verify UI work without falling back to raw `adb`. It also installs companion **Android skills** (Navigation 3, edge-to-edge, XML→Compose, AGP 9, R8, Play Billing, etc.) that activate automatically when the Generator touches those areas.
+>
+> Install page: [developer.android.com/tools/agents](https://developer.android.com/tools/agents) · Skills repo: [github.com/android/skills](https://github.com/android/skills) (official, ~3k stars)
+>
+> macOS and Linux are fully supported. Windows works except for `android emulator`."
+
+**Do NOT install anything automatically.** Ask the user to install the CLI themselves from the download page (it's platform-specific and may require sudo), then come back and say "done." After they confirm, run:
+
+```bash
+# Verify install and set up the environment for the current agent (Claude Code).
+android --version
+android init
+```
+
+`android init` installs the baseline `android-cli` skill into the detected agent directories. Then, with user confirmation, offer to add the rest of the official skills:
+
+```bash
+android skills add --all --agent=claude-code
+```
+
+(Drop `--agent=claude-code` to install for every detected agent. Use `--skill=<name>` for a single skill.)
+
+**For Flutter specifically:** also verify that the `flutter` CLI is on `PATH` (`which flutter`, `flutter doctor`). Flutter's own CLI drives the build/test loop (`flutter build apk`, `flutter test`, `flutter drive`), while Android CLI handles device/emulator and screenshot operations. If the Flutter project also targets iOS, walk through the Apple platform setup too (XcodeBuildMCP + optional Peekaboo for macOS).
 
 **For web projects:**
 
@@ -273,6 +345,10 @@ Do NOT add `learnings` sections to any role file — the self-learning system ha
   "evaluation": {
     "scope": ["code", "ui-previews", "domain-content"],
     "tools": ["xcodebuildmcp-cli", "xcode-mcp"]
+    // For Apple projects with a macOS target, ALSO add "peekaboo-cli" to tools
+    // and "ui-runtime" to scope — enables Evaluator to drive the running Mac app.
+    // For Android: ["android-cli"] — add "flutter-cli" too for Flutter projects.
+    // For web: ["browser-use-cli"] or ["playwright-mcp"] depending on choice.
   },
   "codex": {
     "effort": "high"
@@ -288,9 +364,10 @@ Populate each with project-specific context. Key requirements:
 - Build/test/preview commands (for code missions)
 - Source verification guidance (for documentation/content missions)
 - "Always Do" and "Never Do" sections should distinguish between code and content missions
-- For macOS apps: SwiftUI views → `#Preview` + `RenderPreview` as primary UI verification. AppKit/integrated flows → manual testing. `screencapture` → evidence capture only (not automated navigation).
+- **For macOS apps:** primary UI verification is **Peekaboo CLI** on the running app (screenshot, AX tree, click, type, menu navigation). `#Preview` + Xcode MCP `RenderPreview` is still the fastest path for isolated view rendering. Forbid `mcp__computer-use__*` on macOS (unreliable on Tahoe). Include Peekaboo command examples in the role file.
+- **For macOS apps with backends (ASC, DB, API):** verify backend side-effects via the app's CLI (e.g., `asc`, `psql`) — do not trust the UI alone.
 
-**Generator.md should reference existing project skills** that are relevant (e.g., "Load `swift-code-context` before writing Swift code", "Load `swiftui-code-context` for SwiftUI work", "Use `review-swift-changes` for validation").
+**Generator.md should reference existing project skills** that are relevant (e.g., "Load `swift-code-context` before writing Swift code", "Load `swiftui-code-context` for SwiftUI work", "Use `review-swift-changes` for validation"). **For macOS apps, reference `macos-peekaboo` (runtime UI automation) and `macos-accessibility-ids` (so new/touched SwiftUI/AppKit views are automatable by Peekaboo and XCUITest out of the box).**
 
 **Planner.md should reference ALL major documentation areas** — not just code docs. Include research folders, exploration docs, context directories, domain-specific reference material with "When to read" guidance.
 
