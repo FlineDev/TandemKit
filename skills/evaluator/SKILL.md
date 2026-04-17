@@ -253,10 +253,12 @@ The user invokes this skill with `/tandemkit:evaluator NNN-MissionName`. First r
 
 After writing your verdict, IMMEDIATELY start TWO background watchers:
 
-1. **Next round watcher:**
+1. **Next round watcher (use `--min-round`, NOT `--round`):**
 ```bash
-bash "$HOME/.claude/plugins/cache/FlineDev/tandemkit/latest/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" generatorStatus ready-for-eval --round N+1
+bash "$HOME/.claude/plugins/cache/FlineDev/tandemkit/latest/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" generatorStatus ready-for-eval --min-round N+1
 ```
+
+Why `--min-round` and not `--round`: if the Generator is running autonomously (never-stop mode), it may advance past round N+1 while you are still writing your verdict. `--round N+1` is exact-match and would miss a Generator that already raced to round N+2 or N+3 — the condition window on round=N+1 may only have existed for milliseconds between the Generator's writes. `--min-round N+1` fires as soon as the Generator has reached at least N+1 AND is in `ready-for-eval`, which is the semantic you actually want: "wake me up when there is at least one new round to evaluate".
 
 2. **Completion watcher:**
 ```bash
@@ -268,6 +270,15 @@ Run both with `run_in_background: true`. When either returns:
 - If `phase: complete` → print the closing banner and stop
 
 If a watch times out (10 minutes), re-read State.json and restart the watchers. NEVER go idle.
+
+### Catchup case — Evaluator has fallen behind
+
+If the watcher fires and State.json reports `round` is **more than one ahead** of your last-evaluated round (e.g. you last evaluated round 4 and the Generator is now at round 11), you are in a catchup situation. The Generator's per-round artifacts (`Generator/Round-NN.md`, `Generator/ChangedFiles-NN.txt`) are persistent, so no evaluation work has been lost — but you need to decide between two strategies:
+
+- **Per-round sweep (preferred when the number of missed rounds is small, say ≤ 3):** evaluate each missed round individually in order (Round-NN-Discussion/Claude-01.md → Round-NN.md), bump State.json `round` appropriately after each. Accurate but slow.
+- **Cumulative catchup evaluation (preferred when many rounds have been missed):** write ONE evaluation at the current round targeting the cumulative delta since your last PASS, covering all intermediate milestones and feedbacks in one report. Note the catchup mode explicitly (e.g. set a `catchupEvaluation` field in State.json) so Planner/user can see why rounds 5..N-1 don't have individual Evaluator files. Faster; loses per-round granularity.
+
+Never silently skip rounds — either evaluate them or record that you did a cumulative pass. The verdict in State.json reflects the catchup round's verdict.
 
 ════════════════════════════════════════
   → Verdict delivered — Watching for next round
