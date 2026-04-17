@@ -10,18 +10,21 @@ unset _TC _NV
 # TandemKit — wait-for-state
 # Blocks until a State.json field matches an expected value (or any change occurs).
 #
-# Usage: wait-for-state.sh <mission-folder> [<field> <value1> [value2 ...]] [--quiet] [--round N] [--min-round N]
+# Usage: wait-for-state.sh <mission-folder> [<field> <value1> [value2 ...]] [--quiet]
 #   mission-folder:  absolute path to the TandemKit/NNN-MissionName/ folder
 #   field:           JSON field to check (e.g., evaluatorStatus, generatorStatus)
 #   value1..N:       acceptable values — script exits when field matches any of them
 #   --quiet:         suppress all output except final READY line (for Codex)
-#   --round N:       also require State.json "round" field to equal N exactly
-#   --min-round N:   also require State.json "round" field to be >= N (catches up if the
-#                    other agent raced ahead past N between wake events). Use this from the
-#                    Evaluator side when the Generator runs autonomously (Feedback-06 mode).
-#                    Mutually exclusive with --round.
 #
 # If no field/values given: blocks until State.json content changes (any field).
+#
+# NOTE: There is no round filter. Both agents reset the other side's status field
+# at the start of each round (Generator writes evaluatorStatus=pending when
+# signalling ready-for-eval; Evaluator's verdict write keeps generatorStatus=
+# ready-for-eval but the next round-start flips generatorStatus=working first),
+# so a field-value match can never fire on a stale value from a previous round.
+# Dropping the round filter removes an exact-match race condition that used to
+# hang watchers when the counterparty raced ahead past the expected round number.
 #
 # Exit 0 = condition met. Output includes current state summary.
 # Exit 1 = error (missing files, bad args).
@@ -29,25 +32,20 @@ unset _TC _NV
 MISSION_DIR="$1"
 shift
 
-# Check for --quiet, --round, --min-round flags (can appear anywhere in remaining args)
+# Check for --quiet flag (can appear anywhere in remaining args).
 QUIET=false
-REQUIRED_ROUND=""
-MIN_ROUND=""
 _ARGS=()
 while [[ $# -gt 0 ]]; do
    case "$1" in
       --quiet) QUIET=true; shift ;;
-      --round) REQUIRED_ROUND="$2"; shift 2 ;;
-      --min-round) MIN_ROUND="$2"; shift 2 ;;
+      --round|--min-round)
+         echo "ERROR: $1 has been removed in TandemKit 1.0.9 — watchers now rely on status-field resets, not round numbers. Drop this flag." >&2
+         exit 1
+         ;;
       *) _ARGS+=("$1"); shift ;;
    esac
 done
 set -- "${_ARGS[@]+"${_ARGS[@]}"}"
-
-if [[ -n "$REQUIRED_ROUND" && -n "$MIN_ROUND" ]]; then
-   echo "ERROR: --round and --min-round are mutually exclusive" >&2
-   exit 1
-fi
 
 STATE_FILE="$MISSION_DIR/State.json"
 
@@ -91,14 +89,6 @@ with open('$STATE_FILE') as f:
 " 2>/dev/null || echo "unknown"
 }
 
-read_round() {
-   python3 -c "
-import json
-with open('$STATE_FILE') as f:
-   print(json.load(f).get('round', 0))
-" 2>/dev/null || echo "0"
-}
-
 file_hash() {
    md5 -q "$STATE_FILE" 2>/dev/null || md5sum "$STATE_FILE" 2>/dev/null | cut -d' ' -f1 || echo "none"
 }
@@ -108,29 +98,6 @@ check_condition() {
       # No field specified — watching for any change
       # This mode always passes through to the watch loop on first call
       return 1
-   fi
-
-   # Check round constraint first (if specified)
-   if [[ -n "$REQUIRED_ROUND" ]]; then
-      local actual_round
-      actual_round=$(read_round)
-      if [[ "$actual_round" != "$REQUIRED_ROUND" ]]; then
-         return 1
-      fi
-   fi
-
-   # Check min-round constraint (>=). Useful when the other agent may race past N
-   # between our wake events — fires as soon as round has reached N or later.
-   if [[ -n "$MIN_ROUND" ]]; then
-      local actual_round
-      actual_round=$(read_round)
-      # Numeric comparison; guard against non-integer output by defaulting to 0.
-      if ! [[ "$actual_round" =~ ^[0-9]+$ ]]; then
-         actual_round=0
-      fi
-      if (( actual_round < MIN_ROUND )); then
-         return 1
-      fi
    fi
 
    local current
@@ -168,10 +135,7 @@ INITIAL_HASH=$(file_hash)
 # Not ready — enter watch loop
 if [[ "$QUIET" != true ]]; then
    if [[ -n "$FIELD" ]]; then
-      _round_note=""
-      [[ -n "$REQUIRED_ROUND" ]] && _round_note=" (round == $REQUIRED_ROUND)"
-      [[ -n "$MIN_ROUND" ]] && _round_note=" (round >= $MIN_ROUND)"
-      echo "WAITING: $FIELD not yet ${VALUES[*]:-non-null}$_round_note. Watching $STATE_FILE..."
+      echo "WAITING: $FIELD not yet ${VALUES[*]:-non-null}. Watching $STATE_FILE..."
    else
       echo "WAITING: Watching $STATE_FILE for any change..."
    fi

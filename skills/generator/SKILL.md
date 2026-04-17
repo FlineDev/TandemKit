@@ -81,9 +81,9 @@ The user invokes this skill with `/tandemkit:generator NNN-MissionName`. First r
 6. **Signal the Evaluator**: Update State.json — `generatorStatus: "ready-for-eval"`, `evaluatorStatus: "pending"`, `phase: "evaluation"`, `round: N`. Read-modify-write only your fields.
 7. **Wait for evaluation**: Use `wait-for-state.sh`:
    ```bash
-   bash "$HOME/.claude/plugins/cache/FlineDev/tandemkit/latest/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" evaluatorStatus done --round N
+   bash "$HOME/.claude/plugins/cache/FlineDev/tandemkit/latest/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" evaluatorStatus done
    ```
-   Run with `run_in_background: true`. When `evaluatorStatus` is `"done"` and round matches, read `Evaluator/Round-NN.md`.
+   Run with `run_in_background: true`. When `evaluatorStatus` flips to `"done"`, read `Evaluator/Round-NN.md` where `N` is whatever `round` is in State.json at that moment. No round filter is needed — step 6 reset `evaluatorStatus` to `"pending"` when signalling, so the next `"done"` is always your round's verdict.
 
 ════════════════════════════════════════
   → DONE — Waiting for Evaluator
@@ -213,10 +213,10 @@ If the user says "abort": confirm, set State.json `phase: "abandoned"`, Config.j
 Use `wait-for-state.sh` for ALL State.json watching. Do NOT use raw watchman-wait.
 
 ```bash
-bash "$HOME/.claude/plugins/cache/FlineDev/tandemkit/latest/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" evaluatorStatus done --round N
+bash "$HOME/.claude/plugins/cache/FlineDev/tandemkit/latest/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" evaluatorStatus done
 ```
 
-Run with `run_in_background: true`. The script checks immediately, then enters a watch loop. When it prints "READY", re-read State.json. The `--round N` parameter ensures you don't match stale values from a previous round.
+Run with `run_in_background: true`. The script checks immediately, then enters a watch loop. When it prints "READY", re-read State.json. No round filter — the status-field reset at step 6 guarantees the next `done` is your round's verdict.
 
 ## File Reading Limits
 

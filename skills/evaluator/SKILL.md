@@ -253,12 +253,18 @@ The user invokes this skill with `/tandemkit:evaluator NNN-MissionName`. First r
 
 After writing your verdict, IMMEDIATELY start TWO background watchers:
 
-1. **Next round watcher (use `--min-round`, NOT `--round`):**
+1. **Next round watcher:**
 ```bash
-bash "$HOME/.claude/plugins/cache/FlineDev/tandemkit/latest/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" generatorStatus ready-for-eval --min-round N+1
+bash "$HOME/.claude/plugins/cache/FlineDev/tandemkit/latest/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" generatorStatus ready-for-eval
 ```
 
-Why `--min-round` and not `--round`: if the Generator is running autonomously (never-stop mode), it may advance past round N+1 while you are still writing your verdict. `--round N+1` is exact-match and would miss a Generator that already raced to round N+2 or N+3 — the condition window on round=N+1 may only have existed for milliseconds between the Generator's writes. `--min-round N+1` fires as soon as the Generator has reached at least N+1 AND is in `ready-for-eval`, which is the semantic you actually want: "wake me up when there is at least one new round to evaluate".
+No round filter is needed. Your verdict write leaves `generatorStatus` at its
+value from the Generator's ready-for-eval signal; the Generator's next round-
+start flips it to `"working"` first (or sometimes straight to `"ready-for-eval"`
+again for the new round). Either way, the next time `generatorStatus ==
+ready-for-eval` is the next round's signal, regardless of how many rounds the
+Generator has burned through since your last wake. Read `round` from
+`State.json` at wake time to know which `Round-NN.md` to evaluate.
 
 2. **Completion watcher:**
 ```bash
