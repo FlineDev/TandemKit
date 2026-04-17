@@ -258,13 +258,7 @@ After writing your verdict, IMMEDIATELY start TWO background watchers:
 bash "$HOME/.claude/plugins/cache/FlineDev/tandemkit/latest/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" generatorStatus ready-for-eval
 ```
 
-No round filter is needed. Your verdict write leaves `generatorStatus` at its
-value from the Generator's ready-for-eval signal; the Generator's next round-
-start flips it to `"working"` first (or sometimes straight to `"ready-for-eval"`
-again for the new round). Either way, the next time `generatorStatus ==
-ready-for-eval` is the next round's signal, regardless of how many rounds the
-Generator has burned through since your last wake. Read `round` from
-`State.json` at wake time to know which `Round-NN.md` to evaluate.
+Read `round` from `State.json` at wake time to know which `Round-NN.md` to evaluate.
 
 2. **Completion watcher:**
 ```bash

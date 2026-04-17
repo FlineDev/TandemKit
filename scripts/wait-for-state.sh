@@ -18,13 +18,12 @@ unset _TC _NV
 #
 # If no field/values given: blocks until State.json content changes (any field).
 #
-# NOTE: There is no round filter. Both agents reset the other side's status field
-# at the start of each round (Generator writes evaluatorStatus=pending when
-# signalling ready-for-eval; Evaluator's verdict write keeps generatorStatus=
-# ready-for-eval but the next round-start flips generatorStatus=working first),
-# so a field-value match can never fire on a stale value from a previous round.
-# Dropping the round filter removes an exact-match race condition that used to
-# hang watchers when the counterparty raced ahead past the expected round number.
+# INVARIANT (why no round filter): both agents reset the other side's status
+# field at the start of each round — Generator writes evaluatorStatus=pending
+# when signalling ready-for-eval; Evaluator's verdict leaves generatorStatus at
+# ready-for-eval, and the next Generator round-start flips it to working first.
+# So the next time a watched field matches its expected value is always the
+# current round's signal, never a stale match from a previous round.
 #
 # Exit 0 = condition met. Output includes current state summary.
 # Exit 1 = error (missing files, bad args).
@@ -39,7 +38,7 @@ while [[ $# -gt 0 ]]; do
    case "$1" in
       --quiet) QUIET=true; shift ;;
       --round|--min-round)
-         echo "ERROR: $1 has been removed in TandemKit 1.0.9 — watchers now rely on status-field resets, not round numbers. Drop this flag." >&2
+         echo "ERROR: $1 has been removed in TandemKit 1.0.8 — watchers now rely on status-field resets, not round numbers. Drop this flag." >&2
          exit 1
          ;;
       *) _ARGS+=("$1"); shift ;;

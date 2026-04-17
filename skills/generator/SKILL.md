@@ -83,7 +83,7 @@ The user invokes this skill with `/tandemkit:generator NNN-MissionName`. First r
    ```bash
    bash "$HOME/.claude/plugins/cache/FlineDev/tandemkit/latest/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" evaluatorStatus done
    ```
-   Run with `run_in_background: true`. When `evaluatorStatus` flips to `"done"`, read `Evaluator/Round-NN.md` where `N` is whatever `round` is in State.json at that moment. No round filter is needed — step 6 reset `evaluatorStatus` to `"pending"` when signalling, so the next `"done"` is always your round's verdict.
+   Run with `run_in_background: true`. When `evaluatorStatus` flips to `"done"`, read `Evaluator/Round-NN.md` where `N` is whatever `round` is in State.json at that moment.
 
 ════════════════════════════════════════
   → DONE — Waiting for Evaluator
@@ -216,7 +216,7 @@ Use `wait-for-state.sh` for ALL State.json watching. Do NOT use raw watchman-wai
 bash "$HOME/.claude/plugins/cache/FlineDev/tandemkit/latest/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" evaluatorStatus done
 ```
 
-Run with `run_in_background: true`. The script checks immediately, then enters a watch loop. When it prints "READY", re-read State.json. No round filter — the status-field reset at step 6 guarantees the next `done` is your round's verdict.
+Run with `run_in_background: true`. The script checks immediately, then enters a watch loop. When it prints "READY", re-read State.json.
 
 ## File Reading Limits
 
