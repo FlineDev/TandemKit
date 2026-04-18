@@ -369,6 +369,14 @@ Populate each with project-specific context. Key requirements:
 
 **Generator.md should reference existing project skills** that are relevant (e.g., "Load `swift-code-context` before writing Swift code", "Load `swiftui-code-context` for SwiftUI work", "Use `review-swift-changes` for validation"). **For macOS apps, reference `macos-peekaboo` (runtime UI automation) and `macos-accessibility-ids` (so new/touched SwiftUI/AppKit views are automatable by Peekaboo and XCUITest out of the box).**
 
+**Generator.md AND Evaluator.md must both include a top-of-file reminder** pointing at the Signal Protocol in SKILL.md. Suggested exact wording (add verbatim at the top of each file, under the first heading):
+
+```markdown
+> ⛔ **Signal Protocol — Atomic (NON-NEGOTIABLE):** every round handoff is the two-step SIGNAL from the Generator/Evaluator SKILL.md §"Signal Protocol" — flip State.json **and** launch `wait-for-state.sh` via `Bash run_in_background: true` **before the response ends**. A State.json write without the watcher deadlocks the loop; a foreground `ls`/`until` poll is NOT a substitute — those die when the turn ends. If the user ever asks "why did you stop?", run `scripts/unstick.sh <mission>` and follow the "If the user asks…" section of SKILL.md.
+```
+
+This reminder is the project-level safety net that makes the skill-level rule impossible to miss, even if the agent somehow skims past it in SKILL.md.
+
 **Planner.md should reference ALL major documentation areas** — not just code docs. Include research folders, exploration docs, context directories, domain-specific reference material with "When to read" guidance.
 
 ### Verify Build Commands

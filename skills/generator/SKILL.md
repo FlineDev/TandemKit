@@ -27,6 +27,65 @@ You are the Generator. Your job is to implement the spec faithfully, commit at m
 - Be honest in your Generator reports — list what you're uncertain about
 - The spec is immutable. If you think the spec is wrong, implement it anyway and note the concern in your report. The user can address it during feedback.
 
+## ⛔ Signal Protocol — Atomic (NON-NEGOTIABLE) ⛔
+
+**A "signal" to the Evaluator is NOT just a State.json write. It is a two-step atomic operation, and both steps must happen before your response ends. Skipping the second step deadlocks the loop — the Evaluator can flip its status to `done` but nothing will wake you to respond.**
+
+### The SIGNAL template — use this EVERY time you hand off a round
+
+```bash
+# Step 1 of 2 — Flip State.json (Edit/Write + git commit)
+#   generatorStatus: "ready-for-eval"
+#   evaluatorStatus: "pending"
+#   phase:           "evaluation"
+#   round:           N
+#   updated:         <now>
+#
+# Step 2 of 2 — IMMEDIATELY launch the wake-up watcher in background.
+#   Use the Bash tool with run_in_background: true. Do NOT foreground.
+bash "$HOME/.claude/plugins/cache/FlineDev/tandemkit/latest/scripts/wait-for-state.sh" \
+  "$(pwd)/TandemKit/<mission>" evaluatorStatus done
+```
+
+**A signal is incomplete without both steps.** If you wrote Step 1 and did not start Step 2 before the response ended, you violated the protocol. The next Evaluator verdict will sit unseen until the user manually intervenes.
+
+### Why it MUST be the backgrounded watcher
+
+Within one turn, foreground `ls` polls or `until` loops inside a single Bash call work fine. But **the moment your response ends, foreground polls die**. The only thing that wakes you across turn boundaries is a `run_in_background: true` Bash task completing and firing a `<task-notification>` into your session. `wait-for-state.sh` exists specifically for this purpose:
+
+- It uses watchman-wait when available, else md5-polls State.json every 5 seconds.
+- When the watched field matches, it prints `READY` and exits cleanly.
+- Exit → Claude Code fires `<task-notification>` → your next turn starts automatically → read `Evaluator/Round-N.md`, address it, signal N+1 (with the same atomic template).
+
+### Before your response ends — pre-flight checklist
+
+If your response is about to end, verify **all three** of these:
+- [ ] State.json was flipped to `ready-for-eval` / `evaluatorStatus: pending` with the current round.
+- [ ] `wait-for-state.sh … evaluatorStatus done` is running via `Bash run_in_background: true`.
+- [ ] The last thing you did was a tool call (ideally the watcher launch or the signal commit), not explanatory text. Closing narration = "Continuing on next milestone…" = the deadlock pattern.
+
+If any box is unchecked: **do not let the response end.** Fix it with another tool call.
+
+### Why this is non-negotiable
+
+This pattern has caused real cross-turn deadlocks in live missions — Evaluator verdicts sitting unseen for tens of minutes because the Generator wrote Step 1 and ended the response before starting Step 2. The user eventually has to notice and intervene manually. The atomic template above is the only reliable fix; skipping the background watcher is what breaks the loop.
+
+## If the user asks "why did you stop?" / "what are you waiting for?"
+
+Treat it as an unstick request. Run the diagnostic:
+
+```bash
+bash "$HOME/.claude/plugins/cache/FlineDev/tandemkit/latest/scripts/unstick.sh" \
+  "$(pwd)/TandemKit/NNN-MissionName"
+```
+
+Interpret `at-fault side`:
+
+- **If YOU (Generator) are at-fault:** resume work immediately — read the latest `Evaluator/Round-N.md`, address it, and re-signal with the atomic template. No `--touch` needed; doing the work IS the fix.
+- **If the Evaluator is at-fault and your watcher is alive:** no action — their session will wake whichever way when they move. Show the diagnosis to the user.
+- **If the Evaluator is at-fault and your watcher is dead:** re-arm it immediately (Step 2 of the Signal Protocol) so their eventual signal doesn't get missed a second time.
+- **If the diagnosis says your watcher is alive but the Evaluator is stuck:** re-run with `--touch` to refresh State.json's mtime. That re-fires the Evaluator's live watcher if theirs is still alive. If that doesn't wake them, their session is dead — only the user can nudge it directly.
+
 ## On Start
 
 The user invokes this skill with `/tandemkit:generator NNN-MissionName`. First rename the session:
@@ -78,16 +137,33 @@ The user invokes this skill with `/tandemkit:generator NNN-MissionName`. First r
    - [Data sources you couldn't access or verify]
    ```
 5. **Write changed-file manifest** to `Generator/ChangedFiles-NN.txt` — list all files you created or modified in this round, one per line. The Evaluator uses this to know what to verify without reading your prose report first.
-6. **Signal the Evaluator**: Update State.json — `generatorStatus: "ready-for-eval"`, `evaluatorStatus: "pending"`, `phase: "evaluation"`, `round: N`. Read-modify-write only your fields.
-7. **Wait for evaluation**: Use `wait-for-state.sh`:
+6. **SIGNAL (atomic — both halves mandatory)**: This is the "⛔ Signal Protocol" block above. Do NOT split these halves across turns or skip the second half — doing so deadlocks the loop.
+
+   **Half 1: Flip State.json.** Read-modify-write only your fields:
+   - `generatorStatus: "ready-for-eval"`
+   - `evaluatorStatus: "pending"`
+   - `phase: "evaluation"`
+   - `round: N`
+   - `updated: <ISO-8601 now>`
+
+   Commit the State.json change so it's durable (the Evaluator is watching the repo, not just your process).
+
+   **Half 2: Launch the wake-up watcher — immediately, before the response ends.** Use the Bash tool with `run_in_background: true`:
+
    ```bash
-   bash "$HOME/.claude/plugins/cache/FlineDev/tandemkit/latest/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" evaluatorStatus done
+   bash "$HOME/.claude/plugins/cache/FlineDev/tandemkit/latest/scripts/wait-for-state.sh" \
+     "$(pwd)/TandemKit/NNN-MissionName" evaluatorStatus done
    ```
-   Run with `run_in_background: true`. When `evaluatorStatus` flips to `"done"`, read `Evaluator/Round-NN.md` where `N` is whatever `round` is in State.json at that moment.
+
+   The script exits when `evaluatorStatus` flips to `done`. Its completion fires a `<task-notification>` which auto-starts your next turn — that's the ONLY cross-turn wake mechanism. Foreground polls die when the current response ends.
+
+7. When the watcher's `<task-notification>` fires in a later turn, read `round` from State.json (it's whatever the Evaluator left it at) and open the matching `Evaluator/Round-<round>.md`.
 
 ════════════════════════════════════════
-  → DONE — Waiting for Evaluator
+  → DONE — Watcher armed, waiting for Evaluator
 ════════════════════════════════════════
+
+> **Before your response ends, re-check the "Before your response ends" checklist in the Signal Protocol section above.** State.json flipped + watcher backgrounded + last action was a tool call (not closing narration). If all three are not true, your response would deadlock the loop — fix it before stopping.
 
 ## After Receiving Evaluation
 
@@ -210,13 +286,17 @@ If the user says "abort": confirm, set State.json `phase: "abandoned"`, Config.j
 
 ## Watching for State Changes
 
-Use `wait-for-state.sh` for ALL State.json watching. Do NOT use raw watchman-wait.
+The atomic SIGNAL template above (§ Signal Protocol) is the ONLY correct way to hand off a round. This section is a supporting reference — read it but do not treat it as an alternative.
+
+Use `wait-for-state.sh` for ALL State.json watching. Do NOT use raw watchman-wait. Do NOT use foreground `ls` polls or blocking `until` loops as a substitute — they only survive within the current turn and will silently fail across turn boundaries.
 
 ```bash
-bash "$HOME/.claude/plugins/cache/FlineDev/tandemkit/latest/scripts/wait-for-state.sh" "$(pwd)/TandemKit/NNN-MissionName" evaluatorStatus done
+# Always via the Bash tool with run_in_background: true.
+bash "$HOME/.claude/plugins/cache/FlineDev/tandemkit/latest/scripts/wait-for-state.sh" \
+  "$(pwd)/TandemKit/NNN-MissionName" evaluatorStatus done
 ```
 
-Run with `run_in_background: true`. The script checks immediately, then enters a watch loop. When it prints "READY", re-read State.json.
+The script self-heals the `latest` symlink, checks State.json immediately, then watches via watchman-wait (or md5-polls every 5s as fallback). When the field matches, it prints `READY` and exits. Claude Code converts the exit into a `<task-notification>` that auto-starts your next turn.
 
 ## File Reading Limits
 
