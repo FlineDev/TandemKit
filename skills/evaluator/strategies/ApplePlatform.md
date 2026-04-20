@@ -132,7 +132,7 @@ peekaboo see --app "MyApp" --window-id <id> --json  # re-capture to verify
 
 #### Accessibility identifiers are a hard prerequisite for `see`
 
-On SwiftUI apps without `.accessibilityIdentifier(…)` coverage, `peekaboo see` hangs at a 25-second hard cap walking unnamed descendants. **With identifiers the AX walk completes in ~1 second.** Adding identifiers is part of the Generator's responsibility when it touches interactive views — see the `macos-accessibility-ids` skill for naming conventions and the AppKit/UIKit equivalents (`setAccessibilityIdentifier(_:)` and `view.accessibilityIdentifier = …`).
+On SwiftUI apps without `.accessibilityIdentifier(…)` coverage, `peekaboo see` hangs at a 25-second hard cap walking unnamed descendants. **With identifiers the AX walk completes in ~1 second.** Adding identifiers is part of the Generator's responsibility when it touches interactive views. If your Claude setup has a convenience skill for accessibility-identifier conventions (e.g. one named `macos-accessibility-ids`, but actual names vary — scan `~/.claude/skills/`), load it; otherwise follow the standard AppKit/UIKit equivalents (`.accessibilityIdentifier(_:)` on SwiftUI, `setAccessibilityIdentifier(_:)` on AppKit, `view.accessibilityIdentifier = …` on UIKit).
 
 **Fallback for apps without identifiers (or non-native apps like Electron):**
 1. `peekaboo image` for the screenshot.
@@ -146,12 +146,12 @@ On SwiftUI apps without `.accessibilityIdentifier(…)` coverage, `peekaboo see`
 - Fuzzy `click "label"` can match across apps — always scope with `--window-title` or `--window-id`, or prefer menu-path clicks.
 - Focus stealing: every shell call reactivates the terminal as frontmost. Chain multi-step flows in a single `peekaboo run <script.peekaboo.json>` script, or re-focus the target before every click (`peekaboo app switch --to X --verify`).
 
-Full pattern catalog and troubleshooting: **`macos-peekaboo` skill** (user-level, installed at `~/.claude/skills/macos-peekaboo/`).
+Full pattern catalog and troubleshooting lives in the Peekaboo CLI's own docs (`peekaboo --help`) and optionally in a user-level convenience skill if your Claude setup has one (a common name is `macos-peekaboo` at `~/.claude/skills/macos-peekaboo/`, but actual names vary — scan `~/.claude/skills/` to see what's installed).
 
 #### When Peekaboo is NOT enough
 
 - **SwiftUI `#Preview` screenshots** via Xcode MCP `RenderPreview` are still the fastest verification for pure view rendering — use them first when the change is isolated to a single view's appearance. Peekaboo is for end-to-end flows against the running app.
-- **AppKit with no identifiers** — add them (`setAccessibilityIdentifier(_:)`) per the `macos-accessibility-ids` skill; `see` works on AppKit the moment identifiers are present.
+- **AppKit with no identifiers** — add them (`setAccessibilityIdentifier(_:)`); `see` works on AppKit the moment identifiers are present. If your setup has a helper skill for accessibility-identifier conventions (example name: `macos-accessibility-ids`), it offers faster naming guidance — but the API calls are standard AppKit regardless.
 - **Electron/Chromium-based apps** — AX tree is opaque; fall back to menu paths, hotkeys, and coordinate clicks. Check if the app has an official CLI/extension API first.
 
 ## Evaluation Checklist
@@ -171,7 +171,7 @@ Full pattern catalog and troubleshooting: **`macos-peekaboo` skill** (user-level
 
 ### When the Mission Involves UI (macOS)
 5m. **Build and launch** via `xcodebuildmcp macos build` then `xcodebuildmcp macos launch --app-path …` (or `peekaboo app launch`)
-6m. **Read the accessibility tree** via `peekaboo see --app X --window-id <id> --json --timeout-seconds 30` (requires `.accessibilityIdentifier` coverage on interactive views — if missing, add them per the `macos-accessibility-ids` skill)
+6m. **Read the accessibility tree** via `peekaboo see --app X --window-id <id> --json --timeout-seconds 30` (requires `.accessibilityIdentifier` coverage on interactive views — if missing, add them to the relevant views; your Claude setup may have a helper skill for naming conventions, e.g. something named `macos-accessibility-ids`, if not the standard SwiftUI/AppKit APIs work directly)
 7m. **Take screenshots** via `peekaboo image --app X --window-id <id> --path …`
 8m. **Test interaction flows** via `peekaboo click --on <id> --snapshot <snap>`, `peekaboo type`, `peekaboo hotkey`, `peekaboo menu click --path "…"`
 9m. **Verify backend side-effects via the app's own CLI/API** when the UI writes to a remote service (e.g., `asc` CLI for App Store Connect writes, database reads for DB writes) — do not trust the UI alone
@@ -225,7 +225,7 @@ During init, create `TandemKit/Evaluator.md` with:
 - Click / type: `peekaboo click --on <id> --snapshot <snap>`, `peekaboo type "…" --clear`
 - Menu navigation: `peekaboo menu click --app "[AppName]" --path "File > Save"`
 - Hotkeys: `peekaboo hotkey --keys "cmd,s"`
-- **Adding identifiers**: see the `macos-accessibility-ids` skill — unlocks fast `see` and stable targeting.
+- **Adding identifiers**: adding `.accessibilityIdentifier(_:)` (SwiftUI) or `setAccessibilityIdentifier(_:)` (AppKit) unlocks fast `see` and stable targeting. If your Claude setup has a convenience skill for naming conventions (e.g. one named like `macos-accessibility-ids`), it's worth a scan; otherwise the API calls are standard.
 - **DO NOT use `mcp__computer-use__*` on macOS** — unreliable on Tahoe.
 
 ### Shared

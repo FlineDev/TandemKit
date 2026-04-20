@@ -101,7 +101,7 @@ The user invokes this skill with `/tandemkit:generator NNN-MissionName`. First r
 1. Read `TandemKit/Config.json` — verify the mission exists and is current
 2. **Read `TandemKit/Generator.md`** for project-specific context — this is mandatory, do not skip
 3. Read the mission's `Spec.md` — this is your source of truth
-4. **Scan `.claude/skills/` for skills relevant to this mission's topic.** List the skill names and descriptions. Load any that seem related — they may contain domain knowledge, conventions, or validation rules critical for correct implementation. If the Spec mentions specific skills, load those too.
+4. **Scan `.claude/skills/` for skills relevant to this mission's topic.** List the skill names and descriptions. Load any that seem related — they may contain domain knowledge, conventions, or validation rules critical for correct implementation. If the Spec's §8 "Possible Directions & Ideas" (or a similarly-named "Context the Generator Might Find Useful" section) lists suggested skills, **treat those as starting points, not contracts** — load what seems relevant to the approach you choose, ignore what doesn't match. A suggestion in that section is never a pass/fail criterion; only Acceptance Criteria and Scope are binding.
 5. Read `State.json`. If `phase` is `"ready-for-execution"` or `"planning"`:
    a. Check `evaluatorStatus`. If already `"watching"` → update State.json: `generatorStatus: "working"`, `phase: "generation"`. Proceed to step 6.
    b. If `evaluatorStatus` is `null` → the Evaluator is not ready yet. Update State.json: `generatorStatus: "researching"`. You may read files, investigate the codebase, and prepare — but do NOT create or modify implementation files.

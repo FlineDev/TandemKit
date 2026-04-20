@@ -153,12 +153,12 @@ peekaboo daemon start
 peekaboo daemon status
 ```
 
-**Tell the user about the companion skills** (both are user-level and reusable across any macOS/iOS project):
+**Check for companion skills the user may have** at `~/.claude/skills/`. Names and availability vary — examples of skills that pair well with Peekaboo workflows:
 
-- `macos-peekaboo` — full Peekaboo usage catalog (see → act → verify loop, gotchas, troubleshooting).
-- `macos-accessibility-ids` — how to add `.accessibilityIdentifier(…)` / `setAccessibilityIdentifier(_:)` so `peekaboo see` returns fast AX trees instead of hanging at its 25-second cap.
+- A Peekaboo-usage skill (one common name is `macos-peekaboo`) — full Peekaboo usage catalog (see → act → verify loop, gotchas, troubleshooting).
+- An accessibility-identifiers skill (one common name is `macos-accessibility-ids`) — how to add `.accessibilityIdentifier(…)` / `setAccessibilityIdentifier(_:)` so `peekaboo see` returns fast AX trees instead of hanging at its 25-second cap.
 
-Both skills live at `~/.claude/skills/` if already installed. If they're missing, they're documented in `ApplePlatform.md` — you can create them later or skip for now; Peekaboo still works, you just won't have inline guidance.
+These names are illustrative — scan `~/.claude/skills/` and surface whatever exists. If nothing similar is installed, the CLI still works directly; inline guidance is just nice-to-have. The Evaluator strategy in `ApplePlatform.md` covers the technique fundamentals regardless of which skills are present.
 
 Ask the user to come back and say "done" when Peekaboo is verified so you can proceed.
 
@@ -367,7 +367,16 @@ Populate each with project-specific context. Key requirements:
 - **For macOS apps:** primary UI verification is **Peekaboo CLI** on the running app (screenshot, AX tree, click, type, menu navigation). `#Preview` + Xcode MCP `RenderPreview` is still the fastest path for isolated view rendering. Forbid `mcp__computer-use__*` on macOS (unreliable on Tahoe). Include Peekaboo command examples in the role file.
 - **For macOS apps with backends (ASC, DB, API):** verify backend side-effects via the app's CLI (e.g., `asc`, `psql`) — do not trust the UI alone.
 
-**Generator.md should reference existing project skills** that are relevant (e.g., "Load `swift-code-context` before writing Swift code", "Load `swiftui-code-context` for SwiftUI work", "Use `review-swift-changes` for validation"). **For macOS apps, reference `macos-peekaboo` (runtime UI automation) and `macos-accessibility-ids` (so new/touched SwiftUI/AppKit views are automatable by Peekaboo and XCUITest out of the box).**
+**Generator.md should reference existing project skills** that are relevant. The specific skills depend entirely on what exists in the project's `.claude/skills/` directory — scan that directory and name the ones that apply. Typical categories to look for (names and availability vary by project):
+
+- A style-guide skill for the project's primary language (e.g., something like `<language>-code-context` or `<language>-style-guide`)
+- Framework-specific skills (e.g., a UI-framework style guide if the project has one)
+- A testing-conventions skill if the project documents one
+- A final-review / linter skill if the project has one (e.g., something named like `review-<language>-changes`)
+
+For macOS apps specifically, the project may have skills for runtime UI automation (e.g., something like a Peekaboo CLI wrapper) and accessibility-identifier authoring (so new SwiftUI/AppKit views are automatable). Name whatever the project actually has — do not invent or assume skill names.
+
+Example phrasing in Generator.md (adjust names to match reality): "Load `<project-style-skill>` before writing <language> code" / "Use `<project-review-skill>` for validation at end of every round".
 
 **Generator.md AND Evaluator.md must both include a top-of-file reminder** pointing at the Signal Protocol in SKILL.md. Suggested exact wording (add verbatim at the top of each file, under the first heading):
 

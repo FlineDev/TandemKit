@@ -14,7 +14,7 @@ This rule is the difference between a 100-line spec the Generator can execute ag
 2. **No complete code blocks** — no full function bodies, full type definitions, full file contents. A 1–5 line snippet that pins down an exact API contract or shows a tricky edge case is fine. A 20-line block of "here's how the function should look" is not.
 3. **No step-by-step implementation procedures.** "First call `foo()`, then construct `Bar`, then call `baz()` inside a `try` block" is HOW. Replace with WHAT: "the operation must be atomic and respect existing exclusion rules" — and let the Generator find the call sequence by reading the file you pointed to.
 4. **No transcribed file contents.** If `auth_handler.py:42-78` is relevant, write that path and one sentence about WHY. Don't paste the 50 lines into the spec — the Generator will read the file.
-5. **No "Style Guide Reminder" / "Skills to Load" / "Generator MUST..." sections.** Role-specific instructions belong in `TandemKit/Generator.md`, not the spec. The spec is mission-specific; role files are role-specific.
+5. **No "Style Guide Reminder" / "Skills to Load" / "Generator MUST..." sections as mandates.** Role-specific *instructions* belong in `TandemKit/Generator.md`, not the spec. The spec is mission-specific; role files are role-specific. **Allowed exception — non-binding suggestions:** skill names and reference files that may be relevant MAY appear in §8 "Possible Directions & Ideas" (or a similarly-named "Context the Generator Might Find Useful" section), provided they are clearly framed as starting points the Generator can ignore. The distinction is mandate vs. suggestion: *"The Generator MUST load `<style-guide-skill>`"* is a mandate (banned in the spec body). *"`<style-guide-skill>` is worth considering when writing the <relevant feature>"* in a non-binding section is a suggestion (allowed). Whatever example skill names appear in this template are illustrative placeholders — actual skills vary by project. The binding WHAT/WHY stays in Acceptance Criteria + Scope; skill and file hints stay explicitly non-binding.
 6. **No acceptance criteria that prescribe implementation order or specific function calls.** ACs are about observable outcomes. (See §4 below for examples.)
 
 ### When implementation detail IS acceptable (rare exceptions)
@@ -216,16 +216,33 @@ Explicit boundaries. The Generator must NOT implement these. The Evaluator must 
 
 ### 8. Possible Directions & Ideas (Optional)
 
-Soft suggestions from the Planner. Non-binding. The Generator can take these or ignore them.
+Soft suggestions from the Planner. Non-binding. The Generator can take these or ignore them. This is also the right place for **skill hints** and **reference files** — content that doesn't fit as a requirement but would save the Generator time if surfaced. Frame everything as "worth considering", not "must do".
+
+Typical contents (all optional, all non-binding — use whichever sub-headings fit the mission):
+- **Skills worth considering** — name the style-guide, testing, or domain skills that exist in this project and may help. The Generator decides whether to load them. Actual skill names depend on the project.
+- **Files and folders worth reading** — documentation, prior missions, adjacent patterns.
+- **Protocol or RFC references** — when the spec references a standard, point at it.
+- **Tactical hints** — possible implementation directions, testing approaches, edge cases to be aware of.
+- **Naming notes** — suggestions for tool names, branch names, enum values, with alternatives when any is fine.
+- **Suggested milestones** — a possible implementation sequence.
+
+Example — in a hypothetical auth-API mission:
 
 ```markdown
 ## Possible Directions & Ideas
 
-- Consider using the existing `RateLimiter.swift` middleware pattern as
-  a template for the auth middleware
+**Skills worth considering**
+- `<testing-skill-name>` — patterns for the test suite
+- `<api-style-skill-name>` — HTTP handler conventions
+(replace with the skills that actually exist in your project)
+
+**Files worth reading**
+- `Sources/Middleware/RateLimiter.swift` — reference pattern for the new middleware
+- `Documentation/Toolbox.md` — reusable solutions
+
+**Tactical hints**
 - The `swift-jwt` library already in the project supports RS256 natively
-- A `TokenService` actor might be a clean way to encapsulate token
-  creation/validation/rotation logic
+- A `TokenService` actor might cleanly encapsulate token lifecycle
 
 **Suggested milestones for the Generator:**
 1. Data model and token service
@@ -233,6 +250,8 @@ Soft suggestions from the Planner. Non-binding. The Generator can take these or 
 3. Middleware for protected routes
 4. Tests
 ```
+
+**Key framing**: every item in this section is a starting point. If the Generator finds a better approach by reading the codebase, taking that better approach is not a spec violation — the binding content is only what's in Acceptance Criteria, Scope, and Edge Cases. Skill names shown in examples above are placeholders; actual skill names depend on what exists in the project's `.claude/skills/` directory.
 
 ## Principles
 
@@ -252,6 +271,6 @@ Most well-scoped missions produce specs in the **150–400 line** range. If your
 - An "Implementation Sketch" section (delete it entirely)
 - Acceptance criteria that prescribe call sequences (rewrite as observable outcomes)
 - Transcribed file contents in the Context section (replace with file path + 1 sentence)
-- A "Style Guide" or "Skills to Load" section (delete — that belongs in `TandemKit/Generator.md`, not the spec)
+- A "Style Guide" or mandatory "Skills to Load" section in the spec body (delete — that belongs in `TandemKit/Generator.md`, not the spec). Non-binding skill/file *suggestions* are fine in §8 "Possible Directions & Ideas" — the distinction is mandate vs. suggestion, not whether skills can be mentioned at all.
 
 Before finalizing: scan your spec for any code block > 5 lines. For each one, ask "could the Generator have written this themselves after reading the codebase?" If yes — delete it.
