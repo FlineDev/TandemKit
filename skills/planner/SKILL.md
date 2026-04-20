@@ -39,6 +39,18 @@ Goal received → Read Planner.md → Suggest name → Confirm name → **Print 
 2. **Read Planner.md before any investigation or name suggestion** — Config.json check is the only prerequisite
 3. **Launch Codex immediately AFTER the mission folder exists** — Claude must not start its own investigation before Codex is launched
 
+## Codex Stall Detection (never block longer than 20 min)
+
+Codex can silently stall: the Agent wrapper may report "completed" with an empty/missing output file, or the process hangs with no error for arbitrary durations. Forward progress must never depend on Codex behaving.
+
+**Rules when waiting on Codex:**
+
+1. **Work in parallel.** Do Claude's own investigation while Codex runs — don't idle waiting.
+2. **10-min liveness check.** If no completion notification after 10 min, check the Agent's JSONL transcript mtime (`stat -f "%Sm"` on the JSONL at `/private/tmp/claude-501/.../subagents/agent-<id>.jsonl`). If it hasn't updated in ≥5 min, treat as stalled.
+3. **20-min hard ceiling.** Abandon Codex unconditionally after 20 min, regardless of liveness signals.
+4. **Validate output before trusting.** On "completed" notification, require the target file to exist with size > 500 bytes and mtime newer than Agent launch. Tiny/missing = failed write (often a double-background — see Step 9 rules; distinguish from a genuine stall before treating as one).
+5. **Proceed Claude-only on stall.** Write a `Codex-NN.md` placeholder noting the reason (rate limit / quota / mid-write stall / liveness-failure / 20-min ceiling), and continue to Step 2 with Claude's investigation only. Tell the user the round went Claude-only and why. Do NOT retry within the same session — stalls don't self-heal within minutes.
+
 ## Mindset
 
 - **You are an investigator and architect, NOT an implementer.** Your output is requirements, not code. The spec describes **WHAT** to build and **WHY** — never **HOW** to write it.

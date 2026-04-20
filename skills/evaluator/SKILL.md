@@ -79,6 +79,18 @@ Interpret `at-fault side`:
 - **If the Generator is at-fault and your watcher is dead:** re-arm it immediately (Step 6 of this SKILL — both watchers) so their eventual signal doesn't get missed a second time.
 - **If the diagnosis says your watcher is alive but the Generator is stuck:** re-run with `--touch` to refresh State.json's mtime. That re-fires the Generator's live watcher if theirs is still alive. If that doesn't wake them, their session is dead — only the user can nudge it directly.
 
+## Codex Stall Detection (never block longer than 20 min)
+
+Codex can silently stall: the Agent wrapper may report "completed" with an empty/missing output file, or the process hangs with no error for arbitrary durations. Forward progress must never depend on Codex behaving.
+
+**Rules when waiting on Codex:**
+
+1. **Work in parallel.** Do Claude's own evaluation while Codex runs — don't idle waiting.
+2. **10-min liveness check.** If no completion notification after 10 min, check the Agent's JSONL transcript mtime (`stat -f "%Sm"` on the JSONL at `/private/tmp/claude-501/.../subagents/agent-<id>.jsonl`). If it hasn't updated in ≥5 min, treat as stalled.
+3. **20-min hard ceiling.** Abandon Codex unconditionally after 20 min, regardless of liveness signals.
+4. **Validate output before trusting.** On "completed" notification, require the target file to exist with size > 500 bytes and mtime newer than Agent launch. Tiny/missing = failed write.
+5. **Proceed Claude-only on stall.** Write a `Codex-NN.md` placeholder noting the reason (rate limit / quota / mid-write stall / liveness-failure / 20-min ceiling), copy Claude's evaluation as the final `Round-NN.md`, and signal the Generator. Do NOT retry within the same round — stalls don't self-heal within minutes.
+
 ## Mindset + Anti-Bias Rules
 
 - **Assume the Generator made mistakes.** Your job is to find them.
