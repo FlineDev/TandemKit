@@ -263,7 +263,15 @@ The naming convention is auto-detected during `/tandemkit:init` and stored in `C
 
 **Full visibility — everything is plain text.** Every investigation, round, and convergence exchange is stored as readable files. You can open any `Claude-02.md` or `Codex-01.md` to see exactly what was found, what was disputed, and how it was resolved. Nothing is hidden in a database or API log.
 
-**To commit or not** — `/tandemkit:init` asks whether to gitignore these files. I personally commit them: they're plain text, never edited after the fact, and become a full audit trail of the development history. You might prefer to gitignore if you don't want this detail in your history. Either way, the files stay on disk for the duration of the mission.
+**What to commit** — `/tandemkit:init` asks how you want the `TandemKit/` folder handled in git. Three options, default is **Text-only**:
+
+| Option | What's committed | When to pick it |
+|---|---|---|
+| **All** | Coordination text + binary assets (screenshots) | Projects where UI/visual missions are common and you want PR descriptions to link screenshots via GitHub's raw URL. Full audit trail. |
+| **Text-only** (default) | Coordination text; assets gitignored | Good for most projects — you keep the full textual history (decisions, discussions, specs, reports) without bloating the repo with binary captures. Generator can still upload screenshots to PRs manually when needed. |
+| **None** | Nothing under `TandemKit/` | You prefer mission artifacts off-repo entirely. The files still exist on disk while the mission is active. |
+
+The text portion is plain and never edited after the fact — it's a clean audit trail of the development history, so "Text-only" gives you the history-keeping value without the binary-asset weight.
 
 ### Inside a mission
 
@@ -301,9 +309,18 @@ The naming convention is auto-detected during `/tandemkit:init` and stored in `C
 │       ├── Codex-01.md
 │       └── Claude-02.md      ← final merged evaluation (→ Round-02.md)
 │
+├── Assets/
+│   ├── R01-Gen-Before-en.webp        ← Generator, round 1, bug reproduction (English)
+│   ├── R01-Gen-After-en.webp         ← Generator, round 1, post-fix (may still FAIL)
+│   ├── R01-Eval-ClickTransition.webp ← Evaluator captured its own when Gen's was insufficient
+│   ├── R02-Gen-After-en.webp         ← Generator, round 2, post-fix (PASSed)
+│   └── R02-Gen-After-de.webp         ← per-locale variant (German)
+│
 └── UserFeedback/
     └── Feedback-01.md        ← user feedback after PASS (triggers another loop)
 ```
+
+**Screenshots & assets.** For missions that produce visual evidence (UI fixes, layout work), both roles save WebP captures to the flat `Assets/` folder with filenames like `R{NN}-Gen-<Slug>.webp` and `R{NN}-Eval-<Slug>.webp` — round + role + slug, casing from the project's `namingConvention` in `Config.json`. When a capture is locale-specific, append a dash plus the 2-letter language code (BCP-47 short form — `en`, `de`, `ja`, …): `R02-Gen-After-en.webp`, `R02-Gen-After-de.webp`. Never spell out language names. Any media type works (extension decides). The Evaluator reads the Generator's captures as primary evidence — a screenshot is a fact about what the UI looked like at that moment — and only re-captures when the existing file is insufficient (element covered, wrong crop, post-interaction state missing). Captures also feed the PR description's before/after images when the Generator opens a PR.
 
 ## FAQ
 

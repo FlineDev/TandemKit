@@ -27,6 +27,97 @@ You are the Generator. Your job is to implement the spec faithfully, commit at m
 - Be honest in your Generator reports — list what you're uncertain about
 - The spec is immutable. If you think the spec is wrong, implement it anyway and note the concern in your report. The user can address it during feedback.
 
+## Screenshots & Assets
+
+Runtime verification captures (screenshots, optionally recordings) go in the mission's flat `Assets/` folder — not `/tmp/`. Both Generator and Evaluator save here; the Evaluator reads yours as primary evidence and only re-captures when they're insufficient.
+
+**Filenames** encode round + role + a short slug, in the project's `namingConvention` (from `Config.json`):
+
+- PascalCase projects: `Assets/R01-Gen-Before-en.webp`, `Assets/R02-Gen-AfterLoginMode.webp`, `Assets/R01-Eval-ClickTransition.webp`
+- kebab-case projects: `assets/r01-gen-before-en.webp`, `assets/r02-gen-after-login-mode.webp`
+
+**Locale suffix.** When a capture is locale-specific, append a dash plus the short **BCP-47 2-letter code** (`-en`, `-de`, `-ja`, …) — never the spelled-out language name. ✅ `R02-Gen-After-en.webp`, `R02-Gen-After-de.webp`. ❌ `R02-Gen-AfterEnglish.webp`, `R02-Gen-AfterGerman.webp`. Short codes keep filenames compact, uniform, and grep-friendly. The locale code stays lowercase regardless of the project's slug casing.
+
+Any media type — extension indicates format (`.webp`, `.mp4`, `.mov`, …). For still images, prefer WebP at quality 80–90 (much smaller than PNG):
+
+```bash
+screencapture -x -l "$WINID" /tmp/cap.png
+sips -s format webp -s formatOptions 85 /tmp/cap.png \
+  --out TandemKit/NNN-Mission/Assets/R01-Gen-After-en.webp
+```
+
+(`sips` ships with macOS. Alternative: `brew install webp` → `cwebp -q 85 in.png -o out.webp`.)
+
+**Dedup:** keep only captures that add information. Three shots of "the bug still doesn't fix" count as one, not three. Keep the BEFORE, the AFTER, and meaningful intermediates.
+
+**Uncommitted case:** if `git.tandemKitCommit` is `"text-only"` or `"none"`, `Assets/` is gitignored; files still exist on disk for the active session.
+
+## PR Description — Before / After for Visual Missions
+
+Reuse `Assets/` screenshots. Primary locale inline, others in a collapsible `<details>`. **Tables use no leading/trailing pipes** — GitHub renders both styles, we prefer pipe-less for cleaner diffs:
+
+```markdown
+## Before / After
+
+**English**
+
+Before | After
+---|---
+![](<url>/R01-Gen-Before-en.webp) | ![](<url>/R02-Gen-After-en.webp)
+
+<details>
+<summary>Other locales verified</summary>
+
+**German**
+
+Before | After
+---|---
+![](<url>) | ![](<url>)
+
+</details>
+```
+
+**Image URLs:**
+- Committed (`git.tandemKitCommit == "all"`): `https://github.com/<org>/<repo>/raw/<branch>/TandemKit/NNN-Mission/Assets/<file>.webp`
+- Uncommitted: after `gh pr create`, drag-drop the `Assets/` files into the PR body in the web UI — GitHub uploads and inserts the markdown.
+
+Skip the whole section for non-visual missions.
+
+## Commit Messages & PR Text — No TandemKit Process Leakage
+
+**Commit titles, commit bodies, PR titles, and PR descriptions describe *what* the code change is and *why* it exists — never *how* it was developed.** TandemKit is invisible to anyone reading the history. This applies to every milestone commit during implementation, the final commit of a mission, and any PR you help the user open.
+
+**Never mention any of these in an implementation / milestone / final / PR context:**
+
+- "TandemKit" (the brand, the framework, the plugin)
+- "Generator", "Evaluator", "Planner" (the roles)
+- "mission", "round", "Round NN", "R01", "R02"
+- Convergence, FAIL/PASS iterations, evaluator findings, feedback cycles
+- Anything else that describes the AI development process rather than the change itself
+
+The commit message is for the future reader who wants to understand the software's history. They don't care how many rounds of back-and-forth it took; they care what changed and why.
+
+### Good vs. bad
+
+| ✅ Good (describes the change) | ❌ Bad (leaks process) |
+|---|---|
+| `Fix dark-mode contrast on Settings toolbar` | `Round 3: fix dark mode` |
+| `Add locale-aware date formatter for receipts` | `R02 complete — date formatter` |
+| `Prevent duplicate tax-ID entries in onboarding` | `Evaluator flagged duplicate-check regression, fixed` |
+| `Refactor order processor to extract validation` | `Mission 005 milestone: validation extraction` |
+
+Commit *bodies* follow the same rule. Explain motivation, constraint, non-obvious decision — not session history. Same for PR descriptions: describe the branch's contribution to the product, its in-scope/out-of-scope, and verification steps the reviewer can run. Don't describe how many review cycles the change went through.
+
+### The one exception
+
+When (and only when) the user has asked you to commit the **mission text files themselves** — i.e. the contents under `TandemKit/NNN-MissionName/` after a mission completes — the subject may reference "mission files" because that *is* what the commit contains. Example: `Add mission files for dark-mode support`. Still avoid "TandemKit", "round", "Generator", "Evaluator" even there; "mission files" alone is sufficient.
+
+(Internal State.json signal commits during the loop are not governed by this section — they're coordination housekeeping and only ever appear in history if the user opted to commit `TandemKit/` at all.)
+
+### Project overrides
+
+If the project's `TandemKit/Generator.md` or `TandemKit/Evaluator.md` explicitly states a different convention (e.g. "tag milestone commits with the round number"), follow that. Project-specific role files are authoritative for their project. Absent such an override, the rule above is the default.
+
 ## ⛔ Signal Protocol — Atomic (NON-NEGOTIABLE) ⛔
 
 **A "signal" to the Evaluator is NOT just a State.json write. It is a two-step atomic operation, and both steps must happen before your response ends. Skipping the second step deadlocks the loop — the Evaluator can flip its status to `done` but nothing will wake you to respond.**
@@ -127,6 +218,12 @@ The user invokes this skill with `/tandemkit:generator NNN-MissionName`. First r
 
    ## Files Created or Modified
    - `path/to/file` — [what was changed]
+
+   ## Assets (if applicable)
+   - `Assets/R{NN}-Gen-<Slug>.webp` — [one line on what it shows]
+   - [list this round's Generator-produced `Assets/R{NN}-Gen-*` files, one per line]
+
+   (Omit for non-visual missions. See SKILL §"Screenshots & Assets" for the filename convention.)
 
    ## User Feedback Addressed (if applicable)
    - [Feedback point] — [How it was addressed]

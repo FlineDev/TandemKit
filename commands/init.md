@@ -250,6 +250,8 @@ Present what you found in the project's commit conventions and branch patterns, 
 - "Should auto-commits happen in the umbrella repo, in submodules, or submodules only?"
 - "Should auto-commits ever happen on the main branch, or only on feature branches?"
 
+**Note on commit message content** (non-configurable — just informing the user): when auto-commit is on, the Generator writes commit titles and bodies that describe the code change only. TandemKit, the Generator/Evaluator roles, missions, and rounds are **never** mentioned in implementation, milestone, final, or PR commits — the history describes the software, not the process that produced it. The sole exception is the optional post-mission commit of the `TandemKit/NNN-MissionName/` text files, where "mission files" may appear. The project can override this in `TandemKit/Generator.md` if a different convention is desired. See the Generator skill §"Commit Messages & PR Text" for the full rule.
+
 ### Question 5: Codex Plugin Verification
 
 TandemKit ALWAYS uses Codex alongside Claude — this is not optional. Do NOT ask whether the user wants Codex. Instead, verify the `codex-plugin-cc` plugin is installed:
@@ -286,9 +288,24 @@ Present these options (and recommend `high` as the default):
 
 The selection is stored in `Config.json` under `codex.effort` and used by every Planner and Evaluator Codex invocation. It can be changed later by editing Config.json directly.
 
-### Question 7: .gitignore Preference
+### Question 7: TandemKit Commit Policy
 
-> "Do you want TandemKit coordination files gitignored during active missions?"
+The `TandemKit/` folder contains two kinds of content:
+
+- **Coordination text files** (`State.json`, `Spec.md`, `Claude-NN.md`/`Codex-NN.md` discussion files, `Generator/Round-NN.md`, `Evaluator/Round-NN.md`, etc.) — small, plain-text, high value as an audit trail of the development history.
+- **Binary assets** (screenshots and other verification artifacts under `NNN-Mission/Assets/`) — typically WebP screenshots written by the Generator and consumed by the Evaluator. They can add up in repo size if every mission keeps many captures.
+
+Explain both kinds, then ask via AskUserQuestion:
+
+> "What do you want committed to git for TandemKit missions?"
+
+Present three options (default: **Text-only**):
+
+- **Commit everything (text + assets)** — full audit trail including before/after screenshots. Enables linking screenshots from PR descriptions via GitHub's raw URL. Best for projects where UI/visual missions are common and the history is worth keeping. Stores `TandemKit/` untouched in git.
+- **Commit text only, gitignore assets (Recommended)** — keeps the full textual audit trail (decisions, discussions, specs, reports) but ignores `TandemKit/*/Assets/` so binary captures don't bloat the repo. Screenshots still live on disk for the active mission; Generator can upload them to a PR separately if needed.
+- **Don't commit TandemKit at all** — everything under `TandemKit/` is gitignored. Use if you prefer to keep coordination artifacts out of the repo entirely. The files still exist on disk during the mission.
+
+Store the choice in `Config.json` under `git.tandemKitCommit` with values `"all"` / `"text-only"` / `"none"`. Step 7 writes the matching `.gitignore` entries.
 
 ## Step 4 — Check Permissions for Autonomous Operation
 
@@ -308,7 +325,7 @@ If Codex is enabled, check `~/.codex/config.toml`. Only mention issues if restri
 > - Tools: [list]
 > - Git: auto-commit [yes/no], scope [where], feature branches [yes/no], branch pattern [pattern]
 > - Codex: effort [high/xhigh/medium]
-> - .gitignore: [yes/no]
+> - TandemKit commit policy: [all / text-only / none]
 >
 > Does this look right?"
 
@@ -327,6 +344,9 @@ This file is NOT modified by the self-learning system — keep it stable.
 ### Config.json
 
 The `codex.effort` field stores the Codex reasoning effort answered in Question 6 — this is the only Codex setting (whether Codex is used at all is non-negotiable).
+
+The `namingConvention` field captures how identifiers are cased in this project — used by `create-mission.sh` for folder names AND by the Generator/Evaluator when naming `Assets/` files. Auto-detect from existing branch and file patterns; present the detected value in the recap. Valid values: `"PascalCase"`, `"camelCase"`, `"kebab-case"`, `"snake_case"`. When in doubt, ask the user with an example of what a mission folder would look like (`003-AddDarkMode` vs `003-add-dark-mode` vs `003-add_dark_mode`).
+
 Do NOT add `learnings` sections to any role file — the self-learning system has been removed.
 
 ```json
@@ -334,13 +354,15 @@ Do NOT add `learnings` sections to any role file — the self-learning system ha
   "currentMission": null,
   "nextMissionNumber": 1,
   "projectType": "[detected/confirmed type]",
+  "namingConvention": "PascalCase",
   "git": {
     "autoCommit": true,
     "autoCommitUmbrellaRepo": false,
     "autoCommitOnMainBranch": false,
     "featureBranches": true,
     "branchPattern": "[detected from existing branches]",
-    "commitConventions": "[from project docs]"
+    "commitConventions": "[from project docs]",
+    "tandemKitCommit": "text-only"
   },
   "evaluation": {
     "scope": ["code", "ui-previews", "domain-content"],
@@ -392,9 +414,23 @@ This reminder is the project-level safety net that makes the skill-level rule im
 
 Run the build command once to verify it works. Fix if needed.
 
-## Step 7 — Update .gitignore (If User Agreed)
+## Step 7 — Update .gitignore (Based on Commit Policy)
 
-Only if the user said yes in Question 6.
+Read `git.tandemKitCommit` from Config.json and write the matching entries to the project's `.gitignore`. If the file doesn't exist, create it. If the entries already exist (re-init), leave them alone.
+
+- **`"all"`** — no entries. The whole `TandemKit/` folder including assets is committed.
+- **`"text-only"`** — add:
+  ```gitignore
+  # TandemKit: commit coordination text, ignore binary verification assets.
+  TandemKit/*/Assets/
+  ```
+- **`"none"`** — add:
+  ```gitignore
+  # TandemKit: don't commit any mission artifacts.
+  TandemKit/
+  ```
+
+Also tell the user which paths you added so they can adjust if they prefer a different layout. Do NOT overwrite existing `TandemKit`-scoped entries — if `text-only` is chosen but the project already has `TandemKit/` ignored, surface the conflict and ask.
 
 ## Step 8 — Codex Skill Access
 
