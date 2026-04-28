@@ -149,21 +149,22 @@ Silent if everything is up to date. Prints what changed if repairs were made. Ex
 
 ## On Start
 
-The user invokes this skill with `/tandemkit:evaluator NNN-MissionName`. First rename the session:
+The user invokes this skill with `/tandemkit:evaluator NNN-MissionName`. Before anything else, read `TandemKit/Config.json` once to capture `projectName` (fallback if missing — older projects: `basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"`). Then output the rename block as the very first thing in your response, with `{PROJECT}` substituted (and `NNN` substituted with the 3-digit mission number — the leading numeric prefix of the mission name argument, e.g., `005-AddDarkMode` → `005`):
 
 ╔═══ RENAME THIS SESSION ══════════════════════════════════════════════╗
 
 ```
-/rename 🔍 Evaluator: NNN-MissionName
+/rename {PROJECT}: Evaluator (M-NNN)
 ```
 
 ╚══════════════════════════════════════════════════════════════════════╝
 
 ## Step 1 — Read Context
 
-1. Read `TandemKit/Config.json`. Two things to extract:
+1. You already read `TandemKit/Config.json` once for `projectName` above. Re-use that read — three things to extract in total:
    - The current mission name (`currentMission`)
    - **`codex.effort`** (default: `high` if missing — older projects). You will substitute this into every Codex prompt below. Valid values: `none`, `minimal`, `low`, `medium`, `high`, `xhigh`.
+   - `projectName` (already captured above for the rename block).
 2. **Read `TandemKit/Evaluator.md`** for project-specific evaluation context — this is mandatory, do not skip
 3. Read the mission's `Spec.md` — this is your verification baseline
 4. Read any `UserFeedback/` files if this is a post-feedback round

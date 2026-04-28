@@ -99,17 +99,31 @@ Silent if everything is up to date. Prints what changed if repairs were made. Ex
 
    Then STOP and wait for the user's response. Do NOT suggest options, do NOT read AGENTS.md to guess what they might want, do NOT present choices. Just ask and wait.
 4. User provides the goal
-5. Read `TandemKit/Config.json`. Two things to extract:
+5. Read `TandemKit/Config.json`. Three things to extract:
    - If `currentMission` is not null: tell the user and ask what to do
    - **Capture `codex.effort`** (default: `high` if the field is missing — older projects from before this field existed). You will substitute this into every Codex prompt below. Valid values: `none`, `minimal`, `low`, `medium`, `high`, `xhigh`.
+   - **Capture `projectName`**. If the field is missing (older projects from before this field existed), fall back to `basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"`. You will substitute this into every session-rename block below as `{PROJECT}` so the user can distinguish this project's TandemKit sessions from sessions in other projects.
 6. **Read `TandemKit/Planner.md`** for project-specific context. This is mandatory — it informs your mission name suggestion and the Codex prompt. Do NOT skip this.
-7. **Suggest a short PascalCase mission name** based on the goal. Ask the user to confirm via AskUserQuestion. STOP and wait for the answer — do NOT launch Codex yet (Codex needs the confirmed name to know where to write its output file).
-8. **On name confirmation, IMMEDIATELY output the session rename command as the very first thing in your response** — before scaffolding, before launching Codex, before any status text. The user should see this block at the top of your message so they can copy-paste it right away while the rest of the setup runs:
+7. **Suggest mission names with exactly 2–3 PascalCase components.** Name the narrow thing being built or fixed, not a full sentence. This is a **hard limit** — 4+ components are forbidden, even if they "read naturally."
+
+   **Counting rule (do this BEFORE presenting options, for every candidate you draft):** Split the candidate on capital-letter boundaries. Each resulting word is one component. Count them.
+
+   - ✅ 2 components: `LoginFix`, `DarkMode`, `SearchBug`
+   - ✅ 3 components: `AddDarkMode`, `FixAPIEndpoint`, `OnboardingRedesign`, `EmptyStatePolish`
+   - ❌ 4 components (forbidden): `FixUserProfileCrash` (Fix+User+Profile+Crash), `AddSettingsExportFeature` (Add+Settings+Export+Feature)
+   - ❌ 5 components (forbidden): `RefactorUserProfileEditScreen` (Refactor+User+Profile+Edit+Screen)
+
+   Consecutive uppercase letters inside an acronym count as one component (e.g., `API` in `FixAPIEndpoint` = 1 component, making the whole name 3, not 5).
+
+   **Enforcement — before you call AskUserQuestion:** for every candidate in your option list, count its components. If ANY candidate has 4+ components, drop or shorten it — do NOT present it to the user. Presenting even one over-long candidate signals you didn't count and wastes a round. The project's `TandemKit/Planner.md` MAY tighten this range further (e.g., to 2 only) but it MUST NOT loosen it.
+
+   Ask the user to confirm via AskUserQuestion. STOP and wait for the answer — do NOT launch Codex yet (Codex needs the confirmed name to know where to write its output file).
+8. **On name confirmation, IMMEDIATELY output the session rename command as the very first thing in your response** — before scaffolding, before launching Codex, before any status text. The user should see this block at the top of your message so they can copy-paste it right away while the rest of the setup runs. Substitute `{PROJECT}` with the `projectName` you captured from `Config.json` in Step 0.5, and `NNN` with the 3-digit mission number portion of the confirmed mission name (e.g., for `005-AddDarkMode` → `005`):
 
 ╔═══ RENAME THIS SESSION ══════════════════════════════════════════════╗
 
 ```
-/rename 📝 Planner: NNN-MissionName
+/rename {PROJECT}: Planner (M-NNN)
 ```
 
 ╚══════════════════════════════════════════════════════════════════════╝
@@ -286,10 +300,12 @@ Codex is already running in background from Step 0.9. The `Planner-Discussion/` 
 
 ### Generator session (stay in this session)
 
+Substitute `{PROJECT}` with `projectName` from `Config.json` (captured in Step 0.5) and `NNN` with the mission number (3-digit prefix of the mission name, e.g., `005-AddDarkMode` → `005`).
+
 ╔═══ 1/2 — RENAME THIS SESSION ════════════════════════════════════════╗
 
 ```
-/rename 🛠️ Generator: NNN-MissionName
+/rename {PROJECT}: Generator (M-NNN)
 ```
 
 ╚══════════════════════════════════════════════════════════════════════╝
@@ -304,6 +320,8 @@ Codex is already running in background from Step 0.9. The `Planner-Discussion/` 
 
 ### Evaluator session (open a new terminal at the project root)
 
+Same `{PROJECT}` and `NNN` substitution applies to the Evaluator rename block.
+
 ╔═══ 1/3 — OPEN A NEW CLAUDE SESSION (in a new terminal) ══════════════╗
 
 ```
@@ -315,7 +333,7 @@ claude --append-system-prompt-file TandemKit/ClaudeEvaluatorPrompt.md
 ╔═══ 2/3 — IN THAT NEW SESSION, RENAME IT ═════════════════════════════╗
 
 ```
-/rename 🔍 Evaluator: NNN-MissionName
+/rename {PROJECT}: Evaluator (M-NNN)
 ```
 
 ╚══════════════════════════════════════════════════════════════════════╝

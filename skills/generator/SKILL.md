@@ -38,15 +38,15 @@ Runtime verification captures (screenshots, optionally recordings) go in the mis
 
 **Locale suffix.** When a capture is locale-specific, append a dash plus the short **BCP-47 2-letter code** (`-en`, `-de`, `-ja`, …) — never the spelled-out language name. ✅ `R02-Gen-After-en.webp`, `R02-Gen-After-de.webp`. ❌ `R02-Gen-AfterEnglish.webp`, `R02-Gen-AfterGerman.webp`. Short codes keep filenames compact, uniform, and grep-friendly. The locale code stays lowercase regardless of the project's slug casing.
 
-Any media type — extension indicates format (`.webp`, `.mp4`, `.mov`, …). For still images, prefer WebP at quality 80–90 (much smaller than PNG):
+Any media type — extension indicates format (`.webp`, `.mp4`, `.mov`, …). For still images, prefer WebP at quality 80–90 (much smaller than PNG).
+
+**Use `cwebp`, not `sips`.** Apple's `sips -s format webp` fails on macOS. Install `cwebp` once per machine if missing — don't fall back to PNG, just nudge the user to run the `brew` command:
 
 ```bash
 screencapture -x -l "$WINID" /tmp/cap.png
-sips -s format webp -s formatOptions 85 /tmp/cap.png \
-  --out TandemKit/NNN-Mission/Assets/R01-Gen-After-en.webp
+command -v cwebp >/dev/null || brew install webp
+cwebp -q 85 /tmp/cap.png -o TandemKit/NNN-Mission/Assets/R01-Gen-After-en.webp
 ```
-
-(`sips` ships with macOS. Alternative: `brew install webp` → `cwebp -q 85 in.png -o out.webp`.)
 
 **Dedup:** keep only captures that add information. Three shots of "the bug still doesn't fix" count as one, not three. Keep the BEFORE, the AFTER, and meaningful intermediates.
 
@@ -179,17 +179,17 @@ Interpret `at-fault side`:
 
 ## On Start
 
-The user invokes this skill with `/tandemkit:generator NNN-MissionName`. First rename the session:
+The user invokes this skill with `/tandemkit:generator NNN-MissionName`. Before anything else, read `TandemKit/Config.json` once to capture `projectName` (fallback if missing — older projects: `basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"`). Then output the rename block as the very first thing in your response, with `{PROJECT}` substituted (and `NNN` substituted with the 3-digit mission number — the leading numeric prefix of the mission name argument, e.g., `005-AddDarkMode` → `005`):
 
 ╔═══ RENAME THIS SESSION ══════════════════════════════════════════════╗
 
 ```
-/rename 🛠️ Generator: NNN-MissionName
+/rename {PROJECT}: Generator (M-NNN)
 ```
 
 ╚══════════════════════════════════════════════════════════════════════╝
 
-1. Read `TandemKit/Config.json` — verify the mission exists and is current
+1. You already read `TandemKit/Config.json` for `projectName` above. Re-confirm: verify the mission exists and is current (`currentMission` matches the user's argument).
 2. **Read `TandemKit/Generator.md`** for project-specific context — this is mandatory, do not skip
 3. Read the mission's `Spec.md` — this is your source of truth
 4. **Scan `.claude/skills/` for skills relevant to this mission's topic.** List the skill names and descriptions. Load any that seem related — they may contain domain knowledge, conventions, or validation rules critical for correct implementation. If the Spec's §8 "Possible Directions & Ideas" (or a similarly-named "Context the Generator Might Find Useful" section) lists suggested skills, **treat those as starting points, not contracts** — load what seems relevant to the approach you choose, ignore what doesn't match. A suggestion in that section is never a pass/fail criterion; only Acceptance Criteria and Scope are binding.
@@ -270,35 +270,52 @@ The user invokes this skill with `/tandemkit:generator NNN-MissionName`. First r
   3. If you disagree, implement the fix anyway but note disagreement in your report
   4. Re-verify affected criteria yourself
   5. Check that fixes don't break other criteria (regressions)
-- **PASS_WITH_GAPS**: Proceed to Review Briefing — include gaps in "what the user should test"
+- **PASS_WITH_GAPS**: Proceed to Review Briefing — gaps belong in the "What I could NOT confirm" section
 - **PASS**: Proceed to Review Briefing
 - **BLOCKED**: Some criteria couldn't be verified. Inform the user and discuss next steps.
 
 ## Review Briefing
 
-This is the handoff from AI work to human review. Be direct and practical. **Don't paraphrase content that's already on disk** — link to it. The user reads files faster than you can regenerate prose, and regeneration risks drift between the chat summary and the actual artifacts.
+This is the handoff from AI work to human review. **Be direct about what YOU did and what YOU verified.** The user is not your QA team — you are. The user reads your briefing to learn what's done and what's not done; they spot-check at their discretion, not at your assignment.
 
-### What goes in chat (keep it tight)
+### The core flip — what to put in chat
+
+The Briefing's job is to tell the user **what's now true about the system** based on YOUR work, not to assign them a test plan. Two sections carry the weight:
+
+1. **"What I confirmed works"** — bulleted, specific, ≤ 12 items. Each bullet states a behavior + how YOU verified it (which build, which test, which CLI invocation, which UI surface you exercised, which file you grepped). This is past tense, declarative. The user reads it to know what's done; they choose what to spot-check.
+
+2. **"What I could NOT confirm" / "Gaps"** — bulleted, ≤ 5 items. Honest list of things you couldn't verify and why (couldn't deploy, no live integration harness, dependency unavailable, no physical hardware, etc.). For each gap, name the specific obstacle — not "unverified" but "production deploy not run because I never SSH'd to the host; would need `scp` + service-restart steps".
+
+**Never use "you should test X" / "please verify Y" framing.** The user can decide to spot-check anything from the "What I confirmed works" list — that's their judgment call, not your assignment. If something genuinely needs the user's hands (e.g. password, hardware key, decision), say so explicitly under "Gaps" with a concrete reason.
+
+### What goes in chat (in this order, keep it tight)
 
 1. **A 1–2 line headline** — what changed, in plain English the user can scan in two seconds.
 
 2. **Clickable file links** to the existing artifacts the user might want to read. Use the `[name](file:///absolute/path)` format from the workspace AGENTS.md so they open in the user's editor. Always include:
    - 📋 `[Spec.md](file:///absolute/path/...)` — what was asked for
-   - 🔍 `[latest Evaluator/Round-NN.md](file:///absolute/path/...)` — what was verified (substitute the actual latest round number)
-   - 🛠️ `[latest Generator/Round-NN.md](file:///absolute/path/...)` — implementation notes (substitute the actual latest round number)
+   - 🔍 `[latest Evaluator/Round-NN.md](file:///absolute/path/...)` — what was verified by Evaluator
+   - 🛠️ `[latest Generator/Round-NN.md](file:///absolute/path/...)` — implementation notes
    - 📝 `[any UserFeedback/Feedback-NN.md](file:///...)` — only if any exist
 
-   The user reads narrative ("what was done", "evaluator findings addressed", "key decisions") **from these linked files**. Do NOT regenerate that content in chat — it already exists in the linked files byte-for-byte.
+   The user reads detailed narrative ("what was done", "evaluator findings addressed", "key decisions") **from these linked files**. Don't regenerate that content in chat — it already exists in the linked files byte-for-byte.
 
 3. **One stats line** in this format (substitute the actual numbers):
    ```
-   Stats: N files changed · M evaluator rounds (X FAIL → Y PASS) · K user-feedback iterations
+   Stats: N files changed · M evaluator rounds (X FAIL → Y PASS) · K user-feedback iterations · T tests pass
    ```
-   Numbers come from counting `Generator/Round-*.md`, `Evaluator/Round-*.md`, and `UserFeedback/Feedback-*.md` files in the mission folder. Do not guess.
+   Numbers come from counting `Generator/Round-*.md`, `Evaluator/Round-*.md`, `UserFeedback/Feedback-*.md` files in the mission folder + the actual test count from your last test run. Do not guess.
 
-4. **What the user should test** — bulleted, specific, actionable. ≤ 8 items. **This is fresh content the user cannot get from any file** — it's your judgment about which behaviors matter most for the user to verify by hand. This is the section with the highest information density per token; spend output here, not on summaries.
+4. **What I confirmed works** (the heart of the briefing) — bulleted, ≤ 12 items, each stating a verified behavior + the concrete evidence. Examples of the right tone:
+   - ✅ "Migration v9 creates `accounts`, `sessions`, `events` tables — verified by `MigrationV9Tests.v9CreatesNewTables` (passes)."
+   - ✅ "Creating a new session sets cwd to the configured workspace path — verified at `SessionManager.create:199-210` + Round 4 HTTP integration test exercising the offline path."
+   - ✅ "`SettingsView` builds for macOS + iOS targets — verified via `xcodebuild -scheme App build -destination 'generic/platform=iOS'`."
+   - ❌ NOT "You should verify the settings view round-trips to disk" → that frames it as an assignment.
 
-5. **Limitations — what AI could not fully verify** — bulleted, specific, ≤ 5 items. **Also fresh content.** Be honest about what runtime checks were skipped, what UI flows could only be screenshot-checked, what depends on real-world inputs you couldn't simulate.
+5. **What I could NOT confirm / Gaps** — bulleted, ≤ 5 items, each with the specific obstacle. Examples:
+   - ❌ "Did NOT deploy the built server binary to the production host (no `scp` + service restart was run); did NOT verify the live deployment serves the new endpoint. Would need: SSH access + service-install steps."
+   - ❌ "App was NOT uploaded to TestFlight despite Round 4 touching shippable code (project AGENTS.md requires per-milestone TestFlight uploads); internal-tester invite NOT sent."
+   - ❌ "Live end-to-end CLI flow NOT exercised on a real terminal — only HTTP-level + unit tests run. Would need a runtime testbed."
 
 ### What does NOT go in chat
 
@@ -306,12 +323,23 @@ This is the handoff from AI work to human review. Be direct and practical. **Don
 - ❌ An "Evaluator Findings Addressed" list — that content lives in both `Evaluator/Round-NN.md` and `Generator/Round-NN.md`. Link to them.
 - ❌ A "Key decisions" list — that content lives in `Spec.md §Key Decisions` and any new ones in `Generator/Round-NN.md`. Link to them.
 - ❌ Any quoted excerpt longer than 2 lines from a linked file. If it's worth reading, the link is enough.
+- ❌ A "What you should test" / "Please verify" / "Try clicking X" section — flips the responsibility back onto the user. The user spot-checks at their discretion from the "What I confirmed works" list.
 
-**Why this matters:** The user is the slow link. Their reading is fast and free; your generation is slow and costly. Every paragraph you regenerate from a file is one paragraph of latency between PASS and the user's hands on the keyboard. Linking is faster for both of you.
+### Operational reality check (run BEFORE writing the Briefing)
+
+Before declaring the round done, walk through each Spec acceptance criterion + each AGENTS.md operational rule and ask: "Did I do this for real, or did I only verify it via tests/code-grep?" The exact list depends on the project's AGENTS.md — common categories:
+
+- **Release / distribution steps** — if the project prescribes steps after a milestone (TestFlight upload, package publish, registry update, internal-tester invite, deploy to staging, etc.), did you actually run them? If not, list under Gaps.
+- **Production deploy** — did you deploy the built artifact to the actual production host (server, device, cloud function, etc.), or only to local build output? If the latter, list it.
+- **Live integration runs** — did you exercise the full system on the real host with real inputs, or only via unit / HTTP tests? If only the latter, list it.
+
+**Never let the Briefing claim "shipped" / "in production" for surfaces you only built + tested locally.** The Stats line says "T tests pass" — that's accurate. "N surfaces in production" is only accurate if those surfaces are actually deployed + reachable on the production host.
+
+**Why this matters:** The user is not your QA team. They built the system to delegate work, not to discover at review time that the work was only half-done. A Review Briefing that frames every untested behavior as "please verify" is a Briefing that hides incomplete work. The "What I confirmed works" + "Gaps" structure forces honesty: every behavior is either verified-by-me with concrete evidence, or a gap with a concrete obstacle. No middle ground that reads like "we shipped it" but means "we built it locally and ran some tests".
 
 ### After presenting
 
-Notify via `claude-notify` if available. Update State.json: `phase: "user-review"`, `generatorStatus: "awaiting-user"`.
+If the project has a notification mechanism configured (e.g., a notification skill or webhook), use it to ping the user that review is ready. Update State.json: `phase: "user-review"`, `generatorStatus: "awaiting-user"`.
 
 ════════════════════════════════════════
   ✓ DONE — Your turn

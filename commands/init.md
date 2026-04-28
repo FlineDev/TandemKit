@@ -77,7 +77,14 @@ Before asking questions, investigate thoroughly. Tell the user: "Let me investig
    - Check if bash/shell commands are allowed (sandbox_mode, approval_policy)
    - This determines whether Codex should use CLI or MCP mode for tools
 
-Present a brief summary of findings to the user before asking the first question.
+9. **Detect the project name** — used to label session renames so the user can distinguish TandemKit sessions across multiple projects in the session picker:
+   - Get the git root: `git rev-parse --show-toplevel 2>/dev/null || pwd`
+   - Take the `basename` of that path as the candidate project name.
+   - **Generic-folder fallback:** if the basename is one of `App`, `Server`, `Client`, `Frontend`, `Backend`, `Web`, `Mobile`, `iOS`, `macOS`, `Android`, `Desktop`, walk up one level and use the parent's basename instead — these are common umbrella-component folders that are not the project's identity.
+   - If the resulting name is still ambiguous (parent also generic, or the user has a custom umbrella layout where the meaningful project name lives a level or two up), surface it in the Step 2 summary and let the user override it during the Step 5 recap.
+   - This name will be stored in `Config.json` as `projectName` and read by the Planner / Generator / Evaluator on every session rename.
+
+Present a brief summary of findings to the user before asking the first question. Include the detected project name verbatim so the user can object early if it's wrong.
 
 ## Step 3 — Ask Configuration Questions
 
@@ -320,6 +327,7 @@ If Codex is enabled, check `~/.codex/config.toml`. Only mention issues if restri
 **Before writing any files**, present a summary of everything you're about to encode:
 
 > "Here's what I'll set up:
+> - Project name: [detected name] — used to label session renames so this project is recognizable in the session picker. Override now if wrong.
 > - Project type: [type]
 > - Evaluation scope: [list]
 > - Tools: [list]
@@ -347,12 +355,15 @@ The `codex.effort` field stores the Codex reasoning effort answered in Question 
 
 The `namingConvention` field captures how identifiers are cased in this project — used by `create-mission.sh` for folder names AND by the Generator/Evaluator when naming `Assets/` files. Auto-detect from existing branch and file patterns; present the detected value in the recap. Valid values: `"PascalCase"`, `"camelCase"`, `"kebab-case"`, `"snake_case"`. When in doubt, ask the user with an example of what a mission folder would look like (`003-AddDarkMode` vs `003-add-dark-mode` vs `003-add_dark_mode`).
 
+The `projectName` field captures the human-readable project identity (auto-detected from git root in Step 2.9, with the generic-folder walk-up applied) — used by the Planner / Generator / Evaluator to label session renames so the user can recognize which TandemKit project a given session belongs to in the session picker. The recap (Step 5) is the explicit confirmation gate — if the user wants to override the detected name there, write the override.
+
 Do NOT add `learnings` sections to any role file — the self-learning system has been removed.
 
 ```json
 {
   "currentMission": null,
   "nextMissionNumber": 1,
+  "projectName": "[detected/confirmed project name]",
   "projectType": "[detected/confirmed type]",
   "namingConvention": "PascalCase",
   "git": {
