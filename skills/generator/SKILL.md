@@ -274,6 +274,8 @@ The user invokes this skill with `/tandemkit:generator NNN-MissionName`. Before 
 - **PASS**: Proceed to Review Briefing
 - **BLOCKED**: Some criteria couldn't be verified. Inform the user and discuss next steps.
 
+**A passing verdict is NOT closure.** PASS / PASS_WITH_GAPS / PASS_WITH_FINDINGS hands off to **Review Briefing → user-review** — not to Mission Complete. Do not edit `State.json phase` to `"complete"` on your own initiative. Do not write `Summary.md` yet. Wait for the user's explicit closure language (see § Mission Complete trigger gate) before running the closeout protocol.
+
 ## Review Briefing
 
 This is the handoff from AI work to human review. **Be direct about what YOU did and what YOU verified.** The user is not your QA team — you are. The user reads your briefing to learn what's done and what's not done; they spot-check at their discretion, not at your assignment.
@@ -359,50 +361,116 @@ Process:
 2. Update State.json: `phase: "generation"`, `generatorStatus: "working"`, increment `userFeedbackRounds`. Do NOT set `evaluatorStatus: "pending"` here — the Evaluator will be notified when you signal ready-for-eval after implementing the feedback.
 3. Re-enter the implementation loop
 
-## Mission Complete
+## ⛔ Mission Complete — Atomic Closeout Protocol (NON-NEGOTIABLE) ⛔
 
-When the user says "looks good" / "approved" / "done":
-1. Update State.json: `phase: "complete"`, `completedBy: "user"`. **This signals the Evaluator to stop watching** — the Evaluator's watcher detects `phase: "complete"` and prints a closing banner.
-2. Update Config.json: `currentMission: null`
-3. Generate `Summary.md` using this format:
-   ```markdown
-   # NNN-MissionName — Summary
+**Mission Complete is NOT a single State.json edit. It is a fixed five-action sequence, and ALL five must happen in the same response. Skipping any step (especially `Summary.md` and the commit-question) leaves the mission in a half-closed state — `currentMission` not cleared, no record of what shipped, no commit, the next mission collides on top of unfinished metadata.**
 
-   **Goal:** [one-line goal from Spec.md]
-   **Started:** YYYY-MM-DD
-   **Completed:** YYYY-MM-DD
-   **Rounds:** N total (M AI iterations + K user feedback rounds)
-   **Generator:** Claude Code
-   **Evaluator(s):** [Claude Code / Codex / dual]
+### Trigger gate — only the user can authorize
 
-   ## What Was Built
-   [2-3 paragraph summary of the implementation]
+Mission Complete fires **only** when the user has explicitly approved closure in this conversation. Examples that ARE valid triggers:
 
-   ## Key Decisions
-   - [Decision 1 — rationale]
-   - [Decision 2 — rationale]
+- "looks good" / "looks great" / "approved" / "ship it" / "done" / "great work"
+- "let's close this mission" / "let's complete this mission" / "finalize this mission"
+- "passt" / "fertig" / "abgeschlossen" / "lass uns abschließen" (German equivalents)
+- An explicit instruction like "now finalize this current mission and clean up config"
 
-   ## Evaluator Findings Addressed
-   - Round 1: [issue] → [fix]
-   - Round 2: [issue] → [fix]
+Things that are **NOT** triggers — do not enter Mission Complete on these:
 
-   ## User Feedback Addressed
-   - Feedback 1: [what the user said] → [what was changed]
+- ❌ Evaluator returned `PASS` / `PASS_WITH_GAPS` / `PASS_WITH_FINDINGS`. A passing verdict ends the round and hands off to **user-review** — *not* to completion.
+- ❌ All acceptance criteria you yourself can verify are green.
+- ❌ A TestFlight upload, deploy, or any release-step succeeded.
+- ❌ The user thanked you, said "nice", or made a comment about the result without explicit closure language.
+- ❌ A long stretch of work appears to be "wrapping up".
 
-   ## Files Changed
-   - [file list with brief descriptions]
+If in any doubt: **stop, present the Review Briefing, and wait.** A user who wants to close will say so. Generator-initiated completion has caused real bugs in production missions (wrong `completedBy`, no `Summary.md`, `currentMission` left set).
 
-   ## Acceptance Criteria Results
-   1. [criterion] — PASS
-   2. [criterion] — PASS
-   ```
-4. **Present the summary in chat** — if short (under ~30 lines), show in full. If longer, show a concise version with key highlights.
-5. **Ask about committing:** "Should I commit the mission files?" This step is NEVER skipped — even if auto-commit doesn't apply, always ask.
-6. If user confirms: run `git status` to show what will be committed, then stage both implementation outputs and TandemKit metadata. Commit together. If user declines: note that files are uncommitted.
-7. If on feature branch: tell user it's ready for merging
+### The five actions — execute together, in this order
+
+Once the user has triggered closure, run all five in a single response. Order matters: write the artifact (Summary.md) **before** flipping any state, so a mid-response interruption still leaves the most valuable output on disk.
+
+**Action 1 — Write `Summary.md`.** Use the Write tool to create `TandemKit/<mission>/Summary.md` with this exact structure (substitute real content; do not include a Summary.md authoring step that defers to "later"):
+
+```markdown
+# NNN-MissionName — Summary
+
+**Goal:** [one-line goal from Spec.md]
+**Started:** YYYY-MM-DD
+**Completed:** YYYY-MM-DD
+**Rounds:** N total (M AI iterations + K user feedback rounds)
+**Generator:** Claude Code
+**Evaluator(s):** [Claude Code / Codex / dual]
+
+## What Was Built
+[2-3 paragraph summary of the implementation]
+
+## Key Decisions
+- [Decision 1 — rationale]
+- [Decision 2 — rationale]
+
+## Evaluator Findings Addressed
+- Round 1: [issue] → [fix]
+- Round 2: [issue] → [fix]
+
+## User Feedback Addressed
+- Feedback 1: [what the user said] → [what was changed]
+
+## Files Changed
+- [file list with brief descriptions]
+
+## Acceptance Criteria Results
+1. [criterion] — PASS
+2. [criterion] — PASS
+```
+
+Counts come from `ls TandemKit/<mission>/Generator/`, `ls .../Evaluator/`, `ls .../UserFeedback/` — do not guess.
+
+**Action 2 — Update `State.json` to closed.** Edit-only the closeout fields; do not rewrite unrelated fields:
+
+- `phase: "complete"` (literal string `"complete"` — not `"done"`, not `"finished"`, not anything else)
+- `completedBy: "user"` (literal string `"user"` — never `"generator"`, even if the user's wording was terse; the field records *who authorized closure*, and the user authorized it)
+- `updated: <ISO-8601 now>`
+
+This signals the Evaluator's `wait-for-state.sh` to stop watching and print its closing banner.
+
+**Action 3 — Update `Config.json` to clear `currentMission`.** Edit-only that field:
+
+- `currentMission: null`
+
+If you skip this, the next `/tandemkit:planner` or `/tandemkit:generator` invocation will think the just-finished mission is still active and either refuse to start a new one or collide on the metadata. This step is the single most-skipped step in past closeouts — do not skip it.
+
+**Action 4 — Present the Summary in chat.** If the Summary.md is ≤ ~30 lines, paste it in full. If longer, paste a concise version with the headline + Key Decisions + Acceptance-Criteria results. Always link to the file so the user can open it: `📋 [Summary.md](file:///absolute/path/to/TandemKit/<mission>/Summary.md)`.
+
+**Action 5 — Ask about committing.** Always ask, exactly once, in plain words: *"Should I commit the mission files?"* This step is NEVER skipped. Do **not** auto-commit without asking, even if the project's `Config.json` has `git.autoCommit: true` — auto-commit governs in-loop milestone commits, not the final mission-files commit. Wait for the user's reply; on this turn your job ends after asking.
+
+If the user later confirms: run `git status` to show what will be committed, stage both implementation outputs (any code/content changes from the final round) and TandemKit metadata (the new `Summary.md`, the State.json/Config.json edits), commit together with a message that follows the project's commit conventions (and obeys "no TandemKit process leakage" — see § Commit Messages above). If the user declines: note that the files are uncommitted and stop.
+
+If the mission was on a feature branch: after the commit (or after the user declines), tell them the branch is ready for merging.
+
+### Pre-flight checklist — before your response ends
+
+Before stopping, verify **all five** of these:
+
+- [ ] `Summary.md` was written at `TandemKit/<mission>/Summary.md` (Write tool was called, not just planned).
+- [ ] `State.json` `phase` is `"complete"` AND `completedBy` is `"user"` (not `"generator"`, not `"done"`, not unset).
+- [ ] `Config.json` `currentMission` is `null` (Edit tool was called).
+- [ ] You presented the Summary contents in chat (not just "I wrote the file").
+- [ ] You asked the user "Should I commit the mission files?" — and your response ends after the question, awaiting their reply. Do NOT pre-emptively commit.
+
+If any box is unchecked: **do not let the response end.** Fix it with another tool call. A half-closed mission deadlocks the next mission's start and loses the closeout summary forever.
+
+### Why this is non-negotiable
+
+In four real closed missions across this workspace, the previous loose phrasing of this section produced these failures:
+
+- `Summary.md` was **never written** in any of the four (100% miss rate).
+- `Config.json currentMission` was left set in two of the four — blocking new-mission start.
+- `completedBy` was set to `"generator"` in one case (the Generator self-authorized closure based on a `PASS_WITH_FINDINGS` verdict).
+- "Should I commit the mission files?" was skipped in all four; commits happened auto-implicitly or not at all.
+
+The atomic protocol above closes those gaps. Treat it the same way as the SIGNAL Protocol above — five actions, single response, full pre-flight before stopping.
 
 ════════════════════════════════════════
-  ✓ Mission Complete
+  ✓ Mission Complete — awaiting commit confirmation
 ════════════════════════════════════════
 
 ## Abort Mission
