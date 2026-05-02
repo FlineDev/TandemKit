@@ -286,7 +286,13 @@ Codex is already running in background from Step 0.9. The `Planner-Discussion/` 
     3. Wait for Codex's review. If APPROVED, return to step 26 with the new file as the final draft. If NOT APPROVED, address Codex's disagreements and iterate.
     4. **Do not skip the Codex review and copy the file directly to `Spec.md`.** The Spec.md baseline must always be a Codex-approved Claude-NN.md.
 
-29. Optionally ask: "The spec and mission structure are ready. Want me to commit them before we start execution?"
+29. **Ask via AskUserQuestion** whether to commit the mission folder + `Spec.md` + the `Config.json` flip before handing off to the Generator. The mission folder typically lives inside an umbrella git repo; committing now creates a durable baseline the Generator's worktree branch can fork from, but some projects prefer to bundle the planning artifacts with the Generator's first commit. Use **AskUserQuestion** with three options — never prompt this in plain text:
+
+    - **Commit and push (Recommended)** — stage `TandemKit/Config.json` + the entire mission folder, write a planning commit per `Config.json::git.commitConventions`, push to the configured remote.
+    - **Commit only (no push)** — stage and commit locally; the Developer pushes manually later.
+    - **Skip — let the Generator bundle it** — leave the planning artifacts uncommitted; the Generator's first commit picks them up.
+
+    On **Commit and push** or **Commit only**, write a commit message that follows the project's `git.commitConventions` (typically: imperative subject under ~80 chars, capitalized, no trailing period, no `Co-Authored-By`, body wrapped at 72 explaining the planning outcome — mission scope, rounds run, key decisions locked, target submodule).
 
 ════════════════════════════════════════
   ✓ Spec ready — Your turn to approve
@@ -294,35 +300,27 @@ Codex is already running in background from Step 0.9. The `Planner-Discussion/` 
 
 ## Step 5 — Transition to Execution
 
-30. Update State.json: `"phase": "ready-for-execution"`
+30. Update `State.json`: `"phase": "ready-for-execution"`.
 
-**Present the commands below as separate copy-paste blocks — one command per box. Each block must be run one at a time in order; do NOT merge multiple commands into a single box.**
+31. **The Planner session's job is done.** Tell the Developer to start the Generator and Evaluator in **fresh** Claude sessions — never reuse the Planner's session. Token budget matters: the Planner has consumed thousands of tokens on investigation, Codex coordination, and convergence rounds; that context bloat would shorten the Generator's implementation runway and the Evaluator's review depth. Each role gets a clean session.
 
-### Generator session (stay in this session)
+    Both the Generator and Evaluator skills print their own rename blocks as the **first thing** they output when invoked. The Planner does not print rename commands here — they would only duplicate what the role skills do.
 
-Substitute `{PROJECT}` with `projectName` from `Config.json` (captured in Step 0.5) and `NNN` with the mission number (3-digit prefix of the mission name, e.g., `005-AddDarkMode` → `005`).
+Present these two copy-paste blocks (one per role). Substitute `<mission>` with the mission folder name (e.g. `005-AddDarkMode`).
 
-╔═══ 1/2 — RENAME THIS SESSION ════════════════════════════════════════╗
+### Generator — open a new Claude session in any terminal at the project root
 
-```
-/rename {PROJECT}: Generator (M-NNN)
-```
-
-╚══════════════════════════════════════════════════════════════════════╝
-
-╔═══ 2/2 — START THE GENERATOR ════════════════════════════════════════╗
+╔═══ START THE GENERATOR ══════════════════════════════════════════════╗
 
 ```
-/tandemkit:generator NNN-MissionName
+/tandemkit:generator <mission>
 ```
 
 ╚══════════════════════════════════════════════════════════════════════╝
 
-### Evaluator session (open a new terminal at the project root)
+### Evaluator — open another terminal at the project root and start Claude with the Evaluator system prompt
 
-Same `{PROJECT}` and `NNN` substitution applies to the Evaluator rename block.
-
-╔═══ 1/3 — OPEN A NEW CLAUDE SESSION (in a new terminal) ══════════════╗
+╔═══ 1/2 — START CLAUDE WITH THE EVALUATOR SYSTEM PROMPT ══════════════╗
 
 ```
 claude --append-system-prompt-file TandemKit/ClaudeEvaluatorPrompt.md
@@ -330,24 +328,18 @@ claude --append-system-prompt-file TandemKit/ClaudeEvaluatorPrompt.md
 
 ╚══════════════════════════════════════════════════════════════════════╝
 
-╔═══ 2/3 — IN THAT NEW SESSION, RENAME IT ═════════════════════════════╗
+╔═══ 2/2 — IN THAT NEW SESSION, START THE EVALUATOR ═══════════════════╗
 
 ```
-/rename {PROJECT}: Evaluator (M-NNN)
-```
-
-╚══════════════════════════════════════════════════════════════════════╝
-
-╔═══ 3/3 — THEN START THE EVALUATOR ═══════════════════════════════════╗
-
-```
-/tandemkit:evaluator NNN-MissionName
+/tandemkit:evaluator <mission>
 ```
 
 ╚══════════════════════════════════════════════════════════════════════╝
+
+Both the Generator and Evaluator print a `/rename` block as their first response — just copy-paste it to keep your session list legible.
 
 ════════════════════════════════════════
-  ✓ Planning Complete — Start Generator and Evaluator sessions
+  ✓ Planning Complete — Generator and Evaluator run in fresh sessions
 ════════════════════════════════════════
 
 ## What the Spec Is NOT
